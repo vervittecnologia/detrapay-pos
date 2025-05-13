@@ -1,0 +1,46 @@
+<resources>
+    <string name="app_name">Detrapay</string>
+
+    <string name="login_title">Login</string>
+    <string name="prompt_cnpj">CNPJ</string>
+    <string name="prompt_password">Senha</string>
+    <string name="action_login">Fazer login</string>
+
+
+    <string name="welcome">"Bem vindo!"</string>
+    <string name="invalid_cnpj">CNPJ inválido</string>
+    <string name="invalid_password">Senha inválida</string>
+    <string name="login_failed">"Falha no login"</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="fragment_home_services_title">Seus serviços</string>
+    <string name="fragment_home_registration_title">Primeiro Emplacamento</string>
+    <string name="home_orders_title">Meus pedidos</string>
+    <string name="order_list_content_description">Lista de pedidos</string>
+    <string name="employee_selection_title">Bem vindo ao Detrapay!</string>
+    <string name="employee_selection_subtitle">Você está na <b>%s</b>. Toque no seu nome para continuar.</string>
+    <string name="employee_list_content_description">Lista de funcionários</string>
+    <string name="reload_btn">Tentar novamente</string>
+    <string name="order_details_finish_service">Concluir atendimento</string>
+    <string name="employees_default_error_message">Algo deu errado, por favor tente novamente.</string>
+    <string name="default_error_message">Algo deu errado, por favor tente novamente.</string>
+    <string name="orders_default_error_message">Não foi possível carregar os pedidos, por favor tente novamente.</string>
+    <string name="registration_default_error_message">Não foi possível carregar os dados, por favor tente novamente.</string>
+    <string name="home_default_error_message">Não foi possível carregar os serviços, por favor tente novamente.</string>
+    <string name="toolbar_change_store_content_description">trocar de loja</string>
+    <string name="toolbar_notifications_content_description">Notificações</string>
+    <string name="toolbar_content_description">logout</string>
+    <string name="notifications_activity_title">Notificações</string>
+    <string name="registration_title">Dados do pedido</string>
+    <string name="cpf_cnpj_registration_order_input">CPF/CNPJ do Cliente*</string>
+    <string name="client_name_order_input">Nome do cliente*</string>
+    <string name="registration_create_order_button">Criar pedido</string>
+    <string name="whatsapp_order_input">Whatsapp*</string>
+    <string name="invoice_date_order_input">Data de faturamento*</string>
+    <string name="vehicle_value_order_input">Valor do veículo*</string>
+    <string name="vehicle_type_order_input">Tipo de veículo*</string>
+    <string name="registration_next_button">Avançar</string>
+    <string name="disposal_vehicle_order_input">Veículo com alienação</string>
+    <string name="special_plate_order_input">Placa especial</string>
+    <string name="registration_print_button">Imprimir</string>
+</resources>

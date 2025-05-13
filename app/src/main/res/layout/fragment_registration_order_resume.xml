@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.registration.resume.RegistrationResumeFragment">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvOrderDetailed"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="16dp"
+        android:background="@color/neutral_100"
+        android:backgroundTint="@color/neutral_200"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/resumeTotalAmount"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@color/neutral_200"
+        android:paddingTop="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="16dp"
+        android:textAlignment="textEnd"
+        android:textColor="@color/primary_500"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="@+id/rvOrderDetailed"
+        app:layout_constraintStart_toStartOf="@+id/rvOrderDetailed"
+        app:layout_constraintTop_toBottomOf="@+id/rvOrderDetailed"
+        tools:ignore="RtlSymmetry"
+        tools:text="R$ 7.000,00" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/registrationOrderDiscountBtn"
+        style="@style/Widget.Material3.Button.IconButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        android:textSize="14sp"
+        android:text="DESCONTO"
+        android:backgroundTint="@android:color/transparent"
+        app:icon="@drawable/ic_plus"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/resumeTotalAmount" />
+
+    <Button
+        android:id="@+id/registrationOrderResumeNextBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="@string/registration_next_button"
+        android:background="@drawable/default_button_background"
+        android:textColor="@color/white"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/registrationOrderDiscountBtn" />
+
+    <Button
+        android:id="@+id/registrationOrderResumePrintBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/secondary_button_background"
+        android:text="@string/registration_print_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/registrationOrderResumeNextBtn" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

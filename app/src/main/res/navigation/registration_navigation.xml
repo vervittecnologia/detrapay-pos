@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/home_navigation"
+    app:startDestination="@id/orderDataFragment">
+
+    <fragment
+        android:id="@+id/orderDataFragment"
+        android:name="com.detrapay.ui.registration.order_data.RegistrationOrderDataFragment"
+        tools:layout="@layout/fragment_registration_order_data">
+        <action
+            android:id="@+id/action_orderDataFragment_to_resumeFragment"
+            app:destination="@id/resumeFragment"
+            app:popUpTo="@id/orderDataFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/resumeFragment"
+        android:name="com.detrapay.ui.registration.resume.RegistrationResumeFragment"
+        tools:layout="@layout/fragment_registration_order_resume">
+        <action
+            android:id="@+id/action_resumeFragment_to_paymentMethodFragment"
+            app:destination="@id/paymentMethodFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popUpTo="@id/resumeFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/paymentMethodFragment"
+        android:name="com.detrapay.ui.registration.payment_method.RegistrationPaymentMethodFragment"
+        tools:layout="@layout/fragment_registration_order_payment_method"/>
+
+
+</navigation>

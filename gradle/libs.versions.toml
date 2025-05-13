@@ -1,0 +1,77 @@
+[versions]
+agp = "8.9.1"
+currencyedittext = "1.0.0"
+kotlin = "2.1.10"
+coreKtx = "1.15.0"
+junit = "4.13.2"
+junitVersion = "1.2.1"
+espressoCore = "3.6.1"
+lifecycleRuntimeKtx = "2.8.7"
+appcompat = "1.7.0"
+material = "1.12.0"
+annotation = "1.9.1"
+constraintlayout = "2.2.1"
+lifecycleLivedataKtx = "2.8.7"
+lifecycleViewmodelKtx = "2.8.7"
+materialIconsExtended = "1.7.8"
+room = "2.6.1"
+pagseguroWrapper = "1.29.5"
+ksp = "2.1.10-1.0.31"
+gson = "2.12.1"
+hilt = "2.51.1"
+retrofit = "2.11.0"
+okhttp = "4.12.0"
+legacySupportV4 = "1.0.0"
+recyclerview = "1.4.0"
+navigationFragmentKtx = "2.8.9"
+navigationUiKtx = "2.8.9"
+activity = "1.10.1"
+kotlinxSerialization="1.8.0"
+shimmer="0.5.0"
+fragmentKtx="1.8.6"
+
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+currencyedittext = { module = "com.cottacush:CurrencyEditText", version.ref = "currencyedittext" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+androidx-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+androidx-annotation = { group = "androidx.annotation", name = "annotation", version.ref = "annotation" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+androidx-lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version.ref = "lifecycleLivedataKtx" }
+androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
+material-icons = {group = "androidx.compose.material", name = "material-icons-extended", version.ref = "materialIconsExtended" }
+pagseguro = {group = "br.com.uol.pagseguro.plugpagservice.wrapper", name = "wrapper", version.ref = "pagseguroWrapper"}
+room-runtime = {group = "androidx.room", name = "room-runtime", version.ref = "room"}
+room-compiler = {group = "androidx.room", name = "room-compiler", version.ref = "room"}
+room-ktx = {group = "androidx.room", name = "room-ktx", version.ref = "room"}
+gson = {group = "com.google.code.gson", name = "gson", version.ref = "gson"}
+hilt = {group = "com.google.dagger", name = "hilt-android", version.ref = "hilt"}
+hilt-compiler = {group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt"}
+retrofit = {group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit"}
+retrofit-gson-converter = {group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit"}
+okhttp-logging-interceptor = {group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp"}
+androidx-legacy-support-v4 = { group = "androidx.legacy", name = "legacy-support-v4", version.ref = "legacySupportV4" }
+androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
+androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigationFragmentKtx" }
+androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigationUiKtx" }
+androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+kotlin-serialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+shimmer = { group = "com.facebook.shimmer", name = "shimmer", version.ref = "shimmer" }
+fragment-ktx = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "fragmentKtx" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt"}
+room = { id = "androidx.room", version.ref = "room"}
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin"}
