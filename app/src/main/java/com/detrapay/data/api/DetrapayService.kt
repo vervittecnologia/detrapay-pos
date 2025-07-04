@@ -14,6 +14,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface DetrapayService {
@@ -23,11 +24,17 @@ interface DetrapayService {
     @GET("company-users/users")
     suspend fun getEmployees(): Response<EmployeeResponse>
 
+    @GET("companies")
+    suspend fun getCompanies(): Response<Any>
+
     @GET("sales-orders/me")
     suspend fun getOrders(): Response<List<OrderResponse>>
 
     @GET("sales-orders/{id}/me")
     suspend fun getOrder(@Path("id") orderId: Int): Response<OrderResponse>
+
+    @PUT("sales-orders/{id}/me")
+    suspend fun updateOrder(@Path("id") orderId: Int, @Body orderRequest: OrderRequest): Response<OrderResponse>
 
     @POST("sales-orders/me")
     suspend fun createOrder(@Body orderRequest: OrderRequest): Response<OrderResponse>

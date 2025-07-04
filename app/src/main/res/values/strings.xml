@@ -33,7 +33,7 @@
     <string name="notifications_activity_title">Notificações</string>
     <string name="registration_title">Dados do pedido</string>
     <string name="cpf_cnpj_registration_order_input">CPF/CNPJ do Cliente*</string>
-    <string name="client_name_order_input">Nome do cliente*</string>
+    <string name="client_name_order_input">Nome do cliente</string>
     <string name="registration_create_order_button">Criar pedido</string>
     <string name="whatsapp_order_input">Whatsapp*</string>
     <string name="invoice_date_order_input">Data de faturamento*</string>
@@ -43,4 +43,5 @@
     <string name="disposal_vehicle_order_input">Veículo com alienação</string>
     <string name="special_plate_order_input">Placa especial</string>
     <string name="registration_print_button">Imprimir</string>
+    <string name="order_details_edit_order_text_view">Editar dados</string>
 </resources>

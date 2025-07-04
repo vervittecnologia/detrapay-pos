@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Bitmap
+import android.icu.text.Transliterator.Position
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
@@ -69,8 +70,8 @@ class RegistrationResumeFragment : Fragment() {
         binding.registrationOrderDiscountBtn.setOnClickListener {
             val discountDialogFragment =
                 DiscountDialogFragment(listener = object : DiscountDialogFragment.OnUpdateListener {
-                    override fun onUpdate() {
-                        updateResume()
+                    override fun onUpdate(itemPosition: Int?) {
+                        updateItem(itemPosition)
                     }
 
                 })
@@ -82,14 +83,21 @@ class RegistrationResumeFragment : Fragment() {
             registrationViewModel.simulationItems(),
             object : OnItemClickListener {
                 override fun onRemoveDiscount(item: SimulationItem, itemPosition: Int) {
-                    registrationViewModel.removeDiscount(item)
-                    updateResume()
+                    val position = registrationViewModel.removeDiscount(item)
+                    updateItem(position)
                 }
 
             })
         val recyclerView: RecyclerView = binding.rvOrderDetailed
         recyclerView.layoutManager = LinearLayoutManager(this.activity)
         recyclerView.adapter = adapter
+    }
+
+    private fun updateItem(itemPosition: Int?) {
+        if (itemPosition != null) {
+            adapter.updateItem(registrationViewModel.simulationItems(), itemPosition)
+            binding.resumeTotalAmount.text = registrationViewModel.simulationTotalAmount()
+        }
     }
 
     private fun updateResume() {

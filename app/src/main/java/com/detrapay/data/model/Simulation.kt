@@ -32,6 +32,7 @@ data class SimulationItem(
 data class SimulationPayment(
     var id: Long,
     val paymentMethod: PaymentMethod,
-    val amount: String,
+    val amountOriginal: String,
+    val amountFinal: String,
     val installment: Int = 1
 )

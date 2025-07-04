@@ -70,8 +70,12 @@ data class OrderItemResponse(
 data class OrderReceivableItemResponse(
     @SerializedName("id")
     val id: Int,
-    @SerializedName("amount")
-    val amount: Double,
+    @SerializedName("amount_final")
+    val amountFinal: Double,
+    @SerializedName("amount_original")
+    val amountOriginal: Double,
+    @SerializedName("tax")
+    val tax: Double?,
     @SerializedName("status_in")
     val status: OrderReceivableItemStatusResponse,
     @SerializedName("payment_date")

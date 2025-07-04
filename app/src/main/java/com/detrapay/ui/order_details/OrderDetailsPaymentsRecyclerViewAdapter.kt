@@ -14,6 +14,7 @@ import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.OrderReceivableItemStatus.CANCELLED
 import com.detrapay.data.model.OrderReceivableItemStatus.PAID
 import com.detrapay.data.model.OrderReceivableItemStatus.PENDING
+import com.detrapay.data.model.OrderReceivableItemStatus.REFUNDED
 import com.detrapay.databinding.OrderPaymentListItemBinding
 import java.util.Locale
 
@@ -64,7 +65,8 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
             item: OrderReceivableItem,
             listener: OnItemClickListener
         ) {
-            val imageDrawable = if (item.paymentMethod.name.contains("Cartão de crédito", true)) {
+            val isCreditCard = item.paymentMethod.name.contains("Cartão de crédito", true) || item.paymentMethod.name.contains("VISA", true) || item.paymentMethod.name.contains("Mastercard", true)
+            val imageDrawable = if (isCreditCard) {
                 R.drawable.ic_credit_card_outline
             } else if (item.paymentMethod.name.contains("Pix", true)) {
                 R.drawable.ic_pix
@@ -75,8 +77,17 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
             paymentMethodImage.setImageDrawable(context.getDrawable(imageDrawable))
 
             paymentMethodName.text = item.paymentMethod.name
-            val receivableAmount = "%,.2f".format(locale, item.amount)
-            paymentMethodAmount.text = "R$ $receivableAmount"
+
+            val receivableAmount = if (isCreditCard) {
+                val amount = "%,.2f".format(locale, item.amountFinal)
+                val installmentAmount = "%,.2f".format(locale, item.amountFinal / item.installments)
+                "R$ $amount (${item.installments}x de R$$installmentAmount)"
+            } else {
+                val amount = "%,.2f".format(locale, item.amountOriginal)
+                "R$ $amount"
+            }
+
+            paymentMethodAmount.text = receivableAmount
 
             statusTextView.text = item.status.toString()
 
@@ -84,6 +95,7 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
                 PENDING -> R.drawable.pending_status_background
                 PAID -> R.drawable.paid_status_background
                 CANCELLED -> R.drawable.cancelled_status_background
+                REFUNDED -> R.drawable.refunded_status_background
             }
 
             paymentMethodStatusView.background = context.getDrawable(cardBackground)

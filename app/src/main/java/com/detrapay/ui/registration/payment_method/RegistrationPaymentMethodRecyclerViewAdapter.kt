@@ -61,7 +61,8 @@ class RegistrationPaymentMethodRecyclerViewAdapter(
                 val simulationPayment = SimulationPayment(
                     id = values.size.toLong() + 1,
                     paymentMethod = paymentMethod,
-                    amount = ""
+                    amountOriginal = "",
+                    amountFinal = "",
                 )
                 values.add(simulationPayment)
                 notifyItemChanged(values.size)
@@ -120,12 +121,12 @@ class RegistrationPaymentMethodViewHolder(
         onDelete: () -> Unit
     ) {
 
-        amountInputText.setText(item.amount)
+        amountInputText.setText(item.amountOriginal)
         val textWatcher = Mask.moneyMask(amountInputText, { value ->
             val stringValue = amountInputText.text.toString()
             Log.d("UEHARINHA - adapter", stringValue)
             val newPaymentMethod = paymentMethods[paymentMethodSpinner.selectedItemPosition]
-            val newItem = item.copy(amount = stringValue, paymentMethod = newPaymentMethod)
+            val newItem = item.copy(amountOriginal = stringValue, amountFinal = stringValue, paymentMethod = newPaymentMethod)
             onUpdate(newItem)
             updateInstallmentView(newItem)
         })
@@ -157,7 +158,8 @@ class RegistrationPaymentMethodViewHolder(
                     val newPaymentMethod = paymentMethods[position]
                     val newItem = item.copy(
                         paymentMethod = newPaymentMethod,
-                        amount = amountInputText.text.toString()
+                        amountOriginal = amountInputText.text.toString(),
+                        amountFinal = amountInputText.text.toString()
                     )
                     onUpdate(newItem)
                     updateInstallmentView(newItem)
@@ -172,16 +174,29 @@ class RegistrationPaymentMethodViewHolder(
             object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(
                     parent: AdapterView<*>, view: View?,
-                    position: Int, id: Long
+                    position: Int,
+                    id: Long
                 ) {
                     try {
                         val allowedInstallments: List<Int> =
                             (1..item.paymentMethod.maxInstallments).toList()
                         val newInstallment = allowedInstallments[position]
+
+                        val paymentAmountValue = amountInputText.text.toString()
+                            .replace("R$", "")
+                            .replace(" ", "")
+                            .replace(".", "")
+                            .replace(",", ".")
+                            .replace("\\s".toRegex(), "").toDouble()
+                        val interestRate = item.paymentMethod.interestRate ?: 0.0
+                        val amountFinal = (paymentAmountValue + (paymentAmountValue * interestRate))
+                        val amountFinalValue = "%,.2f".format(locale, amountFinal)
+
                         onUpdate(
                             item.copy(
                                 installment = newInstallment,
-                                amount = amountInputText.text.toString()
+                                amountOriginal = amountInputText.text.toString(),
+                                amountFinal = amountFinalValue
                             ),
                         )
                     } catch (_: Exception) {
@@ -227,10 +242,12 @@ class RegistrationPaymentMethodViewHolder(
                 .replace("\\s".toRegex(), "").toDouble()
 
             if (interestRate != null && interestRate > 0.0) {
-                val installmentAmount =
-                    (paymentAmountValue + (paymentAmountValue * interestRate)) / installment
+                val paymentAmountValueWithInterestRate = paymentAmountValue + (paymentAmountValue * interestRate)
+                val paymentAmountValueWithInterestRateFormattedValue = "%,.2f".format(locale, paymentAmountValueWithInterestRate)
+
+                val installmentAmount = paymentAmountValueWithInterestRate / installment
                 val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
-                "Em ${installment}x de R$${installmentFormattedValue}"
+                "Em ${installment}x de R$${installmentFormattedValue} (R\$${paymentAmountValueWithInterestRateFormattedValue})"
             } else {
                 val installmentAmount = paymentAmountValue / installment
                 val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)

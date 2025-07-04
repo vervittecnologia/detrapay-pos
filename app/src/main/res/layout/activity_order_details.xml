@@ -28,6 +28,27 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/toolbar">
 
+        <TextView
+            android:id="@+id/editOrderTxtView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="4dp"
+            android:text="@string/order_details_edit_order_text_view"
+            android:textColor="@color/neutral_600"
+            app:layout_constraintEnd_toStartOf="@+id/editOrderImageView"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/editOrderImageView"
+            android:layout_width="15dp"
+            android:layout_height="15dp"
+            android:layout_marginEnd="16dp"
+            android:src="@drawable/ic_pencil"
+            app:layout_constraintBottom_toBottomOf="@+id/editOrderTxtView"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/editOrderTxtView" />
+
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/constraintLayout2"
             android:layout_width="match_parent"
@@ -37,7 +58,7 @@
             android:padding="16dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintTop_toBottomOf="@+id/editOrderTxtView">
 
             <TextView
                 android:id="@+id/cpfCnpjLabel"
@@ -205,7 +226,7 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/totalAmountValueTxtView"/>
+                app:layout_constraintTop_toBottomOf="@+id/totalAmountValueTxtView" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <androidx.recyclerview.widget.RecyclerView

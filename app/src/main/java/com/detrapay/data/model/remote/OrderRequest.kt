@@ -53,8 +53,12 @@ data class OrderSimulationItemRequest(
 data class OrderReceivableRequest(
     @SerializedName("payment_method_id")
     val paymentMethodId: Int,
-    @SerializedName("amount")
-    val amount: String,
+    @SerializedName("amount_final")
+    val amountFinal: String,
+    @SerializedName("amount_original")
+    val amountOriginal: String,
+    @SerializedName("tax")
+    val tax: Double?,
     @SerializedName("payment_date")
     val paymentDate: String,
     @SerializedName("installments")

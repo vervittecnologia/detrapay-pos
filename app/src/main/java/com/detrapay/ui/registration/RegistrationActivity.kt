@@ -7,7 +7,9 @@ import androidx.lifecycle.Observer
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import com.detrapay.R
+import com.detrapay.data.model.Order
 import com.detrapay.databinding.ActivityRegistrationBinding
+import com.detrapay.ui.registration.exit_cofirmation_dialog.ExitConfirmationDialog
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -27,10 +29,26 @@ class RegistrationActivity : AppCompatActivity() {
         binding = ActivityRegistrationBinding.inflate(layoutInflater)
         progressBar = binding.linearProgressIndicator
         progressBar.progress = 25
+        initializeViewModelMode()
         setupObservers()
         setupNavigation()
         setupToolbar()
         setContentView(binding.root)
+    }
+
+    override fun onBackPressed() {
+        if (currentScreen == 1) {
+            ExitConfirmationDialog().show(supportFragmentManager, "ExitConfirmationDialog")
+            if (false) super.onBackPressed()
+        } else {
+            navController.navigateUp() || super.onSupportNavigateUp()
+        }
+        viewModel.navigateBack()
+    }
+
+    private fun initializeViewModelMode(){
+        val orderParam: Order? = intent.getSerializableExtra("order") as Order?
+        viewModel.initialize(orderParam)
     }
 
     private fun setupToolbar() {
@@ -39,7 +57,7 @@ class RegistrationActivity : AppCompatActivity() {
 
         binding.registrationToolbar.setNavigationOnClickListener {
             if (currentScreen == 1) {
-                finish()
+                ExitConfirmationDialog().show(supportFragmentManager, "ExitConfirmationDialog")
             } else {
                 navController.navigateUp() || super.onSupportNavigateUp()
             }

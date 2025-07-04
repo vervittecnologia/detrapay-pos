@@ -7,11 +7,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.detrapay.data.Result
 import com.detrapay.data.model.CustomerSearchData
+import com.detrapay.data.model.Order
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.Simulation
 import com.detrapay.data.model.SimulationItem
 import com.detrapay.data.model.SimulationPayment
 import com.detrapay.data.repositories.RegistrationRepository
+import com.detrapay.ui.registration.order_data.OrderData
 import com.detrapay.ui.registration.order_data.RegistrationOrderInitialState
 import com.detrapay.ui.registration.order_data.RegistrationOrderState
 import com.detrapay.ui.registration.payment_method.RegistrationPaymentMethodCreateOrderState
@@ -27,6 +29,10 @@ import javax.inject.Inject
 class RegistrationViewModel @Inject constructor(private val registrationRepository: RegistrationRepository) :
     ViewModel() {
     private val locale = Locale("pt", "BR")
+
+    var inEditMode = false
+    var order: Order? = null
+    var firstInitialization = true
 
     private var simulation: Simulation? = null
 
@@ -58,17 +64,49 @@ class RegistrationViewModel @Inject constructor(private val registrationReposito
     private val _orderDataState = MutableLiveData<UIState<RegistrationOrderState>>()
     val orderDataState: LiveData<UIState<RegistrationOrderState>> = _orderDataState
 
+    fun initialize(order: Order?) {
+        if (order != null) {
+            this.order = order
+            inEditMode = true
+            payments = order.receivables.map {
+                SimulationPayment(
+                    id = it.id.toLong(),
+                    paymentMethod = it.paymentMethod,
+                    amountOriginal = "%,.2f".format(locale, it.amountOriginal),
+                    amountFinal = "%,.2f".format(locale, it.amountFinal),
+                    installment = it.installments
+                )
+            }.toMutableList()
+        }
+    }
+
     fun loadOrderScreenContent() {
         Log.d("UEHARINHA", "RegistrationViewModel - loadScreenContent")
         _orderInitialState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
             val result = registrationRepository.loadVehicleTypes()
             if (result is Result.Success) {
-                _orderInitialState.postValue(
-                    UIState.Success(
-                        RegistrationOrderInitialState(result.data)
+                val initialState = if (inEditMode && firstInitialization) {
+                    RegistrationOrderInitialState(
+                        vehicleTypes = result.data,
+                        orderData = OrderData(
+                            cpfCnpj = order!!.customer.cpfCnpj,
+                            phone = order!!.customer.phoneNumber,
+                            name = order!!.customer.name,
+                            invoiceDate = order!!.billingDate,
+                            specialPlate = order!!.isVehicleSpecialPlate,
+                            disposalVehicle = order!!.isVehicleFinanced,
+                            vehicleType = order!!.vehicleType,
+                            vehiclePrice = "%,.2f".format(locale, order!!.vehiclePrice),
+                        )
                     )
-                )
+                } else {
+                    RegistrationOrderInitialState(
+                        vehicleTypes = result.data
+                    )
+                }
+                _orderInitialState.postValue(UIState.Success(initialState))
+                firstInitialization = false
             } else {
                 val error = result as Result.Error
                 _orderInitialState.postValue(
@@ -94,7 +132,8 @@ class RegistrationViewModel @Inject constructor(private val registrationReposito
                     val simulationPayment = SimulationPayment(
                         id = 0,
                         paymentMethod = paymentMethod,
-                        amount = ""
+                        amountOriginal = "",
+                        amountFinal = ""
                     )
                     payments.add(simulationPayment)
                 }
@@ -178,17 +217,18 @@ class RegistrationViewModel @Inject constructor(private val registrationReposito
                 )
             }
         }
-
     }
 
     fun navigateBack() {
         registrationState.value?.let {
             val currentIndex = it.currentScreen
-            _registrationState.postValue(
-                RegistrationState(
-                    currentScreen = currentIndex - 1,
+            if (currentIndex > 1){
+                _registrationState.postValue(
+                    RegistrationState(
+                        currentScreen = currentIndex - 1,
+                    )
                 )
-            )
+            }
         }
     }
 
@@ -246,7 +286,8 @@ class RegistrationViewModel @Inject constructor(private val registrationReposito
         }
     }
 
-    fun removeDiscount(item: SimulationItem) {
+    fun removeDiscount(item: SimulationItem): Int? {
+        val itemPosition = simulation?.simulationItems?.indexOf(item)
         val updatedSimulationItems = simulation?.simulationItems?.map {
             if (it.id == item.id) {
                 it.copy(discount = null)
@@ -256,10 +297,13 @@ class RegistrationViewModel @Inject constructor(private val registrationReposito
         }
         simulation =
             simulation?.copy(simulationItems = updatedSimulationItems?.toList() ?: emptyList())
+
+        return itemPosition
     }
 
-    fun addDiscountToSimulationItem(item: SimulationItem?, discountAmount: Double) {
+    fun addDiscountToSimulationItem(item: SimulationItem?, discountAmount: Double): Int? {
         if (item != null) {
+            val itemPosition = simulation?.simulationItems?.indexOf(item)
             val updatedSimulationItems = simulation?.simulationItems?.map {
                 if (it.id == item.id) {
                     it.copy(discount = discountAmount)
@@ -269,7 +313,9 @@ class RegistrationViewModel @Inject constructor(private val registrationReposito
             }
             simulation =
                 simulation?.copy(simulationItems = updatedSimulationItems?.toList() ?: emptyList())
+            return itemPosition
         }
+        return null
     }
 
     fun createOrder() {
@@ -290,10 +336,18 @@ class RegistrationViewModel @Inject constructor(private val registrationReposito
 
         if (simulation != null) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = registrationRepository.createOrder(
-                    simulation!!,
-                    payments
-                )
+                val result = if (inEditMode) {
+                    registrationRepository.updateOrder(
+                        order!!.id,
+                        simulation!!,
+                        payments
+                    )
+                } else {
+                    registrationRepository.createOrder(
+                        simulation!!,
+                        payments
+                    )
+                }
                 if (result is Result.Success) {
                     _paymentSelectionCreateOrderState.postValue(
                         UIState.Success(
@@ -319,7 +373,7 @@ class RegistrationViewModel @Inject constructor(private val registrationReposito
     private fun paymentsAmount(): Double {
         return try {
             payments.sumOf {
-                it.amount.replace("R$", "")
+                it.amountOriginal.replace("R$", "", true)
                     .replace(" ", "")
                     .replace(".", "")
                     .replace(",", ".")

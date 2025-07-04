@@ -47,7 +47,7 @@ class OrderDetailsItemsRecyclerViewAdapter(
 
         @SuppressLint("SetTextI18n")
         fun bind(item: OrderItem, locale: Locale) {
-            val price = "%,.2f".format(locale, item.price)
+            val price = "%,.2f".format(locale, item.totalPrice)
             itemName.text = item.name
             itemValue.text = "R$ $price"
 

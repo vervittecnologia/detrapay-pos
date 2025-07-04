@@ -16,6 +16,7 @@ import com.detrapay.data.model.Order
 import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.databinding.ActivityOrderDetailsBinding
 import com.detrapay.ui.employee_selection.EmployeeSelectionActivity
+import com.detrapay.ui.registration.RegistrationActivity
 import com.detrapay.ui.session_expired_dialog.SessionExpiredDialog
 import com.detrapay.ui.state.UIState
 import dagger.hilt.android.AndroidEntryPoint
@@ -95,9 +96,23 @@ class OrderDetailsActivity : AppCompatActivity(),
             }
         }
 
+        binding.editOrderTxtView.setOnClickListener {
+            Log.d("UEHARINHA", order.toString())
+
+            val orderDetailsActivityIntent = Intent(
+                this,
+                RegistrationActivity::class.java
+            )
+            orderDetailsActivityIntent.putExtra("order", order)
+
+            this.startActivity(orderDetailsActivityIntent)
+            this.finish()
+        }
+
         val totalAmount = "%,.2f".format(locale, orderAmount)
 
-        binding.cpfCnpjValue.text = order.customer.cpfCnpj
+        val cpfCnpjFormatted = formatCpfCnpj(order.customer.cpfCnpj)
+        binding.cpfCnpjValue.text = cpfCnpjFormatted
         binding.clientNameValue.text = order.customer.name
         binding.vehicleValueValue.text = "R$ $vehiclePrice"
         binding.totalAmountValueTxtView.text = "R$ $totalAmount"
@@ -138,6 +153,25 @@ class OrderDetailsActivity : AppCompatActivity(),
             val intent = Intent(this, EmployeeSelectionActivity::class.java)
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(intent)
+        }
+    }
+
+    private fun formatCpfCnpj(cpfCnpj: String): String {
+        if (cpfCnpj.length == 11) {
+            val first = cpfCnpj.substring(0, 3)
+            val second = cpfCnpj.substring(3, 6)
+            val third = cpfCnpj.substring(6, 9)
+            val fourth = cpfCnpj.substring(9, 11)
+            return "$first.$second.$third-$fourth"
+        } else if (cpfCnpj.length == 14){
+            val first = cpfCnpj.substring(0, 2)
+            val second = cpfCnpj.substring(2, 5)
+            val third = cpfCnpj.substring(5, 8)
+            val fourth = cpfCnpj.substring(8, 12)
+            val fifth = cpfCnpj.substring(12, 14)
+            return "$first.$second.$third/$fourth-$fifth"
+        } else {
+            return cpfCnpj
         }
     }
 

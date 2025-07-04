@@ -31,7 +31,7 @@ class DiscountDialogFragment(
     private var selectedSimulationItemPosition: Int? = null
 
     interface OnUpdateListener {
-        fun onUpdate()
+        fun onUpdate(itemPosition: Int?)
     }
 
     override fun onCreateView(
@@ -75,11 +75,11 @@ class DiscountDialogFragment(
             }
 
             if (canSave) {
-                registrationViewModel.addDiscountToSimulationItem(
+                val itemPosition = registrationViewModel.addDiscountToSimulationItem(
                     selectedSimulationItem,
                     discountAmount
                 )
-                listener.onUpdate()
+                listener.onUpdate(itemPosition)
                 this.dismiss()
             }
         }

@@ -52,7 +52,9 @@ data class OrderItem(
 
 data class OrderReceivableItem(
     val id: Int,
-    val amount: Double,
+    val amountOriginal: Double,
+    val amountFinal: Double,
+    val tax: Double?,
     val status: OrderReceivableItemStatus,
     val paymentDate: String,
     val cardBrand: String?,
@@ -65,13 +67,15 @@ data class OrderReceivableItem(
 enum class OrderReceivableItemStatus {
     PENDING,
     PAID,
-    CANCELLED;
+    CANCELLED,
+    REFUNDED;
 
     override fun toString(): String {
         return when (this) {
             PENDING -> "Pendente"
             PAID -> "Pago"
             CANCELLED -> "Cancelado"
+            REFUNDED -> "Estornado"
         }
     }
 }

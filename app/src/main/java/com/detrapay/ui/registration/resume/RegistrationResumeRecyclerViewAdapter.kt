@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import com.detrapay.data.model.SimulationItem
-import com.detrapay.data.model.SimulationPayment
 import com.detrapay.databinding.RegistrationResumeListItemBinding
 import java.util.Locale
 
@@ -27,6 +26,11 @@ class RegistrationResumeRecyclerViewAdapter(
     fun swapData(newList: List<SimulationItem>) {
         this.values = newList
         notifyDataSetChanged()
+    }
+
+    fun updateItem(newList: List<SimulationItem>, itemPosition: Int) {
+        this.values = newList
+        notifyItemChanged(itemPosition)
     }
 
     override fun getItemId(position: Int): Long {
@@ -75,6 +79,9 @@ class RegistrationResumeRecyclerViewAdapter(
                 btnDiscount.setOnClickListener {
                     listener.onRemoveDiscount(item, position)
                 }
+            } else {
+                itemDiscount.visibility = View.GONE
+                btnDiscount.visibility = View.GONE
             }
         }
     }

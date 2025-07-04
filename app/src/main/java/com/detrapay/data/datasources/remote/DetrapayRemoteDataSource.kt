@@ -62,6 +62,23 @@ class DetrapayRemoteDataSource @Inject constructor(
         }
     }
 
+    suspend fun getCompanies(): Result<Any> {
+        try {
+            val result = detrapayService.getCompanies()
+            if (result.isSuccessful) {
+                Log.d("UEHARINHA", (result.body() ?: "").toString())
+                return Result.Success(result.body()!!)
+            } else {
+                Log.d("UEHARINHA", (result.errorBody() ?: "").toString())
+                if (result.code() == 401) return Result.Error(UnauthorizedException())
+                return Result.Error(Exception(ApiError(result.errorBody()).message))
+            }
+        } catch (e: Throwable) {
+            Log.d("UEHARINHA", e.toString())
+            return Result.Error(IOException("Error getting employees", e))
+        }
+    }
+
     suspend fun getOrders(): Result<List<OrderResponse>> {
         try {
             val result = detrapayService.getOrders()
@@ -210,6 +227,34 @@ class DetrapayRemoteDataSource @Inject constructor(
             Log.d("UEHARINHA", e.toString())
             return Result.Error(IOException("Error creating order", e))
         }
+    }
 
+    suspend fun updateOrder(
+        orderId: Int,
+        customer: OrderCustomerRequest,
+        simulation: OrderSimulationRequest,
+        simulationItems: List<OrderSimulationItemRequest>,
+        receivables: List<OrderReceivableRequest>
+    ): Result<OrderResponse> {
+        try {
+            val orderRequest = OrderRequest(
+                customer = customer,
+                simulation = simulation,
+                simulationItems = simulationItems,
+                receivables = receivables
+            )
+            val result = detrapayService.updateOrder(orderId, orderRequest)
+            if (result.isSuccessful) {
+                Log.d("UEHARINHA", (result.body() ?: "").toString())
+                return Result.Success(result.body()!!)
+            } else {
+                Log.d("UEHARINHA", (result.errorBody() ?: "").toString())
+                if (result.code() == 401) return Result.Error(UnauthorizedException())
+                return Result.Error(Exception(ApiError(result.errorBody()).message))
+            }
+        } catch (e: Throwable) {
+            Log.d("UEHARINHA", e.toString())
+            return Result.Error(IOException("Error creating order", e))
+        }
     }
 }

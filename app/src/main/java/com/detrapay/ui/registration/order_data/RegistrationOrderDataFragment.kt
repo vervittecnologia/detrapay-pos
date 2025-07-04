@@ -3,6 +3,7 @@ package com.detrapay.ui.registration.order_data
 import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,6 +22,8 @@ import com.detrapay.ui.registration.RegistrationViewModel
 import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.Mask
 import com.detrapay.ui.session_expired_dialog.SessionExpiredDialog
+import com.detrapay.ui.util.isValidCpf
+import com.detrapay.ui.util.isValidCpnj
 import java.util.Date
 
 class RegistrationOrderDataFragment : Fragment() {
@@ -98,20 +101,24 @@ class RegistrationOrderDataFragment : Fragment() {
         binding.registrationOrderDataNextBtn.setOnClickListener {
             var hasInvalidFields = false
             val cpfCnpj = binding.cpfCnpj.text.toString()
+            val validCpfCnpj = isValidCpf(cpfCnpj) || isValidCpnj(cpfCnpj)
             if (cpfCnpj.length != 14 && cpfCnpj.length != 18) {
                 hasInvalidFields = true
                 binding.cpfCnpjTextInputLayout.error = "Campo obrigatório"
+            } else if (!validCpfCnpj) {
+                hasInvalidFields = true
+                binding.cpfCnpjTextInputLayout.error = "Cpf/Cnpj inválido"
             } else {
                 binding.cpfCnpjTextInputLayout.error = null
             }
 
             val clientName = binding.clientNameInput.text.toString()
-            if (clientName.isEmpty()) {
-                hasInvalidFields = true
-                binding.clientNameTextInputLayout.error = "Campo obrigatório"
-            } else {
-                binding.clientNameTextInputLayout.error = null
-            }
+//            if (clientName.isEmpty()) {
+//                hasInvalidFields = true
+//                binding.clientNameTextInputLayout.error = "Campo obrigatório"
+//            } else {
+//                binding.clientNameTextInputLayout.error = null
+//            }
 
             val whatsapp = binding.whatsappInput.text.toString()
             if (whatsapp.isEmpty() || whatsapp.length < 13) {
@@ -188,11 +195,42 @@ class RegistrationOrderDataFragment : Fragment() {
             when (status) {
                 is UIState.Success<RegistrationOrderInitialState> -> {
                     status.data?.let {
+                        Log.d("UEHARA", "Recebeu dados - orderInitialState")
                         binding.loadingView.stopShimmer()
                         binding.loadingView.visibility = View.GONE
                         binding.errorView.visibility = View.GONE
                         binding.contentView.visibility = View.VISIBLE
                         setupVehiclesTypesAdapter(it.vehicleTypes)
+
+                        it.orderData?.let { data ->
+                            Log.d("UEHARA", data.toString())
+                            Log.d("UEHARA", data.phone)
+                            Log.d("UEHARA", data.invoiceDate)
+
+                            binding.clientNameInput.setText(data.name)
+
+                            if (binding.cpfCnpj.text?.isEmpty() == true){
+                                binding.cpfCnpj.setText(data.cpfCnpj)
+                            }
+
+                            if (binding.whatsappInput.text?.isEmpty() == true){
+                                binding.whatsappInput.setText(data.phone)
+                            }
+
+                            if (binding.invoiceDateInput.text?.isEmpty() == true){
+                                val day = data.invoiceDate.substring(8, 10)
+                                val month = data.invoiceDate.substring(5, 7)
+                                val year = data.invoiceDate.substring(0, 4)
+                                val invoiceDate = "$day/$month/$year"
+                                binding.invoiceDateInput.setText(invoiceDate)
+                            }
+
+                            binding.specialPlateCheckBox.isChecked = data.specialPlate
+                            binding.disposalVehicleCheckbox.isChecked = data.disposalVehicle
+                            selectedVehicle = data.vehicleType
+                            selectedVehicleType = data.vehicleType.id
+                            binding.vehicleValueInput.setText(data.vehiclePrice)
+                        }
                     }
                 }
 
