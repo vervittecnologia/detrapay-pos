@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/dialog_background"
+    tools:context=".ui.payment.RefundPaymentDialogFragment">
+
+    <TextView
+        android:id="@+id/dialogTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="Pagamento"
+        android:textColor="@color/neutral_700"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toStartOf="@+id/closeDialog"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/closeDialog"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:src="@drawable/ic_close"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@color/black" />
+
+    <com.google.android.material.divider.MaterialDivider
+        android:id="@+id/materialDivider2"
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:layout_marginTop="16dp"
+        app:dividerColor="@color/neutral_200"
+        app:layout_constraintTop_toBottomOf="@+id/dialogTitle"
+        tools:layout_editor_absoluteX="0dp" />
+
+    <LinearLayout
+        android:id="@+id/infoSection"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/materialDivider2">
+
+        <TextView
+            android:id="@+id/paymentAmount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Valor: R$5,00"
+            android:textColor="@color/neutral_700"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/paymentMethod"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Pagamento via: PIX"
+            android:textColor="@color/neutral_700"
+            android:textSize="18sp"
+            android:layout_marginTop="8dp"
+            android:visibility="visible"/>
+
+        <com.google.android.material.divider.MaterialDivider
+            android:id="@+id/infoDivider"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_marginTop="16dp"
+            app:dividerColor="@color/neutral_200"
+            app:layout_constraintTop_toBottomOf="@+id/dialogTitle"
+            tools:layout_editor_absoluteX="0dp" />
+
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:id="@+id/contentView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/infoSection">
+
+        <LinearLayout
+            android:id="@+id/loadingView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:visibility="gone">
+
+            <ProgressBar
+                android:id="@+id/progressIndicator"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:indeterminateTint="@color/primary_500" />
+
+            <TextView
+                android:id="@+id/transactionMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAllCaps="true"
+                android:textColor="@color/neutral_700"
+                tools:text="Processando"
+                android:textAlignment="center"
+                android:textSize="20sp"
+                android:layout_marginTop="12dp"/>
+
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:id="@+id/errorView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:src= "@drawable/close_circle_outline" />
+
+            <TextView
+                android:id="@+id/errorMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Ops, algo deu errado"
+                android:textAllCaps="true"
+                android:textAlignment="center"
+                android:textSize="20sp"
+                android:visibility="visible"
+                android:layout_marginTop="12dp"/>
+
+            <com.google.android.material.divider.MaterialDivider
+                android:id="@+id/transactionDivider"
+                android:layout_width="match_parent"
+                android:layout_height="2dp"
+                android:layout_marginTop="16dp"
+                app:dividerColor="@color/neutral_200"
+                app:layout_constraintTop_toBottomOf="@+id/dialogTitle"
+                tools:layout_editor_absoluteX="0dp" />
+
+            <Button
+                android:id="@+id/retryAction"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/default_button_background"
+                android:text="Tentar novamente"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/infoSection" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/successView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:visibility="gone">
+
+<!--            TODO ADICIONAR INFORMACOES DA TRANSACAO-->
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:src= "@drawable/check_circle_outline" />
+
+            <TextView
+                android:id="@+id/successMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Pagamento realizado com sucesso!"
+                android:textAllCaps="true"
+                android:textAlignment="center"
+                android:textSize="20sp"
+                android:layout_marginTop="12dp"/>
+
+            <Button
+                android:id="@+id/backSuccessBtn"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/secondary_button_background"
+                android:text="Voltar ao pedido"
+                android:textAllCaps="false"
+                android:textColor="@color/primary_500"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/infoSection" />
+
+        </LinearLayout>
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

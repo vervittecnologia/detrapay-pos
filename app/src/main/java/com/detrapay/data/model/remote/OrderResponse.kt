@@ -70,6 +70,8 @@ data class OrderItemResponse(
 data class OrderReceivableItemResponse(
     @SerializedName("id")
     val id: Int,
+    @SerializedName("documentId")
+    val documentId: String,
     @SerializedName("amount_final")
     val amountFinal: Double,
     @SerializedName("amount_original")
@@ -80,14 +82,22 @@ data class OrderReceivableItemResponse(
     val status: OrderReceivableItemStatusResponse,
     @SerializedName("payment_date")
     val paymentDate: String,
+    @SerializedName("refund_date")
+    val refundDate: String?,
     @SerializedName("card_brand")
     val cardBrand: String?,
     @SerializedName("card_last4")
     val cardLast4: String?,
+    @SerializedName("card_holder")
+    val cardHolder: String?,
     @SerializedName("authorization_code")
     val authorizationCode: String?,
+    @SerializedName("authorization_id")
+    val authorizationId: String?,
     @SerializedName("installments")
     val installments: Int,
+    @SerializedName("pix_tx_id_code")
+    val pixTxIdCode: String?,
     @SerializedName("payment_method_id")
     val paymentMethod: PaymentMethodResponse,
 )
@@ -96,7 +106,8 @@ data class OrderReceivableItemResponse(
 enum class OrderReceivableItemStatusResponse {
     @SerializedName("pending") PENDING,
     @SerializedName("paid") PAID,
-    @SerializedName("cancelled") CANCELLED
+    @SerializedName("cancelled") CANCELLED,
+    @SerializedName("refunded") REFUNDED,
 }
 
 @Serializable

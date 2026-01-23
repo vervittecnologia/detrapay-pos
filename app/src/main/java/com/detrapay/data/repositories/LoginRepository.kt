@@ -1,11 +1,11 @@
 package com.detrapay.data.repositories
 
-import android.util.Log
 import com.detrapay.data.Result
 import com.detrapay.data.datasources.local.UsersDao
 import com.detrapay.data.datasources.remote.DetrapayRemoteDataSource
 import com.detrapay.data.model.LoggedInUser
 import com.detrapay.data.model.local.User
+import com.detrapay.ui.util.Logger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -37,7 +37,7 @@ class LoginRepository @Inject constructor(
                     )
                     return Result.Success(loggedInUser)
                 } catch (e: Exception) {
-                    Log.d("UNABLE TO SAVE LOCAL SESSION", e.message ?: "")
+                    Logger.d("UNABLE TO SAVE LOCAL SESSION: ${e.message}")
                     return Result.Error(e)
                 }
             }

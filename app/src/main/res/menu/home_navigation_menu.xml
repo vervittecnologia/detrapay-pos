@@ -10,4 +10,10 @@
         android:enabled="true"
         android:icon="@drawable/ic_article"
         android:title="Pedidos" />
+
+    <item
+        android:id="@+id/paymentHistoryFragment"
+        android:enabled="true"
+        android:icon="@drawable/ic_calendar_white"
+        android:title="Pagamentos" />
 </menu>

@@ -52,6 +52,7 @@ data class OrderItem(
 
 data class OrderReceivableItem(
     val id: Int,
+    val documentId: String,
     val amountOriginal: Double,
     val amountFinal: Double,
     val tax: Double?,
@@ -59,7 +60,11 @@ data class OrderReceivableItem(
     val paymentDate: String,
     val cardBrand: String?,
     val cardLast4: String?,
+    val cardHolder: String?,
+    val authorizationId: String?,
     val authorizationCode: String?,
+    val refundDate: String?,
+    val pixTxIdCode: String?,
     val installments: Int,
     val paymentMethod: PaymentMethod,
 ) : Serializable

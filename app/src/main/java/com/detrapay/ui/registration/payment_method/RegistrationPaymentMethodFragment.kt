@@ -114,8 +114,6 @@ class RegistrationPaymentMethodFragment : Fragment(), OnItemClickListener{
     }
 
     private fun openDetailsScreen(order: Order) {
-        Log.d("UEHARINHA", order.toString())
-        
         val orderDetailsActivityIntent = Intent(
             requireContext(),
             OrderDetailsActivity::class.java

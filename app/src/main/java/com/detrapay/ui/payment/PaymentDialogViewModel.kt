@@ -1,0 +1,180 @@
+package com.detrapay.ui.payment
+
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import br.com.uol.pagseguro.plugpagservice.wrapper.IPlugPagWrapper
+import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPag
+import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagCustomPrinterLayout
+import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagEventData
+import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagEventListener
+import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagPaymentData
+import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagTransactionResult
+import br.com.uol.pagseguro.plugpagservice.wrapper.exception.PlugPagException
+import com.detrapay.data.model.OrderReceivableItem
+import com.detrapay.data.model.PaymentData
+import com.detrapay.data.repositories.PaymentRepository
+import com.detrapay.ui.state.UIState
+import com.detrapay.ui.util.Logger
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+import kotlin.math.roundToInt
+
+@HiltViewModel
+class PaymentDialogViewModel @Inject constructor(
+    private val plugPag: IPlugPagWrapper,
+    private val paymentRepository: PaymentRepository
+) : ViewModel(), PlugPagEventListener {
+
+    private val _paymentState = MutableLiveData<UIState<PaymentData>>()
+    val paymentState: LiveData<UIState<PaymentData>> = _paymentState
+
+    fun init(){
+        setupPrintLayout()
+        setupPlugPagEventListener()
+    }
+
+    private fun setupPlugPagEventListener(){
+        plugPag.setEventListener(this)
+    }
+
+    private fun setupPrintLayout() {
+        //configura o popup de impressão da via do cliente
+        plugPag.setPlugPagCustomPrinterLayout(
+            PlugPagCustomPrinterLayout(
+                "Imprimir via do cliente?",
+                "#000000",
+                "#FFFFFF",
+                "#A0A0A0",
+                "#0E5FB2",
+                "#000000",
+                "#808080",
+                "#FFFFFF",
+                60, // tempo de espera máximo do popup de impressão
+            )
+        )
+    }
+
+    fun payOrder(orderId: Int, receivable: OrderReceivableItem) {
+        _paymentState.postValue(UIState.Loading())
+        viewModelScope.launch(Dispatchers.Default) {
+            try {
+                if (plugPag.isAuthenticated()) {
+                    val amountInCents = receivable.amountFinal * 100
+                    val roundedAmountInCents = amountInCents.roundToInt()
+
+//                    Logger.d( "amountFinal: ${receivable.amountFinal}")
+//                    Logger.d( "amount: $amountInCents")
+//                    Logger.d( "roundedAmount: $roundedAmountInCents")
+
+                    val paymentType = getPaymentType(receivable.paymentMethod.name)
+                    val installmentType = getInstallmentType(receivable.installments)
+                    val paymentData = PlugPagPaymentData(
+                        paymentType,
+                        roundedAmountInCents,
+                        installmentType,
+                        receivable.installments,
+                        null,
+                        printReceipt = true,
+                        partialPay = false,
+                        isCarne = false,
+                    )
+                    val plugPagResult: PlugPagTransactionResult = plugPag.doPayment(paymentData)
+                    if (plugPagResult.result == PlugPag.RET_OK) {
+                        val transactionResult = PaymentData(
+                            transactionId = plugPagResult.transactionId!!,
+                            transactionCode = plugPagResult.transactionCode!!,
+                            date = plugPagResult.date!!,
+                            time = plugPagResult.time!!,
+                            cardBrand = plugPagResult.cardBrand,
+                            cardLast4 = plugPagResult.holder,
+                            cardHolder = plugPagResult.holderName,
+                            pixTxIdCode = plugPagResult.pixTxIdCode
+                        )
+
+                        paymentRepository.saveTransaction(
+                            orderId = orderId,
+                            amount = receivable.amountFinal,
+                            installments = receivable.installments,
+                            paymentType = receivable.paymentMethod.name,
+                            transactionId = plugPagResult.transactionId,
+                            transactionCode = plugPagResult.transactionCode,
+                            date = plugPagResult.date,
+                            result = plugPagResult.result,
+                            cardBrand = plugPagResult.cardBrand,
+                            cardLast4 = plugPagResult.holder,
+                            cardHolder = plugPagResult.holderName,
+                            pixTxIdCode = plugPagResult.pixTxIdCode,
+                            message = plugPagResult.message,
+                            errorCode = plugPagResult.errorCode
+                        )
+                        _paymentState.postValue(UIState.Success(transactionResult))
+                    } else {
+                        val errorCode = plugPagResult.errorCode.toString()
+                        val errorMessage = plugPagResult.message.toString()
+
+                        paymentRepository.saveTransaction(
+                            orderId = orderId,
+                            amount = receivable.amountFinal,
+                            installments = receivable.installments,
+                            paymentType = receivable.paymentMethod.name,
+                            transactionId = plugPagResult.transactionId,
+                            transactionCode = plugPagResult.transactionCode,
+                            date = plugPagResult.date,
+                            result = plugPagResult.result,
+                            cardBrand = plugPagResult.cardBrand,
+                            cardLast4 = plugPagResult.holder,
+                            cardHolder = plugPagResult.holderName,
+                            pixTxIdCode = plugPagResult.pixTxIdCode,
+                            message = plugPagResult.message,
+                            errorCode = plugPagResult.errorCode
+                        )
+
+                        _paymentState.postValue(UIState.Error("$errorCode - $errorMessage"))
+                    }
+                } else {
+                    _paymentState.postValue(UIState.Error("Nenhum usuario autenticado, contate o suporte."))
+                }
+            } catch (e: PlugPagException) {
+                _paymentState.postValue(UIState.Error("${e.errorCode} - ${e.message}"))
+            }
+        }
+    }
+
+    private fun getInstallmentType(installments: Int): Int {
+        return if (installments > 1) {
+            PlugPag.INSTALLMENT_TYPE_PARC_COMPRADOR
+        } else {
+            PlugPag.INSTALLMENT_TYPE_A_VISTA
+        }
+    }
+
+    private fun getPaymentType(name: String): Int {
+        val isCreditCard = name.contains("Crédito", true) || name.contains("Cartão de crédito", true) || name.contains("VISA", true) || name.contains("Mastercard", true)
+        return if (isCreditCard) {
+            PlugPag.TYPE_CREDITO
+        } else if (name.contains("Pix", true)) {
+            PlugPag.TYPE_PIX
+        } else {
+            PlugPag.TYPE_DEBITO
+        }
+    }
+
+    fun abortPayment() {
+        viewModelScope.launch(Dispatchers.Default) {
+            plugPag.abort()
+            plugPag.disposeSubscriber()
+        }
+    }
+
+    override fun onEvent(data: PlugPagEventData) {
+        if (data.eventCode == PlugPagEventData.EVENT_CODE_DIGIT_PASSWORD) {
+            _paymentState.postValue(UIState.Loading(data.customMessage))
+        } else {
+            _paymentState.postValue(UIState.Loading(data.customMessage))
+        }
+    }
+}

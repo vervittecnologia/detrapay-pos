@@ -1,6 +1,7 @@
 package com.detrapay.ui.registration
 
 import android.os.Bundle
+import android.view.Menu
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
@@ -58,7 +59,7 @@ class RegistrationActivity : AppCompatActivity() {
         binding.registrationToolbar.setNavigationOnClickListener {
             if (currentScreen == 1) {
                 ExitConfirmationDialog().show(supportFragmentManager, "ExitConfirmationDialog")
-            } else {
+            }  else {
                 navController.navigateUp() || super.onSupportNavigateUp()
             }
             viewModel.navigateBack()

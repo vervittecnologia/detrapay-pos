@@ -3,7 +3,6 @@ package com.detrapay.ui.home
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.window.OnBackInvokedDispatcher
 import androidx.activity.addCallback
 import androidx.activity.viewModels
@@ -20,6 +19,7 @@ import com.detrapay.databinding.ActivityHomeBinding
 import com.detrapay.ui.employee_selection.EmployeeSelectionActivity
 import com.detrapay.ui.login.LoginActivity
 import com.detrapay.ui.state.UIState
+import com.detrapay.ui.util.Logger
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -106,7 +106,7 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun showLogoutDialog() {
-        Log.d("UEHARINHA", "Loggout button pressed on HomeActivity")
+        Logger.d("Loggout button pressed on HomeActivity")
         AlertDialog.Builder(this)
             .setTitle("Deseja sair?")
             .setMessage("Você deseja sair do aplicativo? \nvocê terá que efetuar login novamente.")

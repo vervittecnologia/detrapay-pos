@@ -3,7 +3,6 @@ package com.detrapay.ui.registration.order_data
 import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -45,6 +44,7 @@ class RegistrationOrderDataFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupObservers()
+        registrationViewModel.loadLoggedUser()
         registrationViewModel.loadOrderScreenContent()
 
         binding.reloadRegistration.setOnClickListener {
@@ -195,7 +195,6 @@ class RegistrationOrderDataFragment : Fragment() {
             when (status) {
                 is UIState.Success<RegistrationOrderInitialState> -> {
                     status.data?.let {
-                        Log.d("UEHARA", "Recebeu dados - orderInitialState")
                         binding.loadingView.stopShimmer()
                         binding.loadingView.visibility = View.GONE
                         binding.errorView.visibility = View.GONE
@@ -203,10 +202,6 @@ class RegistrationOrderDataFragment : Fragment() {
                         setupVehiclesTypesAdapter(it.vehicleTypes)
 
                         it.orderData?.let { data ->
-                            Log.d("UEHARA", data.toString())
-                            Log.d("UEHARA", data.phone)
-                            Log.d("UEHARA", data.invoiceDate)
-
                             binding.clientNameInput.setText(data.name)
 
                             if (binding.cpfCnpj.text?.isEmpty() == true){

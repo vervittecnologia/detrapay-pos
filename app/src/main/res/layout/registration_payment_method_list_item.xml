@@ -23,14 +23,15 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
             android:orientation="vertical"
-            app:layout_constraintEnd_toStartOf="@+id/amountTextInputLayout"
+            app:layout_constraintEnd_toStartOf="@+id/actionButton"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Forma de pgto." />
+                android:text="Forma de pgto."
+                android:textSize="14sp"/>
 
             <Spinner
                 android:id="@+id/paymentMethodSpinner"
@@ -41,22 +42,24 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/amountTextInputLayout"
-            android:layout_width="140dp"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
             android:hint="Valor"
-            app:prefixTextAppearance="@style/TextAppearance.AppCompat.Medium"
-            app:hintTextAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:hintTextAppearance="@style/HintText"
             app:layout_constraintEnd_toStartOf="@+id/actionButton"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintStart_toStartOf="@+id/paymentMethodLayout"
+            app:layout_constraintTop_toBottomOf="@+id/paymentMethodLayout"
+            app:prefixTextAppearance="@style/TextAppearance.AppCompat.Medium">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/amountInput"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
+                android:ems="10"
                 android:inputType="numberDecimal"
                 android:maxLength="17"
-                android:ems="10"
                 android:selectAllOnFocus="true" />
 
         </com.google.android.material.textfield.TextInputLayout>
@@ -65,23 +68,25 @@
             android:id="@+id/actionButton"
             android:layout_width="25dp"
             android:layout_height="25dp"
+            android:contentDescription="Adicionar pagamento"
             android:src="@android:drawable/ic_menu_add"
-            app:layout_constraintBottom_toBottomOf="@+id/amountTextInputLayout"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/amountTextInputLayout" />
-
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="HardcodedText" />
 
         <LinearLayout
             android:id="@+id/installmentSelectorLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
             android:orientation="vertical"
             android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/actionButton"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/paymentMethodLayout">
+            app:layout_constraintTop_toBottomOf="@+id/amountTextInputLayout">
 
             <TextView
                 android:layout_width="match_parent"
@@ -92,7 +97,14 @@
                 android:id="@+id/installmentsSelectorSpinner"
                 android:layout_width="match_parent"
                 android:layout_height="45dp"
+                android:visibility="gone"
                 android:selectAllOnFocus="true" />
+
+            <TextView
+                android:id="@+id/installmentsValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="R$ 1080,00 em 5x R$210,00"/>
         </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

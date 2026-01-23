@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -35,7 +36,8 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
     }
 
     interface OnItemClickListener {
-        fun onItemClick(item: OrderReceivableItem)
+        fun onItemClick(receivable: OrderReceivableItem)
+        fun onRefundClick(receivable: OrderReceivableItem)
     }
 
     @SuppressLint("UseCompatLoadingForDrawables")
@@ -54,18 +56,29 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
         private val paymentMethodImage: ImageView = binding.paymentMethodImage
         private val paymentMethodName: TextView = binding.paymentMethodName
         private val paymentMethodAmount: TextView = binding.paymentMethodAmount
+        private val paymentMethodInstallmentAmount: TextView = binding.paymentMethodInstallmentAmount
 
         private val paymentMethodStatusView: LinearLayout = binding.paymentMethodStatusView
         private val statusTextView: TextView = binding.status
 
         private val paymentMethodCard: CardView = binding.paymentMethodCard
+        private val paymentDetails: LinearLayout = binding.paymentDetails
+        private val paymentRefund: TextView = binding.paymentRefund
+        private val paymentRefundDate: TextView = binding.paymentRefundDate
+        private val paymentDate: TextView = binding.paymentDate
+        private val paymentInfo: TextView = binding.paymentInfo
+        private val cardArrow: ImageView = binding.cardArrow
 
-        @SuppressLint("UseCompatLoadingForDrawables")
+        @SuppressLint("UseCompatLoadingForDrawables", "SetTextI18n")
         fun bind(
             item: OrderReceivableItem,
             listener: OnItemClickListener
         ) {
-            val isCreditCard = item.paymentMethod.name.contains("Cartão de crédito", true) || item.paymentMethod.name.contains("VISA", true) || item.paymentMethod.name.contains("Mastercard", true)
+            val isCreditCard =  item.paymentMethod.name.contains("Crédito", true) ||
+                    item.paymentMethod.name.contains("Débito", true) ||
+                    item.paymentMethod.name.contains("Cartão de crédito", true) ||
+                    item.paymentMethod.name.contains("VISA", true) ||
+                    item.paymentMethod.name.contains("Mastercard", true)
             val imageDrawable = if (isCreditCard) {
                 R.drawable.ic_credit_card_outline
             } else if (item.paymentMethod.name.contains("Pix", true)) {
@@ -78,16 +91,19 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
 
             paymentMethodName.text = item.paymentMethod.name
 
-            val receivableAmount = if (isCreditCard) {
-                val amount = "%,.2f".format(locale, item.amountFinal)
-                val installmentAmount = "%,.2f".format(locale, item.amountFinal / item.installments)
-                "R$ $amount (${item.installments}x de R$$installmentAmount)"
-            } else {
-                val amount = "%,.2f".format(locale, item.amountOriginal)
-                "R$ $amount"
-            }
+            if (isCreditCard) {
+                paymentMethodInstallmentAmount.visibility = View.VISIBLE
+                paymentMethodAmount.text = "%,.2f".format(locale, item.amountOriginal)
 
-            paymentMethodAmount.text = receivableAmount
+                val paymentAmountValueWithInterestRateFormattedValue = "%,.2f".format(locale, item.amountFinal)
+                val installmentAmount = item.amountFinal / item.installments
+                val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
+                paymentMethodAmount.text = "Em ${item.installments}x de R$${installmentFormattedValue} (R\$${paymentAmountValueWithInterestRateFormattedValue})"
+            } else {
+                paymentMethodInstallmentAmount.visibility = View.GONE
+                val amount = "%,.2f".format(locale, item.amountOriginal)
+                paymentMethodAmount.text = "R$ $amount"
+            }
 
             statusTextView.text = item.status.toString()
 
@@ -98,10 +114,43 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
                 REFUNDED -> R.drawable.refunded_status_background
             }
 
+            if (item.status == PAID ) {
+                cardArrow.visibility = View.GONE
+                paymentDetails.visibility = View.VISIBLE
+                paymentDate.text = "Pagamento realizado em ${item.paymentDate}"
+
+                if (isCreditCard) {
+                    paymentRefund.visibility = View.VISIBLE
+                    paymentInfo.visibility = View.VISIBLE
+                    paymentRefundDate.visibility = View.GONE
+                    paymentInfo.text = "Com cartão com final ${item.cardLast4} do titular ${item.cardHolder}"
+                } else {
+                    paymentRefundDate.visibility = View.GONE
+                    paymentRefund.visibility = View.GONE
+                    paymentInfo.visibility = View.GONE
+                }
+            } else if (item.status == REFUNDED) {
+                cardArrow.visibility = View.GONE
+                paymentDetails.visibility = View.VISIBLE
+                paymentRefundDate.visibility = View.VISIBLE
+                paymentInfo.visibility = View.VISIBLE
+                paymentRefund.visibility = View.GONE
+                paymentDate.text = "Pagamento realizado em ${item.paymentDate}"
+                paymentInfo.text = "Com cartão com final ${item.cardLast4} do titular ${item.cardHolder}"
+                paymentRefundDate.text = "Pagamento estornado em ${item.refundDate}"
+            } else {
+                cardArrow.visibility = View.VISIBLE
+                paymentDetails.visibility = View.GONE
+            }
+
             paymentMethodStatusView.background = context.getDrawable(cardBackground)
 
             paymentMethodCard.setOnClickListener {
-                listener.onItemClick(item)
+                if (item.status != PAID) listener.onItemClick(item)
+            }
+
+            paymentRefund.setOnClickListener{
+                listener.onRefundClick(item)
             }
 
         }

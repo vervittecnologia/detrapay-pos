@@ -1,6 +1,5 @@
 package com.detrapay.ui.home.order_list
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -22,7 +21,6 @@ class OrderListViewModel @Inject constructor(private val orderRepository: OrderR
     val orderListState: LiveData<UIState<List<Order>>> = _orderListState
 
     fun loadScreenContent() {
-        Log.d("UEHARINHA", "OrderListFragmentViewModel - loadScreenContent" )
         _orderListState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
             val result = orderRepository.getOrders()

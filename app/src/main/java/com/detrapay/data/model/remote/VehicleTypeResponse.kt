@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class VehicleTypeResponse(
-    @SerializedName("vehicle")
+    @SerializedName("data")
     val data: List<VehicleTypItemResponse>,
 )
 

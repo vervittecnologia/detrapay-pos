@@ -34,5 +34,5 @@ data class SimulationPayment(
     val paymentMethod: PaymentMethod,
     val amountOriginal: String,
     val amountFinal: String,
-    val installment: Int = 1
+    val installment: Int
 )

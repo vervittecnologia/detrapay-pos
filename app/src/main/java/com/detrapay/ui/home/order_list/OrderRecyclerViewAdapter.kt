@@ -2,34 +2,25 @@ package com.detrapay.ui.home.order_list
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.res.ColorStateList
-import android.os.Build
-import android.util.Log
 import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.annotation.RequiresApi
 import androidx.cardview.widget.CardView
 import com.detrapay.R
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.OrderStatus.CANCELLED
 import com.detrapay.data.model.OrderStatus.PAID
 import com.detrapay.data.model.OrderStatus.PENDING
-import com.detrapay.data.model.SimulationPayment
 import com.detrapay.databinding.OrderListItemBinding
-import java.text.SimpleDateFormat
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 class OrderRecyclerViewAdapter(
     private var values: List<Order>,
     private val listener: OnItemClickListener
 ) : RecyclerView.Adapter<OrderRecyclerViewAdapter.OrderViewHolder>() {
 
-    private val locale = Locale("pt", "BR")
+
     private var filteredValues: MutableList<Order> = values.toMutableList()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OrderViewHolder {

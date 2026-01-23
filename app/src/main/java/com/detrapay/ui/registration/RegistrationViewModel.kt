@@ -1,17 +1,22 @@
 package com.detrapay.ui.registration
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import br.com.uol.pagseguro.plugpagservice.wrapper.IPlugPagWrapper
+import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPag
+import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagPrinterData
+import br.com.uol.pagseguro.plugpagservice.wrapper.exception.PlugPagException
 import com.detrapay.data.Result
 import com.detrapay.data.model.CustomerSearchData
+import com.detrapay.data.model.LoggedInUser
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.Simulation
 import com.detrapay.data.model.SimulationItem
 import com.detrapay.data.model.SimulationPayment
+import com.detrapay.data.repositories.AuthRepository
 import com.detrapay.data.repositories.RegistrationRepository
 import com.detrapay.ui.registration.order_data.OrderData
 import com.detrapay.ui.registration.order_data.RegistrationOrderInitialState
@@ -19,6 +24,7 @@ import com.detrapay.ui.registration.order_data.RegistrationOrderState
 import com.detrapay.ui.registration.payment_method.RegistrationPaymentMethodCreateOrderState
 import com.detrapay.ui.registration.payment_method.RegistrationPaymentMethodInitialState
 import com.detrapay.ui.state.UIState
+import com.detrapay.ui.util.Logger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -26,8 +32,11 @@ import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
-class RegistrationViewModel @Inject constructor(private val registrationRepository: RegistrationRepository) :
-    ViewModel() {
+class RegistrationViewModel @Inject constructor(
+    private val registrationRepository: RegistrationRepository,
+    private val authRepository: AuthRepository,
+    private val plugPag: IPlugPagWrapper
+) : ViewModel() {
     private val locale = Locale("pt", "BR")
 
     var inEditMode = false
@@ -35,6 +44,7 @@ class RegistrationViewModel @Inject constructor(private val registrationReposito
     var firstInitialization = true
 
     private var simulation: Simulation? = null
+    private var loggedInUser: LoggedInUser? = null
 
     private var paymentMethods: List<PaymentMethod> = emptyList()
 
@@ -64,6 +74,9 @@ class RegistrationViewModel @Inject constructor(private val registrationReposito
     private val _orderDataState = MutableLiveData<UIState<RegistrationOrderState>>()
     val orderDataState: LiveData<UIState<RegistrationOrderState>> = _orderDataState
 
+    private val _orderResumePrintState = MutableLiveData<UIState<String>>()
+    val orderResumePrintState: LiveData<UIState<String>> = _orderResumePrintState
+
     fun initialize(order: Order?) {
         if (order != null) {
             this.order = order
@@ -80,8 +93,18 @@ class RegistrationViewModel @Inject constructor(private val registrationReposito
         }
     }
 
+    fun loggedUser(): LoggedInUser? {
+        return loggedInUser
+    }
+
+    fun loadLoggedUser(){
+        viewModelScope.launch(Dispatchers.IO) {
+            loggedInUser = authRepository.getLoggedUser(false)
+        }
+    }
+
     fun loadOrderScreenContent() {
-        Log.d("UEHARINHA", "RegistrationViewModel - loadScreenContent")
+        Logger.d("RegistrationViewModel - loadScreenContent")
         _orderInitialState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
             val result = registrationRepository.loadVehicleTypes()
@@ -121,7 +144,7 @@ class RegistrationViewModel @Inject constructor(private val registrationReposito
     }
 
     fun loadPaymentSelectionScreenContent() {
-        Log.d("UEHARINHA", "RegistrationViewModel - loadPaymentSelectionScreenContent")
+        Logger.d("RegistrationViewModel - loadPaymentSelectionScreenContent")
         _paymentSelectionInitialState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
             val result = registrationRepository.loadPaymentMethods()
@@ -133,7 +156,8 @@ class RegistrationViewModel @Inject constructor(private val registrationReposito
                         id = 0,
                         paymentMethod = paymentMethod,
                         amountOriginal = "",
-                        amountFinal = ""
+                        amountFinal = "",
+                        installment = paymentMethod.maxInstallments
                     )
                     payments.add(simulationPayment)
                 }
@@ -267,22 +291,20 @@ class RegistrationViewModel @Inject constructor(private val registrationReposito
         try {
             payments.removeIf { it.id == item.id }
         } catch (e: Exception) {
-            Log.d("UEHARINHA", e.message ?: "")
+            Logger.d(e.message ?: "")
         }
     }
 
     fun addPayment(item: SimulationPayment) {
         payments.add(item)
-        Log.d("UEHARINHA - addPayment", payments.toString())
     }
 
     fun updateSimulationPayment(item: SimulationPayment) {
         try {
-            Log.d("UEHARINHA - viewModel", item.toString())
             val paymentIndex = payments.indexOfFirst { it.id == item.id }
             payments[paymentIndex] = item
         } catch (e: Exception) {
-            Log.d("UEHARINHA - updateSimulationPayment - error", e.message ?: "")
+            Logger.d("updateSimulationPayment: ${e.message}")
         }
     }
 
@@ -318,14 +340,22 @@ class RegistrationViewModel @Inject constructor(private val registrationReposito
         return null
     }
 
+    fun Double.roundTo2DecimalPlacesMath(): Double {
+        return Math.round(this * 100.0) / 100.0
+    }
+
     fun createOrder() {
-        Log.d("UEHARINHA", payments.toString())
+        Logger.d(payments.toString())
         _paymentSelectionCreateOrderState.postValue(UIState.Loading())
 
         val totalAmount = totalAmount()
-        val paymentsAmount = paymentsAmount()
+        val roundedTotalAmount = totalAmount.roundTo2DecimalPlacesMath()
 
-        if (paymentsAmount != totalAmount) {
+        val paymentsAmount = paymentsAmount()
+        val roundedPaymentsAmount = paymentsAmount.roundTo2DecimalPlacesMath()
+
+        Logger.d("Expected: ${roundedTotalAmount}, Calculated: ${roundedPaymentsAmount}")
+        if (roundedTotalAmount != roundedPaymentsAmount) {
             if (payments.count() > 1) {
                 _paymentSelectionCreateOrderState.postValue(UIState.Error("A soma dos pagamentos deve ser igual ao valor total do pedido."))
             } else {
@@ -382,6 +412,28 @@ class RegistrationViewModel @Inject constructor(private val registrationReposito
             }
         } catch (e: Exception) {
             0.0
+        }
+    }
+
+    fun printOrderResume(path: String){
+        _orderResumePrintState.postValue(UIState.Loading())
+        viewModelScope.launch(Dispatchers.Default) {
+            try {
+                val result = plugPag.printFromFile(
+                    printerData = PlugPagPrinterData(
+                        path,
+                        100,
+                        PlugPag.MIN_PRINTER_STEPS
+                    )
+                )
+                if (result.result == PlugPag.RET_OK) {
+                    _orderResumePrintState.postValue(UIState.Success("Impressão realizada com sucesso!"))
+                } else {
+                    _orderResumePrintState.postValue(UIState.Error(result.errorCode + result.message))
+                }
+            } catch (e: PlugPagException) {
+                _orderResumePrintState.postValue(UIState.Error(e.message ?: "Falha na impressão!"))
+            }
         }
     }
 }

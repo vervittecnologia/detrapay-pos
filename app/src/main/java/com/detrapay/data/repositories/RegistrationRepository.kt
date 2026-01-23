@@ -1,6 +1,5 @@
 package com.detrapay.data.repositories
 
-import android.util.Log
 import com.detrapay.data.datasources.remote.DetrapayRemoteDataSource
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.VehicleType
@@ -21,13 +20,17 @@ import com.detrapay.data.model.remote.OrderCustomerRequest
 import com.detrapay.data.model.remote.OrderReceivableRequest
 import com.detrapay.data.model.remote.OrderSimulationItemRequest
 import com.detrapay.data.model.remote.OrderSimulationRequest
+import com.detrapay.ui.util.Logger
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class RegistrationRepository @Inject constructor(
-    private val detrapayRemoteDataSource: DetrapayRemoteDataSource
+    private val detrapayRemoteDataSource: DetrapayRemoteDataSource,
 ) {
+
+    private val locale = Locale("pt", "BR")
 
     suspend fun loadVehicleTypes(): Result<List<VehicleType>> {
         when (val result = detrapayRemoteDataSource.getVehicleTypes()) {
@@ -36,10 +39,10 @@ class RegistrationRepository @Inject constructor(
                     val vehicleTypes = result.data.map {
                         VehicleType(it.id, it.name)
                     }
-                    Log.d("UEHARINHA", vehicleTypes.toString())
+                    Logger.d(vehicleTypes.toString())
                     return Result.Success(vehicleTypes)
                 } catch (e: Exception) {
-                    Log.d("UNABLE TO LOAD VEHICLE TYPES", e.message ?: "")
+                    Logger.d("UNABLE TO LOAD VEHICLE TYPES: ${e.message}")
                     return Result.Error(e)
                 }
             }
@@ -65,10 +68,10 @@ class RegistrationRepository @Inject constructor(
                             maxInstallments = it.maxInstallments,
                             interestRate = it.interestRate)
                     }
-                    Log.d("UEHARINHA", paymentMethods.toString())
+                    Logger.d(paymentMethods.toString())
                     return Result.Success(paymentMethods)
                 } catch (e: Exception) {
-                    Log.d("UNABLE TO LOAD PAYMENT METHODS", e.message ?: "")
+                    Logger.d("UNABLE TO LOAD PAYMENT METHODS: ${e.message}")
                     return Result.Error(e)
                 }
             }
@@ -89,11 +92,11 @@ class RegistrationRepository @Inject constructor(
                 try {
                     result.data.let {
                         val customerSearchData = CustomerSearchData(it.id, it.name, it.whatsapp)
-                        Log.d("UEHARINHA", customerSearchData.toString())
+                        Logger.d(customerSearchData.toString())
                         return Result.Success(customerSearchData)
                     }
                 } catch (e: Exception) {
-                    Log.d("UNABLE TO LOAD PAYMENT METHODS", e.message ?: "")
+                    Logger.d("UNABLE TO LOAD PAYMENT METHODS: ${e.message}")
                     return Result.Error(e)
                 }
             }
@@ -118,6 +121,118 @@ class RegistrationRepository @Inject constructor(
         disposalVehicle: Boolean,
         specialPlate: Boolean
     ): Result<Simulation> {
+
+//        return Result.Success(
+//            Simulation(
+//                customer = SimulationCustomer(
+//                    cpfCnpj,
+//                    clientName,
+//                    whatsapp
+//                ),
+//                simulation = SimulationSimulation(
+//                    invoiceDate,
+//                    vehicleValue,
+//                    disposalVehicle,
+//                    specialPlate,
+//                    10.000,
+//                    vehicleTypeId
+//                ),
+//                simulationItems = listOf(
+//                    SimulationItem(
+//                        id = 0,
+//                        name = "Despachante",
+//                        discountAllowed = false,
+//                        price = 200.0,
+//                        discount = 0.0
+//                    ),
+//                    SimulationItem(
+//                        id = 1,
+//                        name = "Detran 1",
+//                        discountAllowed = false,
+//                        price = 200.0,
+//                        discount = 0.0
+//                    ),
+//                    SimulationItem(
+//                        id = 2,
+//                        name = "Detran 2",
+//                        discountAllowed = false,
+//                        price = 200.0,
+//                        discount = 0.0
+//                    ),
+//                    SimulationItem(
+//                        id = 1,
+//                        name = "Detran 1",
+//                        discountAllowed = false,
+//                        price = 200.0,
+//                        discount = 0.0
+//                    ),
+//                    SimulationItem(
+//                        id = 4,
+//                        name = "Detran 2",
+//                        discountAllowed = false,
+//                        price = 200.0,
+//                        discount = 0.0
+//                    ),
+//                    SimulationItem(
+//                        id = 5,
+//                        name = "Detran 1",
+//                        discountAllowed = false,
+//                        price = 200.0,
+//                        discount = 0.0
+//                    ),
+//                    SimulationItem(
+//                        id = 6,
+//                        name = "Detran 2",
+//                        discountAllowed = false,
+//                        price = 200.0,
+//                        discount = 0.0
+//                    ),
+//                    SimulationItem(
+//                        id = 7,
+//                        name = "Detran 2",
+//                        discountAllowed = false,
+//                        price = 200.0,
+//                        discount = 0.0
+//                    ),
+//                    SimulationItem(
+//                        id = 8,
+//                        name = "Detran 1",
+//                        discountAllowed = false,
+//                        price = 200.0,
+//                        discount = 0.0
+//                    ),
+//                    SimulationItem(
+//                        id = 9,
+//                        name = "Detran 2",
+//                        discountAllowed = false,
+//                        price = 200.0,
+//                        discount = 0.0
+//                    ),
+//                    SimulationItem(
+//                        id = 10,
+//                        name = "Detran 2",
+//                        discountAllowed = false,
+//                        price = 200.0,
+//                        discount = 0.0
+//                    ),
+//                    SimulationItem(
+//                        id = 11,
+//                        name = "Detran 2",
+//                        discountAllowed = false,
+//                        price = 200.0,
+//                        discount = 0.0
+//                    ),
+//                    SimulationItem(
+//                        id = 12,
+//                        name = "Detran 2",
+//                        discountAllowed = false,
+//                        price = 200.0,
+//                        discount = 0.0
+//                    )
+//                )
+//            )
+//        )
+
         val vehicleValueAmount = vehicleValue.replace("R$", "")
             .replace(" ", "")
             .replace(".", "")
@@ -137,7 +252,7 @@ class RegistrationRepository @Inject constructor(
             is Result.Success -> {
                 try {
                     result.data.let { data ->
-                        Log.d("UEHARINHA", result.data.toString())
+                        Logger.d(result.data.toString())
                         val simulationCustomer = SimulationCustomer(
                             data.customer.cpfCnpj,
                             data.customer.name,
@@ -172,7 +287,7 @@ class RegistrationRepository @Inject constructor(
                         )
                     }
                 } catch (e: Exception) {
-                    Log.d("UNABLE TO SIMULATE", e.message ?: "")
+                    Logger.d("UNABLE TO SIMULATE: ${e.message}")
                     return Result.Error(e)
                 }
             }
@@ -231,8 +346,8 @@ class RegistrationRepository @Inject constructor(
                     .replace(",", ".")
                     .replace("\\s".toRegex(), ""),
                 tax = simulationPayment.paymentMethod.interestRate,
-                paymentDate = "",
-                installments = simulationPayment.installment
+                installments = simulationPayment.installment,
+                paymentDate = ""
             )
         }
 
@@ -280,14 +395,19 @@ class RegistrationRepository @Inject constructor(
                             receivables = it.receivables.map { receivable ->
                                 OrderReceivableItem(
                                     id = receivable.id,
+                                    documentId = receivable.documentId,
                                     amountFinal = receivable.amountFinal,
                                     amountOriginal = receivable.amountOriginal,
                                     tax = receivable.tax,
                                     status = OrderReceivableItemStatus.PENDING, // TODO CREATE PARSER
                                     paymentDate = receivable.paymentDate,
+                                    cardHolder = receivable.cardHolder,
                                     cardBrand = receivable.cardBrand,
                                     cardLast4 = receivable.cardLast4,
                                     authorizationCode = receivable.authorizationCode,
+                                    authorizationId = receivable.authorizationId,
+                                    pixTxIdCode = receivable.pixTxIdCode,
+                                    refundDate = receivable.refundDate,
                                     installments = receivable.installments,
                                     paymentMethod = PaymentMethod(
                                         id = receivable.paymentMethod.id,
@@ -302,7 +422,7 @@ class RegistrationRepository @Inject constructor(
                         return Result.Success(order)
                     }
                 } catch (e: Exception) {
-                    Log.d("UNABLE TO CREATE ORDER", e.message ?: "")
+                    Logger.d("UNABLE TO CREATE ORDER: ${e.message}")
                     return Result.Error(e)
                 }
             }
@@ -362,8 +482,8 @@ class RegistrationRepository @Inject constructor(
                     .replace(",", ".")
                     .replace("\\s".toRegex(), ""),
                 tax = simulationPayment.paymentMethod.interestRate,
-                paymentDate = "",
-                installments = simulationPayment.installment
+                installments = simulationPayment.installment,
+                paymentDate = ""
             )
         }
 
@@ -412,14 +532,19 @@ class RegistrationRepository @Inject constructor(
                             receivables = it.receivables.map { receivable ->
                                 OrderReceivableItem(
                                     id = receivable.id,
+                                    documentId = receivable.documentId,
                                     amountFinal = receivable.amountFinal,
                                     amountOriginal = receivable.amountOriginal,
                                     tax = receivable.tax,
                                     status = OrderReceivableItemStatus.PENDING, // TODO CREATE PARSER
                                     paymentDate = receivable.paymentDate,
+                                    cardHolder = receivable.cardHolder,
                                     cardBrand = receivable.cardBrand,
                                     cardLast4 = receivable.cardLast4,
                                     authorizationCode = receivable.authorizationCode,
+                                    authorizationId = receivable.authorizationId,
+                                    pixTxIdCode = receivable.pixTxIdCode,
+                                    refundDate = receivable.refundDate,
                                     installments = receivable.installments,
                                     paymentMethod = PaymentMethod(
                                         id = receivable.paymentMethod.id,
@@ -428,13 +553,12 @@ class RegistrationRepository @Inject constructor(
                                         interestRate = receivable.paymentMethod.interestRate
                                     ),
                                 )
-
                             }
                         )
                         return Result.Success(order)
                     }
                 } catch (e: Exception) {
-                    Log.d("UNABLE TO CREATE ORDER", e.message ?: "")
+                    Logger.d("UNABLE TO CREATE ORDER: ${e.message}")
                     return Result.Error(e)
                 }
             }
@@ -446,6 +570,27 @@ class RegistrationRepository @Inject constructor(
             else -> {
                 return Result.Error(Exception())
             }
+        }
+    }
+
+    private fun calculateFinalAmount(finalAmount: String, interestRate: Double?): String {
+        val amountFinalStr = finalAmount
+            .replace("R$", "")
+            .replace(" ", "")
+            .replace(".", "")
+            .replace(",", ".")
+            .replace("\\s".toRegex(), "")
+
+        return try {
+            if (interestRate != null && interestRate > 0.0) {
+                val amountFinalValue = amountFinalStr.toDouble()
+                val bla = amountFinalValue + (amountFinalValue * interestRate)
+                "%,.2f".format(locale, bla)
+            } else {
+                amountFinalStr
+            }
+        } catch (e:Exception) {
+            return amountFinalStr
         }
     }
 

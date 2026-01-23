@@ -1,6 +1,5 @@
 package com.detrapay.ui.login
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -30,7 +29,6 @@ class LoginViewModel @Inject constructor(private val loginRepository: LoginRepos
             if (result is Result.Success) {
                 _loginResult.postValue(LoginResult(success = true))
             } else {
-                Log.d("UEHARINHA", result.toString())
                 _loginResult.postValue(LoginResult(error = R.string.login_failed))
             }
         }

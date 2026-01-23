@@ -7,8 +7,10 @@ import com.detrapay.data.model.remote.EmployeeResponse
 import com.detrapay.data.model.remote.OrderRequest
 import com.detrapay.data.model.remote.OrderResponse
 import com.detrapay.data.model.remote.PaymentMethodResponse
+import com.detrapay.data.model.remote.RefundOrderReceivableRequestDataWrapper
 import com.detrapay.data.model.remote.SimulationRequest
 import com.detrapay.data.model.remote.SimulationResponse
+import com.detrapay.data.model.remote.UpdateOrderReceivableRequestDataWrapper
 import com.detrapay.data.model.remote.VehicleTypeResponse
 import retrofit2.Response
 import retrofit2.http.Body
@@ -35,6 +37,12 @@ interface DetrapayService {
 
     @PUT("sales-orders/{id}/me")
     suspend fun updateOrder(@Path("id") orderId: Int, @Body orderRequest: OrderRequest): Response<OrderResponse>
+
+    @PUT("receivables/{id}")
+    suspend fun updateOrderReceivableItem(@Path("id") receivableItemId: String, @Body updateOrderReceivableRequest: UpdateOrderReceivableRequestDataWrapper): Response<OrderResponse>
+
+    @PUT("receivables/{id}")
+    suspend fun refundOrderReceivableItem(@Path("id") receivableItemId: String, @Body refundOrderReceivableRequest: RefundOrderReceivableRequestDataWrapper): Response<OrderResponse>
 
     @POST("sales-orders/me")
     suspend fun createOrder(@Body orderRequest: OrderRequest): Response<OrderResponse>

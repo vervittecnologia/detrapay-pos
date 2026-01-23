@@ -18,7 +18,7 @@
         app:titleTextColor="@color/white"
         tools:title="Pedido 12345" />
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <ScrollView
         android:id="@+id/contentView"
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -28,244 +28,254 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/toolbar">
 
-        <TextView
-            android:id="@+id/editOrderTxtView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="4dp"
-            android:text="@string/order_details_edit_order_text_view"
-            android:textColor="@color/neutral_600"
-            app:layout_constraintEnd_toStartOf="@+id/editOrderImageView"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <ImageView
-            android:id="@+id/editOrderImageView"
-            android:layout_width="15dp"
-            android:layout_height="15dp"
-            android:layout_marginEnd="16dp"
-            android:src="@drawable/ic_pencil"
-            app:layout_constraintBottom_toBottomOf="@+id/editOrderTxtView"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/editOrderTxtView" />
-
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/constraintLayout2"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:background="@color/neutral_200"
-            android:padding="16dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/editOrderTxtView">
+            android:layout_height="wrap_content">
 
             <TextView
-                android:id="@+id/cpfCnpjLabel"
+                android:id="@+id/editOrderTxtView"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="CPF/CNPJ do cliente"
-                app:layout_constraintStart_toStartOf="parent"
+                android:layout_height="40dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="4dp"
+                android:textAlignment="center"
+                android:gravity="center"
+                android:text="@string/order_details_edit_order_text_view"
+                android:textColor="@color/neutral_600"
+                app:layout_constraintEnd_toStartOf="@+id/editOrderImageView"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <TextView
-                android:id="@+id/cpfCnpjValue"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:textAlignment="textEnd"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/cpfCnpjLabel"
-                app:layout_constraintTop_toTopOf="parent"
-                tools:text="012.879.098-00" />
-
-            <com.google.android.material.divider.MaterialDivider
-                android:id="@+id/dividerCpfCnpj"
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="12dp"
-                app:dividerColor="@color/shimmerColor"
-                app:layout_constraintTop_toBottomOf="@id/cpfCnpjValue"
-                tools:layout_editor_absoluteX="16dp" />
-
-            <TextView
-                android:id="@+id/clientNameLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="Nome do cliente"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/dividerCpfCnpj" />
-
-            <TextView
-                android:id="@+id/clientNameValue"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:ellipsize="end"
-                android:maxLines="2"
-                android:textAlignment="textEnd"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/clientNameLabel"
-                app:layout_constraintTop_toBottomOf="@+id/dividerCpfCnpj"
-                tools:text="Roberto Olaerde Lima da Silva" />
-
-            <com.google.android.material.divider.MaterialDivider
-                android:id="@+id/dividerClientName"
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="12dp"
-                app:dividerColor="@color/shimmerColor"
-                app:layout_constraintTop_toBottomOf="@+id/clientNameValue"
-                tools:layout_editor_absoluteX="16dp" />
-
-            <TextView
-                android:id="@+id/vehicleValueLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="Valor do veículo"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/dividerClientName" />
-
-            <TextView
-                android:id="@+id/vehicleValueValue"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:textAlignment="textEnd"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/vehicleValueLabel"
-                app:layout_constraintTop_toBottomOf="@+id/dividerClientName"
-                tools:text="R$ 250.000" />
-
-            <com.google.android.material.divider.MaterialDivider
-                android:id="@+id/dividerVehicleValue"
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="12dp"
-                app:dividerColor="@color/shimmerColor"
-                app:layout_constraintTop_toBottomOf="@+id/vehicleValueValue"
-                tools:layout_editor_absoluteX="16dp" />
-
-            <TextView
-                android:id="@+id/vehicleTypeLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="Tipo"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/dividerVehicleValue" />
-
-            <TextView
-                android:id="@+id/vehicleTypeValue"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:textAlignment="textEnd"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/vehicleTypeLabel"
-                app:layout_constraintTop_toBottomOf="@+id/dividerVehicleValue"
-                tools:text="automóveis acima de 180cc" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/constraintLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            android:background="@drawable/total_amount_layout_background"
-            android:padding="12dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/constraintLayout2">
-
-            <TextView
-                android:id="@+id/totalAmountTxtView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Valor total"
-                app:layout_constraintBottom_toBottomOf="@+id/totalAmountValueTxtView"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="@+id/totalAmountValueTxtView" />
-
-            <TextView
-                android:id="@+id/totalAmountValueTxtView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:textColor="@color/primary_500"
-                android:textSize="26sp"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toStartOf="@+id/expandOrderListItems"
-                app:layout_constraintTop_toTopOf="parent"
-                tools:text="R$ 7.003,63" />
-
             <ImageView
-                android:id="@+id/expandOrderListItems"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/chevron_down"
-                app:layout_constraintBottom_toBottomOf="@+id/totalAmountValueTxtView"
+                android:id="@+id/editOrderImageView"
+                android:layout_width="15dp"
+                android:layout_height="0dp"
+                android:layout_marginEnd="16dp"
+                android:src="@drawable/ic_pencil"
+                app:layout_constraintBottom_toBottomOf="@+id/editOrderTxtView"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@+id/totalAmountValueTxtView" />
+                app:layout_constraintTop_toTopOf="@+id/editOrderTxtView" />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/constraintLayout2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:background="@color/neutral_200"
+                android:padding="16dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/editOrderTxtView">
+
+                <TextView
+                    android:id="@+id/cpfCnpjLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="CPF/CNPJ do cliente"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/cpfCnpjValue"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:textAlignment="textEnd"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/cpfCnpjLabel"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:text="012.879.098-00" />
+
+                <com.google.android.material.divider.MaterialDivider
+                    android:id="@+id/dividerCpfCnpj"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="12dp"
+                    app:dividerColor="@color/shimmerColor"
+                    app:layout_constraintTop_toBottomOf="@id/cpfCnpjValue"
+                    tools:layout_editor_absoluteX="16dp" />
+
+                <TextView
+                    android:id="@+id/clientNameLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Nome do cliente"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/dividerCpfCnpj" />
+
+                <TextView
+                    android:id="@+id/clientNameValue"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:textAlignment="textEnd"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/clientNameLabel"
+                    app:layout_constraintTop_toBottomOf="@+id/dividerCpfCnpj"
+                    tools:text="Roberto Olaerde Lima da Silva" />
+
+                <com.google.android.material.divider.MaterialDivider
+                    android:id="@+id/dividerClientName"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="12dp"
+                    app:dividerColor="@color/shimmerColor"
+                    app:layout_constraintTop_toBottomOf="@+id/clientNameValue"
+                    tools:layout_editor_absoluteX="16dp" />
+
+                <TextView
+                    android:id="@+id/vehicleValueLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Valor do veículo"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/dividerClientName" />
+
+                <TextView
+                    android:id="@+id/vehicleValueValue"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textAlignment="textEnd"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/vehicleValueLabel"
+                    app:layout_constraintTop_toBottomOf="@+id/dividerClientName"
+                    tools:text="R$ 250.000" />
+
+                <com.google.android.material.divider.MaterialDivider
+                    android:id="@+id/dividerVehicleValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="12dp"
+                    app:dividerColor="@color/shimmerColor"
+                    app:layout_constraintTop_toBottomOf="@+id/vehicleValueValue"
+                    tools:layout_editor_absoluteX="16dp" />
+
+                <TextView
+                    android:id="@+id/vehicleTypeLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Tipo"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/dividerVehicleValue" />
+
+                <TextView
+                    android:id="@+id/vehicleTypeValue"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textAlignment="textEnd"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/vehicleTypeLabel"
+                    app:layout_constraintTop_toBottomOf="@+id/dividerVehicleValue"
+                    tools:text="automóveis acima de 180cc" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/constraintLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="16dp"
+                android:background="@drawable/total_amount_layout_background"
+                android:padding="12dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/constraintLayout2">
+
+                <TextView
+                    android:id="@+id/totalAmountTxtView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Valor total"
+                    app:layout_constraintBottom_toBottomOf="@+id/totalAmountValueTxtView"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/totalAmountValueTxtView" />
+
+                <TextView
+                    android:id="@+id/totalAmountValueTxtView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:textColor="@color/primary_500"
+                    android:textSize="26sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toStartOf="@+id/expandOrderListItems"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:text="R$ 7.003,63" />
+
+                <ImageView
+                    android:id="@+id/expandOrderListItems"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/chevron_down"
+                    app:layout_constraintBottom_toBottomOf="@+id/totalAmountValueTxtView"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/totalAmountValueTxtView" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvOrderListItem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/totalAmountValueTxtView" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
             <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvOrderListItem"
+                android:id="@+id/receivablesRecyclerView"
+                android:layout_width="0dp"
+                android:layout_marginTop="16dp"
+                android:layout_height="wrap_content"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/constraintLayout"
+                tools:itemCount="3"
+                tools:listitem="@layout/order_payment_list_item" />
+
+            <Button
+                android:id="@+id/finishServiceBtn"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="vertical"
-                android:visibility="gone"
+                android:layout_gravity="start"
+                android:layout_marginLeft="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginRight="16dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/default_button_background"
+                android:text="@string/order_details_finish_service"
+                android:textColor="@color/white"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/totalAmountValueTxtView" />
+                app:layout_constraintTop_toBottomOf="@+id/receivablesRecyclerView" />
+
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/receivablesRecyclerView"
-            android:layout_width="0dp"
-            android:layout_marginTop="16dp"
-            android:layout_height="wrap_content"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/constraintLayout"
-            tools:itemCount="3"
-            tools:listitem="@layout/order_payment_list_item" />
-
-        <Button
-            android:id="@+id/finishServiceBtn"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="start"
-            android:layout_marginTop="16dp"
-            android:layout_marginLeft="16dp"
-            android:layout_marginRight="16dp"
-            android:background="@drawable/default_button_background"
-            android:text="@string/order_details_finish_service"
-            android:textColor="@color/white"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/receivablesRecyclerView" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
 
     <com.facebook.shimmer.ShimmerFrameLayout
         android:id="@+id/loadingView"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:visibility="gone">
+        app:layout_constraintTop_toBottomOf="@+id/toolbar">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -347,7 +357,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/toolbar"
         android:padding="16dp"
         android:visibility="gone">
 

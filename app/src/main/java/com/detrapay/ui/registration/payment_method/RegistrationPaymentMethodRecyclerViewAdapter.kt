@@ -1,7 +1,6 @@
 package com.detrapay.ui.registration.payment_method
 
 import android.content.Context
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,11 +10,13 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Spinner
+import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.detrapay.R
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.SimulationPayment
 import com.detrapay.databinding.RegistrationPaymentMethodListItemBinding
+import com.detrapay.ui.util.Logger
 import com.detrapay.ui.util.Mask
 import java.util.Locale
 
@@ -63,6 +64,7 @@ class RegistrationPaymentMethodRecyclerViewAdapter(
                     paymentMethod = paymentMethod,
                     amountOriginal = "",
                     amountFinal = "",
+                    installment = paymentMethod.maxInstallments
                 )
                 values.add(simulationPayment)
                 notifyItemChanged(values.size)
@@ -74,7 +76,7 @@ class RegistrationPaymentMethodRecyclerViewAdapter(
                     values[itemPosition] = newItem
                     listener.onItemUpdated(newItem)
                 } catch (e: Exception) {
-                    Log.d("UEHARINHA", e.message ?: "")
+                    Logger.d(e.message ?: "")
                 }
             },
             onDelete = {
@@ -84,7 +86,7 @@ class RegistrationPaymentMethodRecyclerViewAdapter(
                     listener.onDelete(item)
                     notifyItemRemoved(itemPosition)
                 } catch (e: Exception) {
-                    Log.d("UEHARINHA", e.message ?: "")
+                    Logger.d(e.message ?: "")
                 }
             }
         )
@@ -106,7 +108,8 @@ class RegistrationPaymentMethodViewHolder(
     private val actionButton: ImageView = binding.actionButton
     private val paymentMethodSpinner: Spinner = binding.paymentMethodSpinner
     private val installmentsSelectorLayout: LinearLayout = binding.installmentSelectorLayout
-    private val installmentsSelectorSpinner: Spinner = binding.installmentsSelectorSpinner
+    private val installmentsAmount: TextView = binding.installmentsValue
+//    private val installmentsSelectorSpinner: Spinner = binding.installmentsSelectorSpinner
     private val paymentMethodAdapter = ArrayAdapter(
         context,
         android.R.layout.simple_spinner_dropdown_item,
@@ -124,9 +127,9 @@ class RegistrationPaymentMethodViewHolder(
         amountInputText.setText(item.amountOriginal)
         val textWatcher = Mask.moneyMask(amountInputText, { value ->
             val stringValue = amountInputText.text.toString()
-            Log.d("UEHARINHA - adapter", stringValue)
             val newPaymentMethod = paymentMethods[paymentMethodSpinner.selectedItemPosition]
-            val newItem = item.copy(amountOriginal = stringValue, amountFinal = stringValue, paymentMethod = newPaymentMethod)
+            val amountFinalValue = amountFinalValue(newPaymentMethod.interestRate, stringValue)
+            val newItem = item.copy(amountOriginal = stringValue, amountFinal = amountFinalValue, paymentMethod = newPaymentMethod)
             onUpdate(newItem)
             updateInstallmentView(newItem)
         })
@@ -156,10 +159,13 @@ class RegistrationPaymentMethodViewHolder(
                     position: Int, id: Long
                 ) {
                     val newPaymentMethod = paymentMethods[position]
+                    val amountFinalValue = amountFinalValue(newPaymentMethod.interestRate, amountInputText.text.toString())
+
                     val newItem = item.copy(
                         paymentMethod = newPaymentMethod,
                         amountOriginal = amountInputText.text.toString(),
-                        amountFinal = amountInputText.text.toString()
+                        amountFinal = amountFinalValue,
+                        installment = newPaymentMethod.maxInstallments
                     )
                     onUpdate(newItem)
                     updateInstallmentView(newItem)
@@ -170,62 +176,89 @@ class RegistrationPaymentMethodViewHolder(
 
         updateInstallmentView(item)
 
-        installmentsSelectorSpinner.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    parent: AdapterView<*>, view: View?,
-                    position: Int,
-                    id: Long
-                ) {
-                    try {
-                        val allowedInstallments: List<Int> =
-                            (1..item.paymentMethod.maxInstallments).toList()
-                        val newInstallment = allowedInstallments[position]
-
-                        val paymentAmountValue = amountInputText.text.toString()
-                            .replace("R$", "")
-                            .replace(" ", "")
-                            .replace(".", "")
-                            .replace(",", ".")
-                            .replace("\\s".toRegex(), "").toDouble()
-                        val interestRate = item.paymentMethod.interestRate ?: 0.0
-                        val amountFinal = (paymentAmountValue + (paymentAmountValue * interestRate))
-                        val amountFinalValue = "%,.2f".format(locale, amountFinal)
-
-                        onUpdate(
-                            item.copy(
-                                installment = newInstallment,
-                                amountOriginal = amountInputText.text.toString(),
-                                amountFinal = amountFinalValue
-                            ),
-                        )
-                    } catch (_: Exception) {
-                        // TODO LOG ERROR
-                    }
-                }
-
-                override fun onNothingSelected(parent: AdapterView<*>?) {}
-            }
+//        installmentsSelectorSpinner.onItemSelectedListener =
+//            object : AdapterView.OnItemSelectedListener {
+//                override fun onItemSelected(
+//                    parent: AdapterView<*>, view: View?,
+//                    position: Int,
+//                    id: Long
+//                ) {
+//                    try {
+//                        val allowedInstallments: List<Int> =
+//                            (1..item.paymentMethod.maxInstallments).toList()
+//                        val newInstallment = allowedInstallments[position]
+//
+//                        val paymentAmountValue = amountInputText.text.toString()
+//                            .replace("R$", "")
+//                            .replace(" ", "")
+//                            .replace(".", "")
+//                            .replace(",", ".")
+//                            .replace("\\s".toRegex(), "").toDouble()
+//                        val interestRate = item.paymentMethod.interestRate ?: 0.0
+//                        val amountFinal = (paymentAmountValue + (paymentAmountValue * interestRate))
+//                        val amountFinalValue = "%,.2f".format(locale, amountFinal)
+//
+//                        onUpdate(
+//                            item.copy(
+//                                installment = newInstallment,
+//                                amountOriginal = amountInputText.text.toString(),
+//                                amountFinal = amountFinalValue
+//                            ),
+//                        )
+//                    } catch (_: Exception) {
+//                        // TODO LOG ERROR
+//                    }
+//                }
+//
+//                override fun onNothingSelected(parent: AdapterView<*>?) {}
+//            }
     }
 
     private fun updateInstallmentView(item: SimulationPayment) {
         if (item.paymentMethod.maxInstallments > 0) {
             installmentsSelectorLayout.visibility = View.VISIBLE
-            val allowedInstallments: List<Int> = (1..item.paymentMethod.maxInstallments).toList()
-            val installmentsAdapter = ArrayAdapter(
-                context,
-                android.R.layout.simple_spinner_dropdown_item,
-                allowedInstallments.map {
-                    installmentsDescription(
-                        it,
+            installmentsAmount.text = installmentsDescription(
+                        item.paymentMethod.maxInstallments,
                         item.paymentMethod.interestRate,
                         amountInputText.text.toString()
                     )
-                }
-            )
-            installmentsSelectorSpinner.setAdapter(installmentsAdapter)
+//            val allowedInstallments: List<Int> = (1..item.paymentMethod.maxInstallments).toList()
+//            val installmentsAdapter = ArrayAdapter(
+//                context,
+//                android.R.layout.simple_spinner_dropdown_item,
+//                allowedInstallments.map {
+//                    installmentsDescription(
+//                        it,
+//                        item.paymentMethod.interestRate,
+//                        amountInputText.text.toString()
+//                    )
+//                }
+//            )
+//            installmentsSelectorSpinner.setAdapter(installmentsAdapter)
         } else {
             installmentsSelectorLayout.visibility = View.GONE
+        }
+    }
+
+    private fun amountFinalValue(
+        interestRate: Double?,
+        paymentAmount: String
+    ): String {
+        return try {
+            val paymentAmountValue = paymentAmount.replace("R$", "")
+                .replace(" ", "")
+                .replace(".", "")
+                .replace(",", ".")
+                .replace("\\s".toRegex(), "").toDouble()
+
+            if (interestRate != null && interestRate > 0.0) {
+                val paymentAmountValueWithInterestRate = paymentAmountValue + (paymentAmountValue * interestRate)
+                "%,.2f".format(locale, paymentAmountValueWithInterestRate)
+            } else {
+                paymentAmount
+            }
+        } catch (e: Exception) {
+            paymentAmount
         }
     }
 
@@ -256,6 +289,5 @@ class RegistrationPaymentMethodViewHolder(
         } catch (e: Exception) {
             "Em ${installment}x"
         }
-
     }
 }

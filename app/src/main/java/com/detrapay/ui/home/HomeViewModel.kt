@@ -1,6 +1,5 @@
 package com.detrapay.ui.home
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -21,7 +20,6 @@ class HomeViewModel @Inject constructor(private val authRepository: AuthReposito
     val homeState: LiveData<UIState<HomeState>> = _homeState
 
     fun loadScreenContent() {
-        Log.d("UEHARINHA", "HomeFragmentViewModel - loadScreenContent" )
         _homeState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
             val result = authRepository.getLoggedUser(firstInitialization)

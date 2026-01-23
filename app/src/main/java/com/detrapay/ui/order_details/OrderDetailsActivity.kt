@@ -1,9 +1,10 @@
 package com.detrapay.ui.order_details
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.View
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
@@ -14,8 +15,13 @@ import com.detrapay.R
 import com.detrapay.data.UnauthorizedException
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.OrderReceivableItem
+import com.detrapay.data.model.OrderReceivableItemStatus
+import com.detrapay.data.model.PaymentData
+import com.detrapay.data.model.RefundPaymentData
 import com.detrapay.databinding.ActivityOrderDetailsBinding
 import com.detrapay.ui.employee_selection.EmployeeSelectionActivity
+import com.detrapay.ui.payment.PaymentDialogFragment
+import com.detrapay.ui.refund.RefundPaymentDialogFragment
 import com.detrapay.ui.registration.RegistrationActivity
 import com.detrapay.ui.session_expired_dialog.SessionExpiredDialog
 import com.detrapay.ui.state.UIState
@@ -37,7 +43,6 @@ class OrderDetailsActivity : AppCompatActivity(),
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         orderParam = intent.getSerializableExtra("order") as Order
-        Log.d("UEHARINHA", orderParam.toString())
         binding = ActivityOrderDetailsBinding.inflate(layoutInflater)
         viewModel.loadScreenContent(orderParam.id)
         setupToolbar(orderParam)
@@ -72,6 +77,11 @@ class OrderDetailsActivity : AppCompatActivity(),
 
                 is UIState.Error -> {
                     validateErrorType(status.exception)
+                    if (status.retryData != null) {
+                        setupErrorBtnWithPaymentData(status.retryData)
+                    } else {
+                        setupErrorBtn()
+                    }
                     binding.loadingView.visibility = View.GONE
                     binding.errorTxtView.text =
                         status.message ?: getString(R.string.employees_default_error_message)
@@ -81,6 +91,14 @@ class OrderDetailsActivity : AppCompatActivity(),
         })
     }
 
+    private fun setupErrorBtnWithPaymentData(retryData: Any) {
+        binding.reloadOrderDetails.setOnClickListener {
+            val retryDataModel = retryData as RetryDataModel
+            viewModel.payOrder(retryDataModel.receivableItem, retryDataModel.paymentData)
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
     private fun setupOrderResume(order: Order) {
         val vehiclePrice = "%,.2f".format(locale, order.vehiclePrice)
 
@@ -96,9 +114,17 @@ class OrderDetailsActivity : AppCompatActivity(),
             }
         }
 
-        binding.editOrderTxtView.setOnClickListener {
-            Log.d("UEHARINHA", order.toString())
+        val paidReceivables = order.receivables.filter {
+            it.status == OrderReceivableItemStatus.PAID
+        }
 
+        if (paidReceivables.isEmpty()) {
+            binding.editOrderTxtView.visibility = View.VISIBLE
+        } else {
+            binding.editOrderTxtView.visibility = View.GONE
+        }
+
+        binding.editOrderTxtView.setOnClickListener {
             val orderDetailsActivityIntent = Intent(
                 this,
                 RegistrationActivity::class.java
@@ -117,7 +143,7 @@ class OrderDetailsActivity : AppCompatActivity(),
         binding.vehicleValueValue.text = "R$ $vehiclePrice"
         binding.totalAmountValueTxtView.text = "R$ $totalAmount"
 
-        if (order.vehicleType.name.isNullOrEmpty()) {
+        if (order.vehicleType.name.isEmpty()) {
             binding.vehicleTypeValue.visibility = View.GONE
             binding.vehicleTypeLabel.visibility = View.GONE
         } else {
@@ -163,7 +189,7 @@ class OrderDetailsActivity : AppCompatActivity(),
             val third = cpfCnpj.substring(6, 9)
             val fourth = cpfCnpj.substring(9, 11)
             return "$first.$second.$third-$fourth"
-        } else if (cpfCnpj.length == 14){
+        } else if (cpfCnpj.length == 14) {
             val first = cpfCnpj.substring(0, 2)
             val second = cpfCnpj.substring(2, 5)
             val third = cpfCnpj.substring(5, 8)
@@ -204,8 +230,32 @@ class OrderDetailsActivity : AppCompatActivity(),
         )
     }
 
+    override fun onItemClick(receivable: OrderReceivableItem) {
+        val paymentDialogFragment = PaymentDialogFragment(listener = object : PaymentDialogFragment.PaymentListener {
+                override fun onResult(paymentData: PaymentData?) {
+                    if (paymentData != null) {
+                        viewModel.payOrder(receivable, paymentData)
+                        Toast.makeText(this@OrderDetailsActivity, "Pagamento realizado com sucesso!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this@OrderDetailsActivity, "Falha ao realizar pagamento", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }, orderParam.id, receivable)
+        paymentDialogFragment.show(this.supportFragmentManager, "PaymentDialogFragment")
+    }
 
-    override fun onItemClick(item: OrderReceivableItem) {
-        //        TODO("Not yet implemented")
+    override fun onRefundClick(receivable: OrderReceivableItem) {
+        val refundPaymentDialogFragment = RefundPaymentDialogFragment(listener = object : RefundPaymentDialogFragment.RefundPaymentListener {
+            override fun onResult(refundPaymentData: RefundPaymentData?) {
+                if (refundPaymentData != null) {
+                    viewModel.refundItem(receivable, refundPaymentData)
+                    Toast.makeText(this@OrderDetailsActivity, "Estorno de Pagamento realizado com sucesso!", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this@OrderDetailsActivity, "Falha ao realizar estorno", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }, receivable)
+        refundPaymentDialogFragment.show(this.supportFragmentManager, "RefundPaymentDialogFragment")
+
     }
 }

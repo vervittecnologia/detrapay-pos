@@ -2,7 +2,6 @@ package com.detrapay.ui.registration.discount_dialog
 
 import android.os.Bundle
 import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,15 +9,11 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.activityViewModels
-import com.detrapay.R
 import com.detrapay.data.model.SimulationItem
 import com.detrapay.databinding.FragmentDiscountDialogBinding
-import com.detrapay.databinding.FragmentRegistrationOrderResumeBinding
 import com.detrapay.ui.registration.RegistrationViewModel
-import com.detrapay.ui.registration.resume.RegistrationResumeRecyclerViewAdapter
 import com.detrapay.ui.util.Mask
 import com.detrapay.ui.util.Mask.Companion.locale
-import java.math.BigDecimal
 import java.text.NumberFormat
 
 class DiscountDialogFragment(
@@ -92,7 +87,6 @@ class DiscountDialogFragment(
             this.dismiss()
         }
 
-        Log.d("UEHARINHA", registrationViewModel.simulationItemsWhoSupportDiscount().toString())
         val adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,

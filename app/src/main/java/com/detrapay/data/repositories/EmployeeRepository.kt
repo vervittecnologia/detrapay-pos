@@ -8,7 +8,7 @@ import com.detrapay.data.model.Employee
 import com.detrapay.data.model.local.User
 import javax.inject.Inject
 import javax.inject.Singleton
-import android.util.Log
+import com.detrapay.ui.util.Logger
 
 @Singleton
 class EmployeeRepository @Inject constructor(
@@ -25,7 +25,7 @@ class EmployeeRepository @Inject constructor(
                     }
                     return Result.Success(stores)
                 } catch (e: Exception) {
-                    Log.d("UNABLE TO GET EMPLOYEES", e.message ?: "")
+                    Logger.d("UNABLE TO GET EMPLOYEES: ${e.message}")
                     return Result.Error(e)
                 }
             }

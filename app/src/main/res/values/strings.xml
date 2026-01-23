@@ -11,8 +11,7 @@
     <string name="invalid_cnpj">CNPJ inválido</string>
     <string name="invalid_password">Senha inválida</string>
     <string name="login_failed">"Falha no login"</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+
     <string name="fragment_home_services_title">Seus serviços</string>
     <string name="fragment_home_registration_title">Primeiro Emplacamento</string>
     <string name="home_orders_title">Meus pedidos</string>

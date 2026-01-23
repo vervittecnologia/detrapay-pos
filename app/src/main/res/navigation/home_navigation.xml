@@ -27,6 +27,12 @@
         android:label="Meus pedidos"
         tools:layout="@layout/fragment_order_list"/>
 
+    <fragment
+        android:id="@+id/paymentHistoryFragment"
+        android:name="com.detrapay.ui.home.payment_history.PaymentHistoryFragment"
+        android:label="Histórico de pagamentos"
+        tools:layout="@layout/fragment_payment_history"/>
+
     <activity
         android:id="@+id/notificationsActivity"
         android:name="com.detrapay.ui.notification.NotificationActivity"

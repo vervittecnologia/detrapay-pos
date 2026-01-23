@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.detrapay"
-        minSdk = 26
+        minSdk = 23
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -31,10 +31,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "BASE_URL", "\"https://api-detrapay.curtacode.com.br/api/\"")
+            buildConfigField("String", "BASE_URL", "\"https://detrapay-backend-ie2u6.ondigitalocean.app/api/\"")
         }
         debug {
-            buildConfigField("String", "BASE_URL", "\"https://api-detrapay.curtacode.com.br/api/\"")
+            buildConfigField("String", "BASE_URL", "\"https://detrapay-backend-ie2u6.ondigitalocean.app/api/\"")
         }
     }
     compileOptions {
