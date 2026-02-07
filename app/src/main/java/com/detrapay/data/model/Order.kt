@@ -22,12 +22,16 @@ data class Order(
 enum class OrderStatus {
     PENDING,
     PAID,
+    AUTHORIZED,
+    COMPLETED,
     CANCELLED;
 
     override fun toString(): String {
         return when (this) {
             PENDING -> "Pendente"
             PAID -> "Pago"
+            AUTHORIZED -> "Autorizado"
+            COMPLETED -> "Concluído"
             CANCELLED -> "Cancelado"
         }
     }

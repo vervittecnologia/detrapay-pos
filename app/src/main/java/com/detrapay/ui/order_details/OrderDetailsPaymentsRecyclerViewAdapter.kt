@@ -93,12 +93,13 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
 
             if (isCreditCard) {
                 paymentMethodInstallmentAmount.visibility = View.VISIBLE
-                paymentMethodAmount.text = "%,.2f".format(locale, item.amountOriginal)
-
-                val paymentAmountValueWithInterestRateFormattedValue = "%,.2f".format(locale, item.amountFinal)
+                
+                val amountOriginalFormatted = "%,.2f".format(locale, item.amountOriginal)
+                val amountFinalFormatted = "%,.2f".format(locale, item.amountFinal)
                 val installmentAmount = item.amountFinal / item.installments
                 val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
-                paymentMethodAmount.text = "Em ${item.installments}x de R$${installmentFormattedValue} (R\$${paymentAmountValueWithInterestRateFormattedValue})"
+                
+                paymentMethodAmount.text = "R$ $amountOriginalFormatted em ${item.installments}x de R$ $installmentFormattedValue (R$ $amountFinalFormatted)"
             } else {
                 paymentMethodInstallmentAmount.visibility = View.GONE
                 val amount = "%,.2f".format(locale, item.amountOriginal)
@@ -146,7 +147,7 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
             paymentMethodStatusView.background = context.getDrawable(cardBackground)
 
             paymentMethodCard.setOnClickListener {
-                if (item.status != PAID) listener.onItemClick(item)
+                if (item.status != PAID && item.status != REFUNDED && item.status != CANCELLED) listener.onItemClick(item)
             }
 
             paymentRefund.setOnClickListener{

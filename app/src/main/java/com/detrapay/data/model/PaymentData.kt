@@ -10,5 +10,6 @@ data class PaymentData(
     val cardBrand: String? = null,
     val cardLast4: String? = null,
     val cardHolder: String? = null,
-    val pixTxIdCode: String? = null
+    val pixTxIdCode: String? = null,
+    val transactionLog: String? = null
 ): Serializable

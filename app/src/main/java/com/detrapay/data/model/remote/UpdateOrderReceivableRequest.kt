@@ -21,6 +21,8 @@ data class UpdateOrderReceivableRequest(
     val cardLast4: String?,
     @SerializedName("pix_tx_id_code")
     val pixTxIdCode: String?,
+    @SerializedName("transaction_log")
+    val transactionLog: String?,
 //    @SerializedName("refund_date")
 //    val refundDate: String?
 )

@@ -122,117 +122,6 @@ class RegistrationRepository @Inject constructor(
         specialPlate: Boolean
     ): Result<Simulation> {
 
-//        return Result.Success(
-//            Simulation(
-//                customer = SimulationCustomer(
-//                    cpfCnpj,
-//                    clientName,
-//                    whatsapp
-//                ),
-//                simulation = SimulationSimulation(
-//                    invoiceDate,
-//                    vehicleValue,
-//                    disposalVehicle,
-//                    specialPlate,
-//                    10.000,
-//                    vehicleTypeId
-//                ),
-//                simulationItems = listOf(
-//                    SimulationItem(
-//                        id = 0,
-//                        name = "Despachante",
-//                        discountAllowed = false,
-//                        price = 200.0,
-//                        discount = 0.0
-//                    ),
-//                    SimulationItem(
-//                        id = 1,
-//                        name = "Detran 1",
-//                        discountAllowed = false,
-//                        price = 200.0,
-//                        discount = 0.0
-//                    ),
-//                    SimulationItem(
-//                        id = 2,
-//                        name = "Detran 2",
-//                        discountAllowed = false,
-//                        price = 200.0,
-//                        discount = 0.0
-//                    ),
-//                    SimulationItem(
-//                        id = 1,
-//                        name = "Detran 1",
-//                        discountAllowed = false,
-//                        price = 200.0,
-//                        discount = 0.0
-//                    ),
-//                    SimulationItem(
-//                        id = 4,
-//                        name = "Detran 2",
-//                        discountAllowed = false,
-//                        price = 200.0,
-//                        discount = 0.0
-//                    ),
-//                    SimulationItem(
-//                        id = 5,
-//                        name = "Detran 1",
-//                        discountAllowed = false,
-//                        price = 200.0,
-//                        discount = 0.0
-//                    ),
-//                    SimulationItem(
-//                        id = 6,
-//                        name = "Detran 2",
-//                        discountAllowed = false,
-//                        price = 200.0,
-//                        discount = 0.0
-//                    ),
-//                    SimulationItem(
-//                        id = 7,
-//                        name = "Detran 2",
-//                        discountAllowed = false,
-//                        price = 200.0,
-//                        discount = 0.0
-//                    ),
-//                    SimulationItem(
-//                        id = 8,
-//                        name = "Detran 1",
-//                        discountAllowed = false,
-//                        price = 200.0,
-//                        discount = 0.0
-//                    ),
-//                    SimulationItem(
-//                        id = 9,
-//                        name = "Detran 2",
-//                        discountAllowed = false,
-//                        price = 200.0,
-//                        discount = 0.0
-//                    ),
-//                    SimulationItem(
-//                        id = 10,
-//                        name = "Detran 2",
-//                        discountAllowed = false,
-//                        price = 200.0,
-//                        discount = 0.0
-//                    ),
-//                    SimulationItem(
-//                        id = 11,
-//                        name = "Detran 2",
-//                        discountAllowed = false,
-//                        price = 200.0,
-//                        discount = 0.0
-//                    ),
-//                    SimulationItem(
-//                        id = 12,
-//                        name = "Detran 2",
-//                        discountAllowed = false,
-//                        price = 200.0,
-//                        discount = 0.0
-//                    )
-//                )
-//            )
-//        )
-
         val vehicleValueAmount = vehicleValue.replace("R$", "")
             .replace(" ", "")
             .replace(".", "")
@@ -304,13 +193,17 @@ class RegistrationRepository @Inject constructor(
 
     suspend fun createOrder(
         simulation: Simulation,
-        simulationPayments: List<SimulationPayment>
+        simulationPayments: List<SimulationPayment>,
+        createdById: Int? = null,
+        userId: Int? = null
     ): Result<Order> {
+        val clientCpfCnpj = simulation.customer.cpfCnpj.replace(".", "")
+            .replace("/", "")
+            .replace("-", "")
+            
         val customerRequest = OrderCustomerRequest(
             name = simulation.customer.name,
-            cpfCnpj = simulation.customer.cpfCnpj.replace(".", "")
-                .replace("/", "")
-                .replace("-", ""),
+            cpfCnpj = clientCpfCnpj,
             phoneNumber = simulation.customer.whatsapp.replace("(", "")
                 .replace(")", "")
                 .replace("-", "")
@@ -347,7 +240,8 @@ class RegistrationRepository @Inject constructor(
                     .replace("\\s".toRegex(), ""),
                 tax = simulationPayment.paymentMethod.interestRate,
                 installments = simulationPayment.installment,
-                paymentDate = ""
+                paymentDate = "",
+                cpfCnpjCliente = clientCpfCnpj
             )
         }
 
@@ -355,7 +249,9 @@ class RegistrationRepository @Inject constructor(
             customer = customerRequest,
             simulation = simulationRequest,
             simulationItems = simulationItemsRequest,
-            receivables = receivablesRequest
+            receivables = receivablesRequest,
+            createdById = createdById,
+            userId = userId
         )) {
             is Result.Success -> {
                 try {
@@ -440,13 +336,16 @@ class RegistrationRepository @Inject constructor(
     suspend fun updateOrder(
         orderId: Int,
         simulation: Simulation,
-        simulationPayments: List<SimulationPayment>
+        simulationPayments: List<SimulationPayment>,
+        userId: Int? = null
     ): Result<Order> {
+        val clientCpfCnpj = simulation.customer.cpfCnpj.replace(".", "")
+            .replace("/", "")
+            .replace("-", "")
+
         val customerRequest = OrderCustomerRequest(
             name = simulation.customer.name,
-            cpfCnpj = simulation.customer.cpfCnpj.replace(".", "")
-                .replace("/", "")
-                .replace("-", ""),
+            cpfCnpj = clientCpfCnpj,
             phoneNumber = simulation.customer.whatsapp.replace("(", "")
                 .replace(")", "")
                 .replace("-", "")
@@ -483,7 +382,8 @@ class RegistrationRepository @Inject constructor(
                     .replace("\\s".toRegex(), ""),
                 tax = simulationPayment.paymentMethod.interestRate,
                 installments = simulationPayment.installment,
-                paymentDate = ""
+                paymentDate = "",
+                cpfCnpjCliente = clientCpfCnpj
             )
         }
 
@@ -492,7 +392,8 @@ class RegistrationRepository @Inject constructor(
             customer = customerRequest,
             simulation = simulationRequest,
             simulationItems = simulationItemsRequest,
-            receivables = receivablesRequest
+            receivables = receivablesRequest,
+            userId = userId
         )) {
             is Result.Success -> {
                 try {
