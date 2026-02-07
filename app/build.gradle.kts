@@ -15,8 +15,8 @@ android {
         applicationId = "com.detrapay"
         minSdk = 23
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 3
+        versionName = "1.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -31,10 +31,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "BASE_URL", "\"https://detrapay-backend-ie2u6.ondigitalocean.app/api/\"")
+            buildConfigField("String", "BASE_URL", "\"https://api.simplifikar.com.br/api/\"")
         }
         debug {
-            buildConfigField("String", "BASE_URL", "\"https://detrapay-backend-ie2u6.ondigitalocean.app/api/\"")
+            buildConfigField("String", "BASE_URL", "\"https://api.simplifikar.com.br/api/\"")
         }
     }
     compileOptions {

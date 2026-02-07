@@ -212,14 +212,18 @@ class DetrapayRemoteDataSource @Inject constructor(
         customer: OrderCustomerRequest,
         simulation: OrderSimulationRequest,
         simulationItems: List<OrderSimulationItemRequest>,
-        receivables: List<OrderReceivableRequest>
+        receivables: List<OrderReceivableRequest>,
+        createdById: Int? = null,
+        userId: Int? = null
     ): Result<OrderResponse> {
         try {
             val orderRequest = OrderRequest(
                 customer = customer,
                 simulation = simulation,
                 simulationItems = simulationItems,
-                receivables = receivables
+                receivables = receivables,
+                createdById = createdById,
+                userId = userId
             )
             val result = detrapayService.createOrder(orderRequest)
             if (result.isSuccessful) {
@@ -241,14 +245,16 @@ class DetrapayRemoteDataSource @Inject constructor(
         customer: OrderCustomerRequest,
         simulation: OrderSimulationRequest,
         simulationItems: List<OrderSimulationItemRequest>,
-        receivables: List<OrderReceivableRequest>
+        receivables: List<OrderReceivableRequest>,
+        userId: Int? = null
     ): Result<OrderResponse> {
         try {
             val orderRequest = OrderRequest(
                 customer = customer,
                 simulation = simulation,
                 simulationItems = simulationItems,
-                receivables = receivables
+                receivables = receivables,
+                userId = userId
             )
             val result = detrapayService.updateOrder(orderId, orderRequest)
             if (result.isSuccessful) {
@@ -278,7 +284,8 @@ class DetrapayRemoteDataSource @Inject constructor(
                 cardBrand = paymentData.cardBrand,
                 cardHolder = paymentData.cardHolder,
                 cardLast4 = paymentData.cardLast4,
-                pixTxIdCode = paymentData.pixTxIdCode
+                pixTxIdCode = paymentData.pixTxIdCode,
+                transactionLog = paymentData.transactionLog
             )
             val updateOrderReceivableRequestDataWrapper = UpdateOrderReceivableRequestDataWrapper(data = updateReceivableItemRequest)
             val result = detrapayService.updateOrderReceivableItem(receivable.documentId, updateOrderReceivableRequestDataWrapper)

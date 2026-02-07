@@ -8,12 +8,17 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
 import com.detrapay.R
 import com.detrapay.data.model.Order
+import com.detrapay.data.model.OrderReceivableItemStatus
 import com.detrapay.data.model.OrderStatus.CANCELLED
 import com.detrapay.data.model.OrderStatus.PAID
 import com.detrapay.data.model.OrderStatus.PENDING
+import com.detrapay.data.model.OrderStatus.AUTHORIZED
+import com.detrapay.data.model.OrderStatus.COMPLETED
 import com.detrapay.databinding.OrderListItemBinding
+import java.util.Locale
 
 class OrderRecyclerViewAdapter(
     private var values: List<Order>,
@@ -21,7 +26,8 @@ class OrderRecyclerViewAdapter(
 ) : RecyclerView.Adapter<OrderRecyclerViewAdapter.OrderViewHolder>() {
 
 
-    private var filteredValues: MutableList<Order> = values.toMutableList()
+    private var filteredValues: MutableList<Order> = values.sortedByDescending { it.id }.toMutableList()
+    private val locale = Locale("pt", "BR")
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OrderViewHolder {
         val itemBinding =
@@ -36,7 +42,7 @@ class OrderRecyclerViewAdapter(
     @SuppressLint("NotifyDataSetChanged")
     fun swapData(newList: List<Order>) {
         this.values = newList
-        this.filteredValues = newList.toMutableList()
+        this.filteredValues = newList.sortedByDescending { it.id }.toMutableList()
         notifyDataSetChanged()
     }
 
@@ -61,7 +67,7 @@ class OrderRecyclerViewAdapter(
     fun filterData(text: String) {
         filteredValues = values.filter {
             it.customer.name.contains(text, true) || it.customer.cpfCnpj.contains(text, true)
-        }.toMutableList()
+        }.sortedByDescending { it.id }.toMutableList()
         notifyDataSetChanged()
     }
 
@@ -74,23 +80,35 @@ class OrderRecyclerViewAdapter(
         private val statusView: LinearLayout = binding.statusView
         private val orderCard: CardView = binding.orderCard
 
-        @SuppressLint("UseCompatLoadingForDrawables")
+        @SuppressLint("UseCompatLoadingForDrawables", "SetTextI18n")
         fun bind(
             item: Order,
             listener: OnItemClickListener
         ) {
-            clientNameView.text = item.customer.name
-            serviceNameView.text = item.serviceName
+            val totalReceived = item.receivables
+                .filter { it.status == OrderReceivableItemStatus.PAID }
+                .sumOf { it.amountOriginal }
+
+            val totalPending = item.originalAmount - totalReceived
+
+            val nominalValueFormatted = "%,.2f".format(locale, item.originalAmount)
+            val pendingValueFormatted = "%,.2f".format(locale, totalPending)
+
+            clientNameView.text = "#${item.id} - ${item.customer.name}"
+            serviceNameView.text = "TOTAL: R$ $nominalValueFormatted\nPENDENTE: R$ $pendingValueFormatted"
             serviceDateView.text = stringToFormattedDate(item.creationDate)
             statusTextView.text = item.status.toString()
 
-            val cardBackground = when (item.status) {
-                PENDING -> R.drawable.pending_status_background
-                PAID -> R.drawable.paid_status_background
-                CANCELLED -> R.drawable.cancelled_status_background
+            val (cardBackground, textColor) = when (item.status) {
+                PENDING -> R.drawable.pending_status_background to "#0E5FB2"
+                PAID -> R.drawable.paid_status_background to "#805AD5"
+                AUTHORIZED -> R.drawable.authorized_status_background to "#B7791F"
+                COMPLETED -> R.drawable.completed_status_background to "#2F855A"
+                CANCELLED -> R.drawable.cancelled_status_background to "#FFFFFF"
             }
 
-            statusView.background = context.getDrawable(cardBackground)
+            statusView.background = ContextCompat.getDrawable(context, cardBackground)
+            statusTextView.setTextColor(android.graphics.Color.parseColor(textColor))
 
             orderCard.setOnClickListener {
                 listener.onItemClick(item)

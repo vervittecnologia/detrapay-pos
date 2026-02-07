@@ -99,7 +99,7 @@ class RegistrationViewModel @Inject constructor(
 
     fun loadLoggedUser(){
         viewModelScope.launch(Dispatchers.IO) {
-            loggedInUser = authRepository.getLoggedUser(false)
+            loggedInUser = authRepository.getLoggedUser(true)
         }
     }
 
@@ -366,16 +366,20 @@ class RegistrationViewModel @Inject constructor(
 
         if (simulation != null) {
             viewModelScope.launch(Dispatchers.IO) {
+                val user = authRepository.getLoggedUser(true)
                 val result = if (inEditMode) {
                     registrationRepository.updateOrder(
-                        order!!.id,
-                        simulation!!,
-                        payments
+                        orderId = order!!.id,
+                        simulation = simulation!!,
+                        simulationPayments = payments,
+                        userId = user?.preferredEmployeeId
                     )
                 } else {
                     registrationRepository.createOrder(
-                        simulation!!,
-                        payments
+                        simulation = simulation!!,
+                        simulationPayments = payments,
+                        createdById = user?.id,
+                        userId = user?.preferredEmployeeId
                     )
                 }
                 if (result is Result.Success) {

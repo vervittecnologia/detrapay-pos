@@ -30,13 +30,17 @@ data class OrderResponse(
     @SerializedName("receivables")
     val receivables: List<OrderReceivableItemResponse>,
     @SerializedName("createdAt")
-    val createdAt: String
+    val createdAt: String,
+    @SerializedName("created_by_id")
+    val createdById: Int? = null,
 )
 
 @Serializable
 enum class OrderStatusResponse {
     @SerializedName("pending") PENDING,
     @SerializedName("paid") PAID,
+    @SerializedName("authorized") AUTHORIZED,
+    @SerializedName("completed") COMPLETED,
     @SerializedName("cancelled") CANCELLED
 }
 
@@ -100,6 +104,8 @@ data class OrderReceivableItemResponse(
     val pixTxIdCode: String?,
     @SerializedName("payment_method_id")
     val paymentMethod: PaymentMethodResponse,
+    @SerializedName("cpf_cnpj_cliente")
+    val cpfCnpjCliente: String? = null,
 )
 
 @Serializable

@@ -17,6 +17,7 @@ import com.detrapay.data.model.PaymentData
 import com.detrapay.data.repositories.PaymentRepository
 import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.Logger
+import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -83,6 +84,8 @@ class PaymentDialogViewModel @Inject constructor(
                         isCarne = false,
                     )
                     val plugPagResult: PlugPagTransactionResult = plugPag.doPayment(paymentData)
+                    val transactionLog = Gson().toJson(plugPagResult)
+                    
                     if (plugPagResult.result == PlugPag.RET_OK) {
                         val transactionResult = PaymentData(
                             transactionId = plugPagResult.transactionId!!,
@@ -92,7 +95,8 @@ class PaymentDialogViewModel @Inject constructor(
                             cardBrand = plugPagResult.cardBrand,
                             cardLast4 = plugPagResult.holder,
                             cardHolder = plugPagResult.holderName,
-                            pixTxIdCode = plugPagResult.pixTxIdCode
+                            pixTxIdCode = plugPagResult.pixTxIdCode,
+                            transactionLog = transactionLog
                         )
 
                         paymentRepository.saveTransaction(
