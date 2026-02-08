@@ -75,65 +75,24 @@ class OrderRepository @Inject constructor(
         return Order(
             id = orderResponse.id,
             customer = OrderCustomer(
-                id = orderResponse.customer.id,
-                name = orderResponse.customer.name,
-                cpfCnpj = orderResponse.customer.cpfCnpj,
-                phoneNumber = orderResponse.customer.phoneNumber,
-                email = orderResponse.customer.email
+                id = orderResponse.attributes.customers.data.id,
+                name = orderResponse.attributes.customers.data.attributes.name,
+                cpfCnpj = orderResponse.attributes.customers.data.attributes.cpfCnpj,
+                phoneNumber = "",
+                email = ""
             ),
-            serviceName = "Primeiro emplacamento",
-            creationDate = orderResponse.createdAt,
-            status = OrderStatus.valueOf(orderResponse.status.name),
-            vehiclePrice = orderResponse.vehiclePrice,
-            billingDate = orderResponse.billingDate,
-            originalAmount = orderResponse.originalAmount,
-            currentAmount = orderResponse.currentAmount,
-            isVehicleFinanced = orderResponse.isVehicleFinanced,
-            isVehicleSpecialPlate = orderResponse.isVehicleSpecialPlate,
-            vehicleType = VehicleType(
-                orderResponse.vehicleType?.id ?: 0,
-                orderResponse.vehicleType?.name ?: ""
-            ),
-            items = orderResponse.items.map { item ->
-                OrderItem(
-                    id = item.id,
-                    totalPrice = item.totalPrice,
-                    discount = item.discount,
-                    salesItemId = item.salesItem?.id,
-                    name = item.salesItem?.name,
-                    price = item.salesItem?.price,
-                )
-            }.toList(),
-            receivables = orderResponse.receivables.map { receivable ->
-                OrderReceivableItem(
-                    id = receivable.id,
-                    documentId = receivable.documentId,
-//                    amountFinal = if ( receivable.tax != null ) {
-//                        receivable.amountFinal * receivable.tax
-//                    } else {
-//                        receivable.amountFinal
-//                    },
-                    amountFinal = receivable.amountFinal,
-                    amountOriginal = receivable.amountOriginal,
-                    tax = receivable.tax,
-                    status = OrderReceivableItemStatus.valueOf(receivable.status.name),
-                    paymentDate = receivable.paymentDate,
-                    cardBrand = receivable.cardBrand,
-                    cardLast4 = receivable.cardLast4,
-                    cardHolder = receivable.cardHolder,
-                    refundDate = receivable.refundDate,
-                    authorizationCode = receivable.authorizationCode,
-                    authorizationId = receivable.authorizationId,
-                    installments = receivable.installments,
-                    pixTxIdCode = receivable.pixTxIdCode,
-                    paymentMethod = PaymentMethod(
-                        id = receivable.paymentMethod.id,
-                        name = receivable.paymentMethod.name,
-                        maxInstallments = receivable.paymentMethod.maxInstallments,
-                        interestRate = receivable.paymentMethod.interestRate,
-                    )
-                )
-            }.toList()
+            serviceName = orderResponse.attributes.companies.data.attributes.tradeName,
+            creationDate = orderResponse.attributes.createdAt,
+            status = OrderStatus.valueOf(orderResponse.attributes.status.uppercase()),
+            vehiclePrice = 0.0,
+            billingDate = orderResponse.attributes.billingDate,
+            originalAmount = orderResponse.attributes.originalAmount,
+            currentAmount = orderResponse.attributes.currentAmount,
+            isVehicleFinanced = false,
+            isVehicleSpecialPlate = false,
+            vehicleType = VehicleType(0, ""),
+            items = emptyList(),
+            receivables = emptyList()
         )
     }
 

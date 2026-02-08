@@ -31,10 +31,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "BASE_URL", "\"https://api.simplifikar.com.br/api/\"")
+            buildConfigField("String", "BASE_URL", "\"https://ibulgxjbtpxratoodgtj.supabase.co/functions/v1/mobile/\"")
         }
         debug {
-            buildConfigField("String", "BASE_URL", "\"https://api.simplifikar.com.br/api/\"")
+            buildConfigField("String", "BASE_URL", "\"https://ibulgxjbtpxratoodgtj.supabase.co/functions/v1/mobile/\"")
         }
     }
     compileOptions {

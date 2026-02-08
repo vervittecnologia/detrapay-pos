@@ -14,7 +14,7 @@ import com.detrapay.data.model.remote.OrderSimulationRequest
 import com.detrapay.data.model.remote.PaymentMethodResponse
 import com.detrapay.data.model.remote.SimulationRequest
 import com.detrapay.data.model.remote.SimulationResponse
-import com.detrapay.data.model.remote.VehicleTypItemResponse
+import com.detrapay.data.model.remote.VehicleTypeListResponse
 import com.detrapay.data.UnauthorizedException
 import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.OrderReceivableItemStatus
@@ -24,6 +24,7 @@ import com.detrapay.data.model.remote.RefundOrderReceivableRequest
 import com.detrapay.data.model.remote.RefundOrderReceivableRequestDataWrapper
 import com.detrapay.data.model.remote.UpdateOrderReceivableRequest
 import com.detrapay.data.model.remote.UpdateOrderReceivableRequestDataWrapper
+import com.detrapay.data.model.remote.VehicleTypeItemResponse
 import com.detrapay.ui.util.Logger
 import java.io.IOException
 import javax.inject.Inject
@@ -73,7 +74,7 @@ class DetrapayRemoteDataSource @Inject constructor(
             val result = detrapayService.getOrders()
             if (result.isSuccessful) {
                 Logger.d((result.body() ?: "").toString())
-                return Result.Success(result.body()!!)
+                return Result.Success(result.body()!!.data)
             } else {
                 Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
@@ -102,7 +103,7 @@ class DetrapayRemoteDataSource @Inject constructor(
         }
     }
 
-    suspend fun getVehicleTypes(): Result<List<VehicleTypItemResponse>> {
+    suspend fun getVehicleTypes(): Result<List<VehicleTypeItemResponse>> {
         try {
             val result = detrapayService.getVehicleTypes()
             if (result.isSuccessful) {
@@ -195,8 +196,8 @@ class DetrapayRemoteDataSource @Inject constructor(
         simulation: OrderSimulationRequest,
         simulationItems: List<OrderSimulationItemRequest>,
         receivables: List<OrderReceivableRequest>,
-        createdById: Int? = null,
-        userId: Int? = null
+        createdById: String? = null,
+        userId: String? = null
     ): Result<OrderResponse> {
         try {
             val orderRequest = OrderRequest(
@@ -228,7 +229,7 @@ class DetrapayRemoteDataSource @Inject constructor(
         simulation: OrderSimulationRequest,
         simulationItems: List<OrderSimulationItemRequest>,
         receivables: List<OrderReceivableRequest>,
-        userId: Int? = null
+        userId: String? = null
     ): Result<OrderResponse> {
         try {
             val orderRequest = OrderRequest(

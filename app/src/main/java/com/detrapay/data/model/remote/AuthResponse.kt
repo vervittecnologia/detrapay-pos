@@ -14,11 +14,31 @@ data class AuthResponse(
 @Serializable
 data class UserResponse(
     @SerializedName("id")
-    val id: Int,
+    val id: String,
+    @SerializedName("documentId")
+    val documentId: String,
     @SerializedName("username")
     val username: String,
     @SerializedName("name")
     val name: String,
     @SerializedName("email")
-    val email: String
+    val email: String,
+    @SerializedName("phoneNumber")
+    val phoneNumber: String?,
+    @SerializedName("cpf_cnpj")
+    val cpf_cnpj: String,
+    @SerializedName("blocked")
+    val blocked: Boolean,
+    @SerializedName("role")
+    val role: RoleResponse
+)
+
+@Serializable
+data class RoleResponse(
+    @SerializedName("id")
+    val id: Int,
+    @SerializedName("name")
+    val name: String,
+    @SerializedName("type")
+    val type: String
 )

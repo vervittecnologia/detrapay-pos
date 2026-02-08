@@ -2,15 +2,17 @@ package com.detrapay.data.api
 
 import com.detrapay.data.model.remote.AuthRequest
 import com.detrapay.data.model.remote.AuthResponse
+import com.detrapay.data.model.remote.CompanyListResponse
 import com.detrapay.data.model.remote.CustomerSearchDataResponse
 import com.detrapay.data.model.remote.OrderRequest
 import com.detrapay.data.model.remote.OrderResponse
+import com.detrapay.data.model.remote.PaginatedOrderResponse
 import com.detrapay.data.model.remote.PaymentMethodResponse
 import com.detrapay.data.model.remote.RefundOrderReceivableRequestDataWrapper
 import com.detrapay.data.model.remote.SimulationRequest
 import com.detrapay.data.model.remote.SimulationResponse
 import com.detrapay.data.model.remote.UpdateOrderReceivableRequestDataWrapper
-import com.detrapay.data.model.remote.VehicleTypeResponse
+import com.detrapay.data.model.remote.VehicleTypeListResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -19,39 +21,41 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface DetrapayService {
+
     @POST("auth/local")
-    suspend fun auth(@Body auth: AuthRequest): Response<AuthResponse>
+    suspend fun auth(@Body payload: AuthRequest): Response<AuthResponse>
 
     @GET("companies")
-    suspend fun getCompanies(): Response<Any>
+    suspend fun getCompanies(): Response<CompanyListResponse>
 
-    @GET("sales-orders/me")
-    suspend fun getOrders(): Response<List<OrderResponse>>
+    @GET("orders?populate=deep,3")
+    suspend fun getOrders(): Response<PaginatedOrderResponse>
 
-    @GET("sales-orders/{id}/me")
+    @GET("orders/{id}?populate=deep,3")
     suspend fun getOrder(@Path("id") orderId: Int): Response<OrderResponse>
 
-    @PUT("sales-orders/{id}/me")
-    suspend fun updateOrder(@Path("id") orderId: Int, @Body orderRequest: OrderRequest): Response<OrderResponse>
+    @GET("vehicle-types/me")
+    suspend fun getVehicleTypes(): Response<VehicleTypeListResponse>
 
-    @PUT("receivables/{id}")
-    suspend fun updateOrderReceivableItem(@Path("id") receivableItemId: String, @Body updateOrderReceivableRequest: UpdateOrderReceivableRequestDataWrapper): Response<OrderResponse>
-
-    @PUT("receivables/{id}")
-    suspend fun refundOrderReceivableItem(@Path("id") receivableItemId: String, @Body refundOrderReceivableRequest: RefundOrderReceivableRequestDataWrapper): Response<OrderResponse>
-
-    @POST("sales-orders/me")
-    suspend fun createOrder(@Body orderRequest: OrderRequest): Response<OrderResponse>
-
-    @GET("payment-methods/me")
+    @GET("payment-methods")
     suspend fun getPaymentMethods(): Response<List<PaymentMethodResponse>>
 
-    @GET("vehicle-types/me")
-    suspend fun getVehicleTypes(): Response<VehicleTypeResponse>
+    @GET("customers/{cpfCnpj}")
+    suspend fun searchCustomer(@Path("cpfCnpj") cpfCnpj: String): Response<CustomerSearchDataResponse>
 
-    @GET("customers/{cpfcnpj}/me")
-    suspend fun searchCustomer(@Path("cpfcnpj") cpfCnpj: String): Response<CustomerSearchDataResponse>
+    @POST("mobile/simulate")
+    suspend fun simulate(@Body payload: SimulationRequest): Response<SimulationResponse>
 
-    @POST("sales-items/simulation/me")
-    suspend fun simulate(@Body simulation: SimulationRequest): Response<SimulationResponse>
+    @POST("mobile/orders")
+    suspend fun createOrder(@Body payload: OrderRequest): Response<OrderResponse>
+
+    @PUT("mobile/orders/{id}")
+    suspend fun updateOrder(@Path("id") id: Int, @Body payload: OrderRequest): Response<OrderResponse>
+
+    @PUT("order-receivables/{id}")
+    suspend fun updateOrderReceivableItem(@Path("id") id: String, @Body payload: UpdateOrderReceivableRequestDataWrapper): Response<OrderResponse>
+
+    @PUT("order-receivables/{id}")
+    suspend fun refundOrderReceivableItem(@Path("id") id: String, @Body payload: RefundOrderReceivableRequestDataWrapper): Response<OrderResponse>
+
 }

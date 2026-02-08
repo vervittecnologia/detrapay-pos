@@ -7,7 +7,7 @@ import com.detrapay.data.database.DbConstant
 @Entity(tableName = DbConstant.USER_TABLE)
 data class User(
     @PrimaryKey
-    val id: Int,
+    val id: String,
     var token: String,
     var name: String,
     var email: String,

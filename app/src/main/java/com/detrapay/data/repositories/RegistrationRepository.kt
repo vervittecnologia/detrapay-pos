@@ -18,6 +18,7 @@ import com.detrapay.data.model.SimulationPayment
 import com.detrapay.data.model.SimulationSimulation
 import com.detrapay.data.model.remote.OrderCustomerRequest
 import com.detrapay.data.model.remote.OrderReceivableRequest
+import com.detrapay.data.model.remote.OrderResponse
 import com.detrapay.data.model.remote.OrderSimulationItemRequest
 import com.detrapay.data.model.remote.OrderSimulationRequest
 import com.detrapay.ui.util.Logger
@@ -37,7 +38,7 @@ class RegistrationRepository @Inject constructor(
             is Result.Success -> {
                 try {
                     val vehicleTypes = result.data.map {
-                        VehicleType(it.id, it.name)
+                        VehicleType(it.id, it.attributes.name)
                     }
                     Logger.d(vehicleTypes.toString())
                     return Result.Success(vehicleTypes)
@@ -194,13 +195,13 @@ class RegistrationRepository @Inject constructor(
     suspend fun createOrder(
         simulation: Simulation,
         simulationPayments: List<SimulationPayment>,
-        createdById: Int? = null,
-        userId: Int? = null
+        createdById: String? = null,
+        userId: String? = null
     ): Result<Order> {
         val clientCpfCnpj = simulation.customer.cpfCnpj.replace(".", "")
             .replace("/", "")
             .replace("-", "")
-            
+
         val customerRequest = OrderCustomerRequest(
             name = simulation.customer.name,
             cpfCnpj = clientCpfCnpj,
@@ -256,65 +257,7 @@ class RegistrationRepository @Inject constructor(
             is Result.Success -> {
                 try {
                     result.data.let {
-                        val order = Order(
-                            id = it.id,
-                            customer = OrderCustomer(
-                                id = it.customer.id,
-                                name = it.customer.name,
-                                cpfCnpj = it.customer.cpfCnpj,
-                                phoneNumber = it.customer.phoneNumber,
-                                email = it.customer.email
-                            ),
-                            serviceName = "Primeiro emplacamento", // TODO RECEIVE NAME
-                            creationDate = it.createdAt,
-                            status = OrderStatus.PENDING, // TODO CREATE PARSER
-                            vehiclePrice = it.vehiclePrice,
-                            billingDate = it.billingDate,
-                            originalAmount = it.originalAmount,
-                            currentAmount = it.currentAmount,
-                            isVehicleFinanced = it.isVehicleFinanced,
-                            isVehicleSpecialPlate = it.isVehicleSpecialPlate,
-                            vehicleType = VehicleType(
-                                it.vehicleType?.id ?: 0,
-                                it.vehicleType?.name ?: ""
-                            ),
-                            items = it.items.map { item ->
-                                OrderItem(
-                                    id = item.id,
-                                    totalPrice = item.totalPrice,
-                                    discount = item.discount,
-                                    salesItemId = item.salesItem?.id,
-                                    name = item.salesItem?.name,
-                                    price = item.salesItem?.price,
-                                )
-                            }.toList(),
-                            receivables = it.receivables.map { receivable ->
-                                OrderReceivableItem(
-                                    id = receivable.id,
-                                    documentId = receivable.documentId,
-                                    amountFinal = receivable.amountFinal,
-                                    amountOriginal = receivable.amountOriginal,
-                                    tax = receivable.tax,
-                                    status = OrderReceivableItemStatus.PENDING, // TODO CREATE PARSER
-                                    paymentDate = receivable.paymentDate,
-                                    cardHolder = receivable.cardHolder,
-                                    cardBrand = receivable.cardBrand,
-                                    cardLast4 = receivable.cardLast4,
-                                    authorizationCode = receivable.authorizationCode,
-                                    authorizationId = receivable.authorizationId,
-                                    pixTxIdCode = receivable.pixTxIdCode,
-                                    refundDate = receivable.refundDate,
-                                    installments = receivable.installments,
-                                    paymentMethod = PaymentMethod(
-                                        id = receivable.paymentMethod.id,
-                                        name = receivable.paymentMethod.name,
-                                        maxInstallments = receivable.paymentMethod.maxInstallments,
-                                        interestRate = receivable.paymentMethod.interestRate
-                                    ),
-                                )
-
-                            }
-                        )
+                        val order = parseOrder(it)
                         return Result.Success(order)
                     }
                 } catch (e: Exception) {
@@ -337,7 +280,7 @@ class RegistrationRepository @Inject constructor(
         orderId: Int,
         simulation: Simulation,
         simulationPayments: List<SimulationPayment>,
-        userId: Int? = null
+        userId: String? = null
     ): Result<Order> {
         val clientCpfCnpj = simulation.customer.cpfCnpj.replace(".", "")
             .replace("/", "")
@@ -398,64 +341,7 @@ class RegistrationRepository @Inject constructor(
             is Result.Success -> {
                 try {
                     result.data.let {
-                        val order = Order(
-                            id = it.id,
-                            customer = OrderCustomer(
-                                id = it.customer.id,
-                                name = it.customer.name,
-                                cpfCnpj = it.customer.cpfCnpj,
-                                phoneNumber = it.customer.phoneNumber,
-                                email = it.customer.email
-                            ),
-                            serviceName = "Primeiro emplacamento", // TODO RECEIVE NAME
-                            creationDate = it.createdAt,
-                            status = OrderStatus.PENDING, // TODO CREATE PARSER
-                            vehiclePrice = it.vehiclePrice,
-                            billingDate = it.billingDate,
-                            originalAmount = it.originalAmount,
-                            currentAmount = it.currentAmount,
-                            isVehicleFinanced = it.isVehicleFinanced,
-                            isVehicleSpecialPlate = it.isVehicleSpecialPlate,
-                            vehicleType = VehicleType(
-                                it.vehicleType?.id ?: 0,
-                                it.vehicleType?.name ?: ""
-                            ),
-                            items = it.items.map { item ->
-                                OrderItem(
-                                    id = item.id,
-                                    totalPrice = item.totalPrice,
-                                    discount = item.discount,
-                                    salesItemId = item.salesItem?.id,
-                                    name = item.salesItem?.name,
-                                    price = item.salesItem?.price,
-                                )
-                            }.toList(),
-                            receivables = it.receivables.map { receivable ->
-                                OrderReceivableItem(
-                                    id = receivable.id,
-                                    documentId = receivable.documentId,
-                                    amountFinal = receivable.amountFinal,
-                                    amountOriginal = receivable.amountOriginal,
-                                    tax = receivable.tax,
-                                    status = OrderReceivableItemStatus.PENDING, // TODO CREATE PARSER
-                                    paymentDate = receivable.paymentDate,
-                                    cardHolder = receivable.cardHolder,
-                                    cardBrand = receivable.cardBrand,
-                                    cardLast4 = receivable.cardLast4,
-                                    authorizationCode = receivable.authorizationCode,
-                                    authorizationId = receivable.authorizationId,
-                                    pixTxIdCode = receivable.pixTxIdCode,
-                                    refundDate = receivable.refundDate,
-                                    installments = receivable.installments,
-                                    paymentMethod = PaymentMethod(
-                                        id = receivable.paymentMethod.id,
-                                        name = receivable.paymentMethod.name,
-                                        maxInstallments = receivable.paymentMethod.maxInstallments,
-                                        interestRate = receivable.paymentMethod.interestRate
-                                    ),
-                                )
-                            }
-                        )
+                        val order = parseOrder(it)
                         return Result.Success(order)
                     }
                 } catch (e: Exception) {
@@ -472,6 +358,31 @@ class RegistrationRepository @Inject constructor(
                 return Result.Error(Exception())
             }
         }
+    }
+
+    private fun parseOrder(orderResponse: OrderResponse): Order {
+        return Order(
+            id = orderResponse.id,
+            customer = OrderCustomer(
+                id = orderResponse.attributes.customers.data.id,
+                name = orderResponse.attributes.customers.data.attributes.name,
+                cpfCnpj = orderResponse.attributes.customers.data.attributes.cpfCnpj,
+                phoneNumber = "",
+                email = ""
+            ),
+            serviceName = orderResponse.attributes.companies.data.attributes.tradeName,
+            creationDate = orderResponse.attributes.createdAt,
+            status = OrderStatus.valueOf(orderResponse.attributes.status.uppercase()),
+            vehiclePrice = 0.0,
+            billingDate = orderResponse.attributes.billingDate,
+            originalAmount = orderResponse.attributes.originalAmount,
+            currentAmount = orderResponse.attributes.currentAmount,
+            isVehicleFinanced = false,
+            isVehicleSpecialPlate = false,
+            vehicleType = VehicleType(0, ""),
+            items = emptyList(),
+            receivables = emptyList()
+        )
     }
 
     private fun calculateFinalAmount(finalAmount: String, interestRate: Double?): String {

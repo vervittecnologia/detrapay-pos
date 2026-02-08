@@ -14,9 +14,9 @@ data class OrderRequest(
     @SerializedName("receivables")
     val receivables: List<OrderReceivableRequest>,
     @SerializedName("created_by_id")
-    val createdById: Int? = null,
+    val createdById: String? = null,
     @SerializedName("user_id")
-    val userId: Int? = null,
+    val userId: String? = null,
 )
 
 @Serializable
