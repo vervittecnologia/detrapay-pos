@@ -27,8 +27,7 @@ class HomeViewModel @Inject constructor(private val authRepository: AuthReposito
                 _homeState.postValue(
                     UIState.Success(
                         HomeState(
-                            companyName = result.displayName,
-                            employeeName = result.preferredEmployeeName ?: ""
+                            companyName = result.displayName
                         )
                     )
                 )

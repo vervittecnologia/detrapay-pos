@@ -29,9 +29,7 @@ class AuthRepository @Inject constructor(
                 user.token,
                 user.name,
                 user.email,
-                user.username,
-                user.preferredEmployeeName,
-                user.preferredEmployeeId
+                user.username
             )
             this.user = loggedInUser
             return loggedInUser

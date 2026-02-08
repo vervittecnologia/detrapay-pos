@@ -1,11 +1,5 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/registrationFragment"
-        android:enabled="true"
-        android:icon="@drawable/ic_car"
-        android:title="Emplacamento" />
-
-    <item
         android:id="@+id/orderListFragment"
         android:enabled="true"
         android:icon="@drawable/ic_article"

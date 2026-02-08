@@ -6,7 +6,6 @@ import com.detrapay.data.datasources.remote.DetrapayRemoteDataSource
 import com.detrapay.data.repositories.AuthRepository
 import com.detrapay.data.repositories.LoginRepository
 import com.detrapay.data.repositories.OrderRepository
-import com.detrapay.data.repositories.EmployeeRepository
 import com.detrapay.data.repositories.PaymentRepository
 import com.detrapay.data.repositories.RegistrationRepository
 import dagger.Module
@@ -37,18 +36,6 @@ object RepositoryModule {
         userLocalDatasource: UsersDao,
     ): AuthRepository {
         return AuthRepository(userLocalDatasource)
-    }
-
-    @Singleton
-    @Provides
-    fun provideEmployeeRepository(
-        detrapayRemoteDataSource: DetrapayRemoteDataSource,
-        userLocalDatasource: UsersDao
-    ): EmployeeRepository {
-        return EmployeeRepository(
-            detrapayRemoteDataSource,
-            userLocalDatasource
-        )
     }
 
     @Singleton

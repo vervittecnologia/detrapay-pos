@@ -23,12 +23,10 @@ class SplashViewModel @Inject constructor(private val authRepository: AuthReposi
             val loggedInUser = authRepository.getLoggedUser()
             delay(2000)
             if (loggedInUser != null) {
-                val hasPreferredCompany =
-                    loggedInUser.preferredEmployeeId != null && loggedInUser.preferredEmployeeName != null
                 _authResult.postValue(
                     SplashAuthResult(
                         authenticated = true,
-                        hasPreferredCompany = hasPreferredCompany
+                        hasPreferredCompany = true
                     )
                 )
             } else {

@@ -22,7 +22,7 @@ class OrderRepository @Inject constructor(
     private val detrapayRemoteDataSource: DetrapayRemoteDataSource
 ) {
 
-    suspend fun getOrders(): Result<List<Order>> {
+    suspend fun getOrders(forceRefresh: Boolean = false): Result<List<Order>> {
         when (val result = detrapayRemoteDataSource.getOrders()) {
             is Result.Success -> {
                 try {
@@ -183,7 +183,7 @@ class OrderRepository @Inject constructor(
                 return result
             }
             else -> {
-                return Result.Error(Exception("Tivemos um erro no reembolso do pedido, por favor tente novamente."))
+                return Result.Error(Exception("Tivemos um erro no reembolso do pagamento, por favor tente novamente."))
             }
         }
     }

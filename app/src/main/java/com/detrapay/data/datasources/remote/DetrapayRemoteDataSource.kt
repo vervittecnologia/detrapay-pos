@@ -5,7 +5,6 @@ import com.detrapay.data.api.DetrapayService
 import com.detrapay.data.model.remote.AuthRequest
 import com.detrapay.data.model.remote.AuthResponse
 import com.detrapay.data.model.remote.CustomerSearchDataResponse
-import com.detrapay.data.model.remote.EmployeeItemResponse
 import com.detrapay.data.model.remote.OrderCustomerRequest
 import com.detrapay.data.model.remote.OrderReceivableRequest
 import com.detrapay.data.model.remote.OrderRequest
@@ -49,23 +48,6 @@ class DetrapayRemoteDataSource @Inject constructor(
         } catch (e: Throwable) {
             Logger.d(e.toString())
             return Result.Error(IOException("Error Loggerging in", e))
-        }
-    }
-
-    suspend fun getEmployees(): Result<List<EmployeeItemResponse>> {
-        try {
-            val result = detrapayService.getEmployees()
-            if (result.isSuccessful) {
-                Logger.d((result.body() ?: "").toString())
-                return Result.Success(result.body()!!.data)
-            } else {
-                Logger.d((result.errorBody() ?: "").toString())
-                if (result.code() == 401) return Result.Error(UnauthorizedException())
-                return Result.Error(Exception(ApiError(result.errorBody()).message))
-            }
-        } catch (e: Throwable) {
-            Logger.d(e.toString())
-            return Result.Error(IOException("Error getting employees", e))
         }
     }
 

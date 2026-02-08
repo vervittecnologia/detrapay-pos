@@ -6,7 +6,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
 import androidx.lifecycle.Observer
-import com.detrapay.ui.employee_selection.EmployeeSelectionActivity
 import com.detrapay.ui.home.HomeActivity
 import com.detrapay.ui.login.LoginActivity
 import dagger.hilt.android.AndroidEntryPoint
@@ -29,19 +28,11 @@ class SplashActivity : ComponentActivity() {
 
     private fun handleAuthResult(result: SplashAuthResult) {
         if (result.authenticated) {
-            if (result.hasPreferredCompany) {
-                val homeIntent = Intent(
-                    this,
-                    HomeActivity::class.java
-                )
-                this.startActivity(homeIntent)
-            } else {
-                val storeSelectionIntent = Intent(
-                    this,
-                    EmployeeSelectionActivity::class.java
-                )
-                this.startActivity(storeSelectionIntent)
-            }
+            val homeIntent = Intent(
+                this,
+                HomeActivity::class.java
+            )
+            this.startActivity(homeIntent)
         } else {
             val loginActivityIntent = Intent(
                 this,

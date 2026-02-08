@@ -8,7 +8,5 @@ data class LoggedInUser(
     val sessionToken: String,
     val displayName: String,
     val username: String,
-    val email: String,
-    val preferredEmployeeName: String? = null,
-    val preferredEmployeeId: Int? = null
+    val email: String
 )

@@ -16,7 +16,6 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupWithNavController
 import com.detrapay.R
 import com.detrapay.databinding.ActivityHomeBinding
-import com.detrapay.ui.employee_selection.EmployeeSelectionActivity
 import com.detrapay.ui.login.LoginActivity
 import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.Logger
@@ -67,14 +66,6 @@ class HomeActivity : AppCompatActivity() {
 //        binding.homeToolbar.toolbarNotifications.setOnClickListener {
 //            findNavController().navigate(R.id.notificationsActivity)
 //        }
-        binding.homeToolbar.employeeLayout.setOnClickListener {
-            val intent = Intent(this, EmployeeSelectionActivity::class.java)
-            val dataBundle = Bundle()
-            dataBundle.putBoolean("FROM_HOME", true)
-            intent.putExtras(dataBundle)
-            startActivity(intent)
-            this.finish()
-        }
     }
 
     private fun setupObservers() {
@@ -83,9 +74,6 @@ class HomeActivity : AppCompatActivity() {
                 is UIState.Loading -> {}
                 is UIState.Success -> {
                     status.data?.let {
-                        binding.homeToolbar.circularAvatar.avatarTxtView.text =
-                            it.employeeName.first().toString()
-                        binding.homeToolbar.employeeName.text = it.employeeName
                         binding.homeToolbar.companyName.text = it.companyName
                     }
                 }

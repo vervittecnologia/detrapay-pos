@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "615368887258",
+    "project_id": "detrapay-aa30783b",
+    "storage_bucket": "detrapay-aa30783b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:615368887258:android:c864728d11e4ac55ffcee3",
+        "android_client_info": {
+          "package_name": "com.detrapay"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDynREnkf35vak2X_X6L53g3UJnMFcrRKY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

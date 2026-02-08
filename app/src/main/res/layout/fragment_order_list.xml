@@ -49,20 +49,27 @@
             android:gravity="center"
             app:layout_constraintTop_toTopOf="@+id/orderList" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/orderList"
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefreshLayout"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_marginTop="16dp"
-            android:contentDescription="@string/order_list_content_description"
-            android:orientation="vertical"
-            app:layoutManager="LinearLayoutManager"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/searchOrderTextInputLayout"
-            tools:itemCount="3"
-            tools:listitem="@layout/order_list_item" />
+            app:layout_constraintTop_toBottomOf="@id/searchOrderTextInputLayout">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/orderList"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@string/order_list_content_description"
+                android:orientation="vertical"
+                app:layoutManager="LinearLayoutManager"
+                tools:itemCount="3"
+                tools:listitem="@layout/order_list_item" />
+
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

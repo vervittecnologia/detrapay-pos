@@ -372,14 +372,12 @@ class RegistrationViewModel @Inject constructor(
                         orderId = order!!.id,
                         simulation = simulation!!,
                         simulationPayments = payments,
-                        userId = user?.preferredEmployeeId
                     )
                 } else {
                     registrationRepository.createOrder(
                         simulation = simulation!!,
                         simulationPayments = payments,
                         createdById = user?.id,
-                        userId = user?.preferredEmployeeId
                     )
                 }
                 if (result is Result.Success) {

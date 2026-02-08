@@ -101,7 +101,6 @@ class RegistrationResumeFragment : Fragment() {
             binding.sellerName.visibility = View.VISIBLE
             binding.storeName.visibility = View.VISIBLE
 
-            binding.sellerName.text = "Vendedor: ${it.preferredEmployeeName}"
             binding.storeName.text = "Loja: ${it.displayName}"
         }
 

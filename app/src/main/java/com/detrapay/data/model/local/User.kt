@@ -12,6 +12,4 @@ data class User(
     var name: String,
     var email: String,
     var username: String,
-    var preferredEmployeeName: String? = null,
-    var preferredEmployeeId: Int? = null,
 )

@@ -28,9 +28,6 @@
             android:name=".ui.notification.NotificationActivity"
             android:exported="false" />
         <activity
-            android:name=".ui.employee_selection.EmployeeSelectionActivity"
-            android:exported="false" />
-        <activity
             android:name=".ui.home.HomeActivity"
             android:exported="false" />
         <activity

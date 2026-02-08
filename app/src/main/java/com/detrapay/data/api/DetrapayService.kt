@@ -3,7 +3,6 @@ package com.detrapay.data.api
 import com.detrapay.data.model.remote.AuthRequest
 import com.detrapay.data.model.remote.AuthResponse
 import com.detrapay.data.model.remote.CustomerSearchDataResponse
-import com.detrapay.data.model.remote.EmployeeResponse
 import com.detrapay.data.model.remote.OrderRequest
 import com.detrapay.data.model.remote.OrderResponse
 import com.detrapay.data.model.remote.PaymentMethodResponse
@@ -22,9 +21,6 @@ import retrofit2.http.Path
 interface DetrapayService {
     @POST("auth/local")
     suspend fun auth(@Body auth: AuthRequest): Response<AuthResponse>
-
-    @GET("company-users/users")
-    suspend fun getEmployees(): Response<EmployeeResponse>
 
     @GET("companies")
     suspend fun getCompanies(): Response<Any>

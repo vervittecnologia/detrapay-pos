@@ -19,7 +19,7 @@ import com.detrapay.data.model.OrderReceivableItemStatus
 import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.RefundPaymentData
 import com.detrapay.databinding.ActivityOrderDetailsBinding
-import com.detrapay.ui.employee_selection.EmployeeSelectionActivity
+//import com.detrapay.ui.employee_selection.EmployeeSelectionActivity
 import com.detrapay.ui.payment.PaymentDialogFragment
 import com.detrapay.ui.refund.RefundPaymentDialogFragment
 import com.detrapay.ui.registration.RegistrationActivity
@@ -175,11 +175,11 @@ class OrderDetailsActivity : AppCompatActivity(),
             }
         }
 
-        binding.finishServiceBtn.setOnClickListener {
-            val intent = Intent(this, EmployeeSelectionActivity::class.java)
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
-            startActivity(intent)
-        }
+//        binding.finishServiceBtn.setOnClickListener {
+//            val intent = Intent(this, EmployeeSelectionActivity::class.java)
+//            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+//            startActivity(intent)
+//        }
     }
 
     private fun formatCpfCnpj(cpfCnpj: String): String {

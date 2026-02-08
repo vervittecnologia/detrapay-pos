@@ -11,7 +11,7 @@ import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.activity.viewModels
 import com.detrapay.databinding.ActivityLoginBinding
-import com.detrapay.ui.employee_selection.EmployeeSelectionActivity
+import com.detrapay.ui.home.HomeActivity
 import com.detrapay.ui.util.Mask
 import com.detrapay.ui.util.afterTextChanged
 import dagger.hilt.android.AndroidEntryPoint
@@ -65,8 +65,8 @@ class LoginActivity : AppCompatActivity() {
                 showLoginFailed(loginResult.error)
             }
             if (loginResult.success != null) {
-                val employeeSelectionActivity = Intent(this, EmployeeSelectionActivity::class.java)
-                this.startActivity(employeeSelectionActivity, ActivityOptions.makeSceneTransitionAnimation(this).toBundle())
+                val homeIntent = Intent(this, HomeActivity::class.java)
+                this.startActivity(homeIntent, ActivityOptions.makeSceneTransitionAnimation(this).toBundle())
                 finish()
             }
         })

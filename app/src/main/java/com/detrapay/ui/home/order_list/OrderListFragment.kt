@@ -41,7 +41,14 @@ class OrderListFragment : Fragment(), OrderRecyclerViewAdapter.OnItemClickListen
         setupSearchBar()
         observeViewModel()
         setupErrorBtn()
+        setupSwipeToRefresh()
         viewModel.loadScreenContent()
+    }
+
+    private fun setupSwipeToRefresh() {
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            viewModel.loadScreenContent(true)
+        }
     }
 
     private fun setupSearchBar() {
@@ -71,13 +78,16 @@ class OrderListFragment : Fragment(), OrderRecyclerViewAdapter.OnItemClickListen
         viewModel.orderListState.observe(viewLifecycleOwner, Observer { status ->
             when (status) {
                 is UIState.Loading -> {
-                    binding.contentView.visibility = View.GONE
-                    binding.errorView.visibility = View.GONE
-                    binding.loadingView.visibility = View.VISIBLE
-                    binding.loadingView.startShimmer()
+                    if (!binding.swipeRefreshLayout.isRefreshing) {
+                        binding.contentView.visibility = View.GONE
+                        binding.errorView.visibility = View.GONE
+                        binding.loadingView.visibility = View.VISIBLE
+                        binding.loadingView.startShimmer()
+                    }
                 }
 
                 is UIState.Success -> {
+                    binding.swipeRefreshLayout.isRefreshing = false
                     status.data?.let {
                         if (it.isEmpty()) {
                             binding.emptyListTextView.visibility = View.VISIBLE
@@ -96,6 +106,7 @@ class OrderListFragment : Fragment(), OrderRecyclerViewAdapter.OnItemClickListen
                 }
 
                 is UIState.Error -> {
+                    binding.swipeRefreshLayout.isRefreshing = false
                     validateErrorType(status.exception)
                     binding.loadingView.visibility = View.GONE
                     binding.errorTxtView.text =
