@@ -75,6 +75,7 @@ class HomeActivity : AppCompatActivity() {
                 is UIState.Success -> {
                     status.data?.let {
                         binding.homeToolbar.companyName.text = it.companyName
+                        binding.homeToolbar.dispatcherName.text = it.dispatcherName
                     }
                 }
 
@@ -111,4 +112,3 @@ class HomeActivity : AppCompatActivity() {
             .show()
     }
 }
-
