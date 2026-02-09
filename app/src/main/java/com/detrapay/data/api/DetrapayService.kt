@@ -3,6 +3,7 @@ package com.detrapay.data.api
 import com.detrapay.data.model.remote.AuthRequest
 import com.detrapay.data.model.remote.AuthResponse
 import com.detrapay.data.model.remote.CompanyListResponse
+import com.detrapay.data.model.remote.CreateOrderResponse
 import com.detrapay.data.model.remote.CustomerSearchDataResponse
 import com.detrapay.data.model.remote.OrderRequest
 import com.detrapay.data.model.remote.OrderResponse
@@ -19,6 +20,7 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface DetrapayService {
 
@@ -28,13 +30,13 @@ interface DetrapayService {
     @GET("companies")
     suspend fun getCompanies(): Response<CompanyListResponse>
 
-    @GET("orders?populate=deep,3")
-    suspend fun getOrders(): Response<PaginatedOrderResponse>
+    @GET("orders")
+    suspend fun getOrders(@Query("populate") populate: String = "deep,3"): Response<PaginatedOrderResponse>
 
-    @GET("orders/{id}?populate=deep,3")
-    suspend fun getOrder(@Path("id") orderId: Int): Response<OrderResponse>
+    @GET("sales-orders/{id}")
+    suspend fun getOrder(@Path("id") orderId: Int, @Query("populate") populate: String = "deep,3"): Response<CreateOrderResponse>
 
-    @GET("vehicle-types/me")
+    @GET("vehicle-types")
     suspend fun getVehicleTypes(): Response<VehicleTypeListResponse>
 
     @GET("payment-methods")
@@ -43,14 +45,14 @@ interface DetrapayService {
     @GET("customers/{cpfCnpj}")
     suspend fun searchCustomer(@Path("cpfCnpj") cpfCnpj: String): Response<CustomerSearchDataResponse>
 
-    @POST("mobile/simulate")
+    @POST("sales-items/simulation")
     suspend fun simulate(@Body payload: SimulationRequest): Response<SimulationResponse>
 
-    @POST("mobile/orders")
-    suspend fun createOrder(@Body payload: OrderRequest): Response<OrderResponse>
+    @POST("orders")
+    suspend fun createOrder(@Body payload: OrderRequest): Response<CreateOrderResponse>
 
-    @PUT("mobile/orders/{id}")
-    suspend fun updateOrder(@Path("id") id: Int, @Body payload: OrderRequest): Response<OrderResponse>
+    @POST("orders/{id}")
+    suspend fun updateOrder(@Path("id") id: Int, @Body payload: OrderRequest): Response<CreateOrderResponse>
 
     @PUT("order-receivables/{id}")
     suspend fun updateOrderReceivableItem(@Path("id") id: String, @Body payload: UpdateOrderReceivableRequestDataWrapper): Response<OrderResponse>

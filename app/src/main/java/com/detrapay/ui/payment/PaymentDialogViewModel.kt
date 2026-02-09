@@ -72,12 +72,12 @@ class PaymentDialogViewModel @Inject constructor(
 //                    Logger.d( "roundedAmount: $roundedAmountInCents")
 
                     val paymentType = getPaymentType(receivable.paymentMethod.name)
-                    val installmentType = getInstallmentType(receivable.installments)
+                    val installmentType = getInstallmentType(receivable.max_installments)
                     val paymentData = PlugPagPaymentData(
                         paymentType,
                         roundedAmountInCents,
                         installmentType,
-                        receivable.installments,
+                        receivable.max_installments,
                         null,
                         printReceipt = true,
                         partialPay = false,
@@ -102,7 +102,7 @@ class PaymentDialogViewModel @Inject constructor(
                         paymentRepository.saveTransaction(
                             orderId = orderId,
                             amount = receivable.amountFinal,
-                            installments = receivable.installments,
+                            installments = receivable.max_installments,
                             paymentType = receivable.paymentMethod.name,
                             transactionId = plugPagResult.transactionId,
                             transactionCode = plugPagResult.transactionCode,
@@ -123,7 +123,7 @@ class PaymentDialogViewModel @Inject constructor(
                         paymentRepository.saveTransaction(
                             orderId = orderId,
                             amount = receivable.amountFinal,
-                            installments = receivable.installments,
+                            installments = receivable.max_installments,
                             paymentType = receivable.paymentMethod.name,
                             transactionId = plugPagResult.transactionId,
                             transactionCode = plugPagResult.transactionCode,

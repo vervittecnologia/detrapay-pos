@@ -10,13 +10,11 @@ data class OrderRequest(
     @SerializedName("simulation")
     val simulation: OrderSimulationRequest,
     @SerializedName("items")
-    val simulationItems: List<OrderSimulationItemRequest>,
+    val items: List<OrderSimulationItemRequest>,
     @SerializedName("receivables")
     val receivables: List<OrderReceivableRequest>,
     @SerializedName("created_by_id")
     val createdById: String? = null,
-    @SerializedName("user_id")
-    val userId: String? = null,
 )
 
 @Serializable
@@ -66,7 +64,5 @@ data class OrderReceivableRequest(
     @SerializedName("payment_date")
     val paymentDate: String,
     @SerializedName("installments")
-    val installments: Int,
-    @SerializedName("cpf_cnpj_cliente")
-    val cpfCnpjCliente: String? = null
+    val installments: Int
 )

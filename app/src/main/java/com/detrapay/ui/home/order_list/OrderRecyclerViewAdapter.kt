@@ -11,12 +11,7 @@ import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import com.detrapay.R
 import com.detrapay.data.model.Order
-import com.detrapay.data.model.OrderReceivableItemStatus
-import com.detrapay.data.model.OrderStatus.CANCELLED
-import com.detrapay.data.model.OrderStatus.PAID
-import com.detrapay.data.model.OrderStatus.PENDING
-import com.detrapay.data.model.OrderStatus.AUTHORIZED
-import com.detrapay.data.model.OrderStatus.COMPLETED
+import com.detrapay.data.model.OrderStatus
 import com.detrapay.databinding.OrderListItemBinding
 import java.util.Locale
 
@@ -24,7 +19,6 @@ class OrderRecyclerViewAdapter(
     private var values: List<Order>,
     private val listener: OnItemClickListener
 ) : RecyclerView.Adapter<OrderRecyclerViewAdapter.OrderViewHolder>() {
-
 
     private var filteredValues: MutableList<Order> = values.sortedByDescending { it.id }.toMutableList()
     private val locale = Locale("pt", "BR")
@@ -55,7 +49,6 @@ class OrderRecyclerViewAdapter(
         return "$day/$month/$year"
     }
 
-    @SuppressLint("UseCompatLoadingForDrawables")
     override fun onBindViewHolder(holder: OrderViewHolder, position: Int) {
         val item: Order = filteredValues[position]
         holder.bind(item, listener)
@@ -85,26 +78,33 @@ class OrderRecyclerViewAdapter(
             item: Order,
             listener: OnItemClickListener
         ) {
-            val totalReceived = item.receivables
-                .filter { it.status == OrderReceivableItemStatus.PAID }
-                .sumOf { it.amountOriginal }
+            val receivablesDetails = item.receivables.map { receivable ->
+                val paymentMethodName = receivable.paymentMethod.name
+                val installments = receivable.max_installments
 
-            val totalPending = item.originalAmount - totalReceived
-
-            val nominalValueFormatted = "%,.2f".format(locale, item.originalAmount)
-            val pendingValueFormatted = "%,.2f".format(locale, totalPending)
+                if (installments > 1) {
+                    val amountOriginalFormatted = "%,.2f".format(locale, receivable.amountOriginal)
+                    val amountFinalFormatted = "%,.2f".format(locale, receivable.amountFinal)
+                    val installmentAmount = receivable.amountFinal / installments
+                    val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
+                    "$paymentMethodName ${installments}x\nR$ $amountOriginalFormatted em ${installments}x de R$ $installmentFormattedValue (R$ $amountFinalFormatted)"
+                } else {
+                    val amountOriginalFormatted = "%,.2f".format(locale, receivable.amountOriginal)
+                    "$paymentMethodName\nR$ $amountOriginalFormatted"
+                }
+            }.joinToString("\n\n")
 
             clientNameView.text = "#${item.id} - ${item.customer.name}"
-            serviceNameView.text = "TOTAL: R$ $nominalValueFormatted\nPENDENTE: R$ $pendingValueFormatted"
+            serviceNameView.text = receivablesDetails
             serviceDateView.text = stringToFormattedDate(item.creationDate)
             statusTextView.text = item.status.toString()
 
             val (cardBackground, textColor) = when (item.status) {
-                PENDING -> R.drawable.pending_status_background to "#0E5FB2"
-                PAID -> R.drawable.paid_status_background to "#805AD5"
-                AUTHORIZED -> R.drawable.authorized_status_background to "#B7791F"
-                COMPLETED -> R.drawable.completed_status_background to "#2F855A"
-                CANCELLED -> R.drawable.cancelled_status_background to "#FFFFFF"
+                OrderStatus.PENDING -> R.drawable.pending_status_background to "#0E5FB2"
+                OrderStatus.PAID -> R.drawable.paid_status_background to "#805AD5"
+                OrderStatus.AUTHORIZED -> R.drawable.authorized_status_background to "#B7791F"
+                OrderStatus.COMPLETED -> R.drawable.completed_status_background to "#2F855A"
+                OrderStatus.CANCELLED -> R.drawable.cancelled_status_background to "#FFFFFF"
             }
 
             statusView.background = ContextCompat.getDrawable(context, cardBackground)
@@ -113,9 +113,6 @@ class OrderRecyclerViewAdapter(
             orderCard.setOnClickListener {
                 listener.onItemClick(item)
             }
-
         }
-
     }
-
 }

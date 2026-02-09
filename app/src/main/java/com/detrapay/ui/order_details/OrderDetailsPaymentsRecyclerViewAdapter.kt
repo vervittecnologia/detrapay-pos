@@ -74,14 +74,16 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
             item: OrderReceivableItem,
             listener: OnItemClickListener
         ) {
-            val isCreditCard =  item.paymentMethod.name.contains("Crédito", true) ||
-                    item.paymentMethod.name.contains("Débito", true) ||
-                    item.paymentMethod.name.contains("Cartão de crédito", true) ||
-                    item.paymentMethod.name.contains("VISA", true) ||
-                    item.paymentMethod.name.contains("Mastercard", true)
+            val paymentMethod = item.paymentMethod
+
+            val isCreditCard =  paymentMethod.name.contains("Crédito", true) ||
+                    paymentMethod.name.contains("Débito", true) ||
+                    paymentMethod.name.contains("Cartão de crédito", true) ||
+                    paymentMethod.name.contains("VISA", true) ||
+                    paymentMethod.name.contains("Mastercard", true)
             val imageDrawable = if (isCreditCard) {
                 R.drawable.ic_credit_card_outline
-            } else if (item.paymentMethod.name.contains("Pix", true)) {
+            } else if (paymentMethod.name.contains("Pix", true)) {
                 R.drawable.ic_pix
             } else {
                 R.drawable.ic_money
@@ -89,20 +91,20 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
 
             paymentMethodImage.setImageDrawable(context.getDrawable(imageDrawable))
 
-            paymentMethodName.text = item.paymentMethod.name
+            if (item.max_installments > 1) {
+                paymentMethodName.text = "${paymentMethod.name} ${item.max_installments}x"
+                paymentMethodInstallmentAmount.visibility = View.GONE
 
-            if (isCreditCard) {
-                paymentMethodInstallmentAmount.visibility = View.VISIBLE
-                
                 val amountOriginalFormatted = "%,.2f".format(locale, item.amountOriginal)
                 val amountFinalFormatted = "%,.2f".format(locale, item.amountFinal)
-                val installmentAmount = item.amountFinal / item.installments
+                val installmentAmount = item.amountFinal / item.max_installments
                 val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
-                
-                paymentMethodAmount.text = "R$ $amountOriginalFormatted em ${item.installments}x de R$ $installmentFormattedValue (R$ $amountFinalFormatted)"
+
+                paymentMethodAmount.text = "R$$amountOriginalFormatted em ${item.max_installments}x de R$$installmentFormattedValue (R$$amountFinalFormatted)"
             } else {
+                paymentMethodName.text = paymentMethod.name
                 paymentMethodInstallmentAmount.visibility = View.GONE
-                val amount = "%,.2f".format(locale, item.amountOriginal)
+                val amount = "%,.2f".format(locale, item.amountFinal)
                 paymentMethodAmount.text = "R$ $amount"
             }
 

@@ -53,38 +53,3 @@ data class OrderItem(
     val name: String?,
     val price: Double?
 ) : Serializable
-
-data class OrderReceivableItem(
-    val id: Int,
-    val documentId: String,
-    val amountOriginal: Double,
-    val amountFinal: Double,
-    val tax: Double?,
-    val status: OrderReceivableItemStatus,
-    val paymentDate: String,
-    val cardBrand: String?,
-    val cardLast4: String?,
-    val cardHolder: String?,
-    val authorizationId: String?,
-    val authorizationCode: String?,
-    val refundDate: String?,
-    val pixTxIdCode: String?,
-    val installments: Int,
-    val paymentMethod: PaymentMethod,
-) : Serializable
-
-enum class OrderReceivableItemStatus {
-    PENDING,
-    PAID,
-    CANCELLED,
-    REFUNDED;
-
-    override fun toString(): String {
-        return when (this) {
-            PENDING -> "Pendente"
-            PAID -> "Pago"
-            CANCELLED -> "Cancelado"
-            REFUNDED -> "Estornado"
-        }
-    }
-}

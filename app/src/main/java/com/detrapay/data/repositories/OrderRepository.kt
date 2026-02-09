@@ -1,5 +1,6 @@
 package com.detrapay.data.repositories
 
+import android.util.Log
 import com.detrapay.data.Result
 import com.detrapay.data.datasources.remote.DetrapayRemoteDataSource
 import com.detrapay.data.model.Order
@@ -13,7 +14,6 @@ import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.RefundPaymentData
 import com.detrapay.data.model.VehicleType
 import com.detrapay.data.model.remote.OrderResponse
-import com.detrapay.ui.util.Logger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -35,7 +35,7 @@ class OrderRepository @Inject constructor(
                     }
                     return Result.Success(orders.filterNotNull())
                 } catch (e: Exception) {
-                    Logger.d("UNABLE TO GET ORDERS: ${e.message}")
+                    Log.e("OrderRepository", "UNABLE TO GET ORDERS: ${e.message}")
                     return Result.Error(e)
                 }
             }
@@ -57,7 +57,7 @@ class OrderRepository @Inject constructor(
                     val order = parseOrder(result.data)
                     return Result.Success(order)
                 } catch (e: Exception) {
-                    Logger.d("UNABLE TO GET ORDER: ${e.message}")
+                    Log.e("OrderRepository", "UNABLE TO GET ORDER: ${e.message}")
                     return Result.Error(e)
                 }
             }
@@ -78,21 +78,64 @@ class OrderRepository @Inject constructor(
                 id = orderResponse.attributes.customers.data.id,
                 name = orderResponse.attributes.customers.data.attributes.name,
                 cpfCnpj = orderResponse.attributes.customers.data.attributes.cpfCnpj,
-                phoneNumber = "",
-                email = ""
+                phoneNumber = orderResponse.attributes.customers.data.attributes.phoneNumber,
+                email = orderResponse.attributes.customers.data.attributes.email
             ),
             serviceName = orderResponse.attributes.companies.data.attributes.tradeName,
             creationDate = orderResponse.attributes.createdAt,
             status = OrderStatus.valueOf(orderResponse.attributes.status.uppercase()),
-            vehiclePrice = 0.0,
+            vehiclePrice = orderResponse.attributes.vehiclePrice,
             billingDate = orderResponse.attributes.billingDate,
             originalAmount = orderResponse.attributes.originalAmount,
             currentAmount = orderResponse.attributes.currentAmount,
-            isVehicleFinanced = false,
-            isVehicleSpecialPlate = false,
-            vehicleType = VehicleType(0, ""),
-            items = emptyList(),
-            receivables = emptyList()
+            isVehicleFinanced = orderResponse.attributes.isVehicleFinanced,
+            isVehicleSpecialPlate = orderResponse.attributes.isSpecialPlate,
+            vehicleType = VehicleType(orderResponse.attributes.vehicle_types.data.id, orderResponse.attributes.vehicle_types.data.attributes.name),
+            items = orderResponse.attributes.sales_order_items.data.map { item ->
+                OrderItem(
+                    id = item.id,
+                    totalPrice = item.attributes.total_price,
+                    discount = item.attributes.discount,
+                    salesItemId = item.attributes.sales_item_id,
+                    name = item.attributes.sales_items.data.attributes.name,
+                    price = item.attributes.unit_price
+                )
+            },
+            receivables = orderResponse.attributes.receivables?.data?.map { receivable ->
+                val originalAmount = receivable.attributes.amountOriginal
+                val paymentMethod = PaymentMethod(
+                    id = receivable.attributes.payment_methods.data.id,
+                    name = receivable.attributes.payment_methods.data.attributes.name,
+                    maxInstallments = receivable.attributes.payment_methods.data.attributes.max_installments,
+                    interestTax = receivable.attributes.payment_methods.data.attributes.interest_tax
+                )
+                val finalAmount = if (paymentMethod.interestTax != null && paymentMethod.interestTax > 0) {
+                    originalAmount + (originalAmount * paymentMethod.interestTax)
+                } else {
+                    receivable.attributes.amountFinal
+                }
+                Log.e("OrderRepository", "originalAmount: $originalAmount, interestTax: ${paymentMethod.interestTax}, finalAmount: $finalAmount")
+
+
+                OrderReceivableItem(
+                    id = receivable.id,
+                    documentId = receivable.documentId,
+                    amountOriginal = originalAmount,
+                    amountFinal = finalAmount,
+                    max_installments = receivable.attributes.installments,
+                    status = OrderReceivableItemStatus.valueOf(receivable.attributes.status.uppercase()),
+                    paymentMethod = paymentMethod,
+                    paymentDate = receivable.attributes.paymentDate,
+                    refundDate = null, // TODO: Add refundDate to response
+                    cardLast4 = receivable.attributes.card_last4,
+                    cardHolder = receivable.attributes.cardHolder,
+                    tax = receivable.attributes.tax,
+                    cardBrand = receivable.attributes.cardBrand,
+                    authorizationId = null,
+                    authorizationCode = receivable.attributes.authorizationCode,
+                    pixTxIdCode = null
+                )
+            } ?: emptyList()
         )
     }
 
@@ -114,7 +157,7 @@ class OrderRepository @Inject constructor(
                 try {
                     return getOrder(orderId)
                 } catch (e: Exception) {
-                    Logger.d("UNABLE TO GET ORDER: ${e.message}")
+                    Log.e("OrderRepository", "UNABLE TO GET ORDER: ${e.message}")
                     return Result.Error(e)
                 }
             }
@@ -134,7 +177,7 @@ class OrderRepository @Inject constructor(
                 try {
                     return getOrder(orderId)
                 } catch (e: Exception) {
-                    Logger.d("UNABLE TO GET ORDER: ${e.message}")
+                    Log.e("OrderRepository", "UNABLE TO GET ORDER: ${e.message}")
                     return Result.Error(e)
                 }
             }

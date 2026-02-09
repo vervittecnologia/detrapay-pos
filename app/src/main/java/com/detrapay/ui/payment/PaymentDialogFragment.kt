@@ -85,24 +85,18 @@ class PaymentDialogFragment(
     private fun setupView(orderId: Int, receivableItem: OrderReceivableItem) {
         val paymentMethodName = receivableItem.paymentMethod.name
 
-        val isCreditCard = receivableItem.paymentMethod.name.contains("Crédito", true) ||
-                receivableItem.paymentMethod.name.contains("Débito", true) ||
-                receivableItem.paymentMethod.name.contains("Cartão de crédito", true) ||
-                receivableItem.paymentMethod.name.contains("VISA", true) ||
-                receivableItem.paymentMethod.name.contains("Mastercard", true)
+        if (receivableItem.max_installments > 1) {
+            val amountFinalFormatted = "%,.2f".format(locale, receivableItem.amountFinal)
+            val installmentAmount = receivableItem.amountFinal / receivableItem.max_installments
+            val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
 
-        val receivableAmount = if (isCreditCard) {
-            val amount = "%,.2f".format(locale, receivableItem.amountFinal)
-            val installmentAmount = "%,.2f".format(locale, receivableItem.amountFinal / receivableItem.installments)
-            "R$ $amount (${receivableItem.installments}x de R$$installmentAmount)"
+            binding.paymentAmount.text = "R$$amountFinalFormatted em ${receivableItem.max_installments}x de R$$installmentFormattedValue"
         } else {
-            val amount = "%,.2f".format(locale, receivableItem.amountOriginal)
-            "R$ $amount"
+            val amount = "%,.2f".format(locale, receivableItem.amountFinal)
+            binding.paymentAmount.text = "R$ $amount"
         }
 
-        binding.paymentAmount.text = "Valor: $receivableAmount"
-
-        binding.paymentMethod.text = "Método de pagamento: $paymentMethodName"
+        binding.paymentMethod.text = paymentMethodName
 
         binding.retryAction.setOnClickListener {
             startPayment(orderId, receivableItem)

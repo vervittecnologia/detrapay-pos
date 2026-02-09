@@ -6,5 +6,5 @@ data class PaymentMethod(
     val id: Int,
     val name: String,
     val maxInstallments: Int,
-    val interestRate: Double?
+    val interestTax: Double?
 ): Serializable

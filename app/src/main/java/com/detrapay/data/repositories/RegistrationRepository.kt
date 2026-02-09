@@ -7,9 +7,6 @@ import com.detrapay.data.Result
 import com.detrapay.data.model.CustomerSearchData
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.OrderCustomer
-import com.detrapay.data.model.OrderItem
-import com.detrapay.data.model.OrderReceivableItem
-import com.detrapay.data.model.OrderReceivableItemStatus
 import com.detrapay.data.model.OrderStatus
 import com.detrapay.data.model.Simulation
 import com.detrapay.data.model.SimulationCustomer
@@ -34,32 +31,26 @@ class RegistrationRepository @Inject constructor(
     private val locale = Locale("pt", "BR")
 
     suspend fun loadVehicleTypes(): Result<List<VehicleType>> {
-        when (val result = detrapayRemoteDataSource.getVehicleTypes()) {
+        return when (val result = detrapayRemoteDataSource.getVehicleTypes()) {
             is Result.Success -> {
                 try {
                     val vehicleTypes = result.data.map {
                         VehicleType(it.id, it.attributes.name)
                     }
                     Logger.d(vehicleTypes.toString())
-                    return Result.Success(vehicleTypes)
+                    Result.Success(vehicleTypes)
                 } catch (e: Exception) {
                     Logger.d("UNABLE TO LOAD VEHICLE TYPES: ${e.message}")
-                    return Result.Error(e)
+                    Result.Error(e)
                 }
             }
 
-            is Result.Error -> {
-                return result
-            }
-
-            else -> {
-                return Result.Error(Exception())
-            }
+            is Result.Error -> result
         }
     }
 
     suspend fun loadPaymentMethods(): Result<List<PaymentMethod>> {
-        when (val result = detrapayRemoteDataSource.getPaymentMethods()) {
+        return when (val result = detrapayRemoteDataSource.getPaymentMethods()) {
             is Result.Success -> {
                 try {
                     val paymentMethods = result.data.map {
@@ -67,48 +58,36 @@ class RegistrationRepository @Inject constructor(
                             id = it.id,
                             name = it.name,
                             maxInstallments = it.maxInstallments,
-                            interestRate = it.interestRate)
+                            interestTax = it.interestTax)
                     }
                     Logger.d(paymentMethods.toString())
-                    return Result.Success(paymentMethods)
+                    Result.Success(paymentMethods)
                 } catch (e: Exception) {
                     Logger.d("UNABLE TO LOAD PAYMENT METHODS: ${e.message}")
-                    return Result.Error(e)
+                    Result.Error(e)
                 }
             }
 
-            is Result.Error -> {
-                return result
-            }
-
-            else -> {
-                return Result.Error(Exception())
-            }
+            is Result.Error -> result
         }
     }
 
     suspend fun searchCustomer(cpfCnpj: String): Result<CustomerSearchData> {
-        when (val result = detrapayRemoteDataSource.searchCustomer(cpfCnpj)) {
+        return when (val result = detrapayRemoteDataSource.searchCustomer(cpfCnpj)) {
             is Result.Success -> {
                 try {
                     result.data.let {
                         val customerSearchData = CustomerSearchData(it.id, it.name, it.whatsapp)
                         Logger.d(customerSearchData.toString())
-                        return Result.Success(customerSearchData)
+                        Result.Success(customerSearchData)
                     }
                 } catch (e: Exception) {
                     Logger.d("UNABLE TO LOAD PAYMENT METHODS: ${e.message}")
-                    return Result.Error(e)
+                    Result.Error(e)
                 }
             }
 
-            is Result.Error -> {
-                return result
-            }
-
-            else -> {
-                return Result.Error(Exception())
-            }
+            is Result.Error -> result
         }
     }
 
@@ -124,12 +103,11 @@ class RegistrationRepository @Inject constructor(
     ): Result<Simulation> {
 
         val vehicleValueAmount = vehicleValue.replace("R$", "")
-            .replace(" ", "")
             .replace(".", "")
             .replace(",", ".")
             .replace("\\s".toRegex(), "")
 
-        when (val result = detrapayRemoteDataSource.simulate(
+        return when (val result = detrapayRemoteDataSource.simulate(
             cpfCnpj,
             clientName,
             whatsapp,
@@ -144,31 +122,31 @@ class RegistrationRepository @Inject constructor(
                     result.data.let { data ->
                         Logger.d(result.data.toString())
                         val simulationCustomer = SimulationCustomer(
-                            data.customer.cpfCnpj,
-                            data.customer.name,
-                            data.customer.whatsapp
+                            data.data.attributes.cpfCnpj,
+                            data.data.attributes.name,
+                            data.data.attributes.whatsapp
                         )
 
                         val simulationSimulation = SimulationSimulation(
-                            data.simulation.billingDate,
-                            data.simulation.vehiclePrice,
-                            data.simulation.vehicleDisposal,
-                            data.simulation.vehicleSpecialPlate,
-                            data.simulation.totalPrice,
-                            data.simulation.vehicleTypeId
+                            data.data.attributes.billingDate,
+                            data.data.attributes.vehiclePrice,
+                            data.data.attributes.vehicleDisposal,
+                            data.data.attributes.vehicleSpecialPlate,
+                            data.data.attributes.totalPrice,
+                            data.data.attributes.vehicleTypeId
                         )
 
-                        val simulationItems = data.items.map {
+                        val simulationItems = data.data.attributes.items.map {
                             SimulationItem(
                                 id = it.id,
-                                name = it.name,
-                                discountAllowed = it.discountAllowed,
-                                price = it.price,
+                                name = it.attributes.name,
+                                discountAllowed = it.attributes.discountAllowed,
+                                price = it.attributes.price,
                                 discount = null
                             )
                         }
 
-                        return Result.Success(
+                        Result.Success(
                             Simulation(
                                 customer = simulationCustomer,
                                 simulation = simulationSimulation,
@@ -178,25 +156,18 @@ class RegistrationRepository @Inject constructor(
                     }
                 } catch (e: Exception) {
                     Logger.d("UNABLE TO SIMULATE: ${e.message}")
-                    return Result.Error(e)
+                    Result.Error(e)
                 }
             }
 
-            is Result.Error -> {
-                return result
-            }
-
-            else -> {
-                return Result.Error(Exception())
-            }
+            is Result.Error -> result
         }
     }
 
     suspend fun createOrder(
         simulation: Simulation,
         simulationPayments: List<SimulationPayment>,
-        createdById: String? = null,
-        userId: String? = null
+        createdById: String? = null
     ): Result<Order> {
         val clientCpfCnpj = simulation.customer.cpfCnpj.replace(".", "")
             .replace("/", "")
@@ -229,50 +200,40 @@ class RegistrationRepository @Inject constructor(
                 paymentMethodId = simulationPayment.paymentMethod.id,
                 amountOriginal = simulationPayment.amountOriginal
                     .replace("R$", "")
-                    .replace(" ", "")
                     .replace(".", "")
                     .replace(",", ".")
                     .replace("\\s".toRegex(), ""),
                 amountFinal = simulationPayment.amountFinal
                     .replace("R$", "")
-                    .replace(" ", "")
                     .replace(".", "")
                     .replace(",", ".")
                     .replace("\\s".toRegex(), ""),
-                tax = simulationPayment.paymentMethod.interestRate,
+                tax = simulationPayment.paymentMethod.interestTax,
                 installments = simulationPayment.installment,
-                paymentDate = "",
-                cpfCnpjCliente = clientCpfCnpj
+                paymentDate = ""
             )
         }
 
-        when (val result = detrapayRemoteDataSource.createOrder(
+        return when (val result = detrapayRemoteDataSource.createOrder(
             customer = customerRequest,
             simulation = simulationRequest,
-            simulationItems = simulationItemsRequest,
+            items = simulationItemsRequest,
             receivables = receivablesRequest,
-            createdById = createdById,
-            userId = userId
+            createdById = createdById
         )) {
             is Result.Success -> {
                 try {
                     result.data.let {
                         val order = parseOrder(it)
-                        return Result.Success(order)
+                        Result.Success(order)
                     }
                 } catch (e: Exception) {
                     Logger.d("UNABLE TO CREATE ORDER: ${e.message}")
-                    return Result.Error(e)
+                    Result.Error(e)
                 }
             }
 
-            is Result.Error -> {
-                return result
-            }
-
-            else -> {
-                return Result.Error(Exception())
-            }
+            is Result.Error -> result
         }
     }
 
@@ -280,7 +241,7 @@ class RegistrationRepository @Inject constructor(
         orderId: Int,
         simulation: Simulation,
         simulationPayments: List<SimulationPayment>,
-        userId: String? = null
+        createdById: String? = null
     ): Result<Order> {
         val clientCpfCnpj = simulation.customer.cpfCnpj.replace(".", "")
             .replace("/", "")
@@ -313,50 +274,41 @@ class RegistrationRepository @Inject constructor(
                 paymentMethodId = simulationPayment.paymentMethod.id,
                 amountOriginal = simulationPayment.amountOriginal
                     .replace("R$", "")
-                    .replace(" ", "")
                     .replace(".", "")
                     .replace(",", ".")
                     .replace("\\s".toRegex(), ""),
                 amountFinal = simulationPayment.amountFinal
                     .replace("R$", "")
-                    .replace(" ", "")
                     .replace(".", "")
                     .replace(",", ".")
                     .replace("\\s".toRegex(), ""),
-                tax = simulationPayment.paymentMethod.interestRate,
+                tax = simulationPayment.paymentMethod.interestTax,
                 installments = simulationPayment.installment,
-                paymentDate = "",
-                cpfCnpjCliente = clientCpfCnpj
+                paymentDate = ""
             )
         }
 
-        when (val result = detrapayRemoteDataSource.updateOrder(
+        return when (val result = detrapayRemoteDataSource.updateOrder(
             orderId = orderId,
             customer = customerRequest,
             simulation = simulationRequest,
-            simulationItems = simulationItemsRequest,
+            items = simulationItemsRequest,
             receivables = receivablesRequest,
-            userId = userId
+            createdById = createdById
         )) {
             is Result.Success -> {
                 try {
                     result.data.let {
                         val order = parseOrder(it)
-                        return Result.Success(order)
+                        Result.Success(order)
                     }
                 } catch (e: Exception) {
                     Logger.d("UNABLE TO CREATE ORDER: ${e.message}")
-                    return Result.Error(e)
+                    Result.Error(e)
                 }
             }
 
-            is Result.Error -> {
-                return result
-            }
-
-            else -> {
-                return Result.Error(Exception())
-            }
+            is Result.Error -> result
         }
     }
 
@@ -383,27 +335,6 @@ class RegistrationRepository @Inject constructor(
             items = emptyList(),
             receivables = emptyList()
         )
-    }
-
-    private fun calculateFinalAmount(finalAmount: String, interestRate: Double?): String {
-        val amountFinalStr = finalAmount
-            .replace("R$", "")
-            .replace(" ", "")
-            .replace(".", "")
-            .replace(",", ".")
-            .replace("\\s".toRegex(), "")
-
-        return try {
-            if (interestRate != null && interestRate > 0.0) {
-                val amountFinalValue = amountFinalStr.toDouble()
-                val bla = amountFinalValue + (amountFinalValue * interestRate)
-                "%,.2f".format(locale, bla)
-            } else {
-                amountFinalStr
-            }
-        } catch (e:Exception) {
-            return amountFinalStr
-        }
     }
 
     private fun calculateItemPrice(itemPrice: Double, discount: Double?): String {

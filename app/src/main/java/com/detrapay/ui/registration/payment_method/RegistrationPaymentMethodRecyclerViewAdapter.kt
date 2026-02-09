@@ -128,7 +128,7 @@ class RegistrationPaymentMethodViewHolder(
         val textWatcher = Mask.moneyMask(amountInputText, { value ->
             val stringValue = amountInputText.text.toString()
             val newPaymentMethod = paymentMethods[paymentMethodSpinner.selectedItemPosition]
-            val amountFinalValue = amountFinalValue(newPaymentMethod.interestRate, stringValue)
+            val amountFinalValue = amountFinalValue(newPaymentMethod.interestTax, stringValue)
             val newItem = item.copy(amountOriginal = stringValue, amountFinal = amountFinalValue, paymentMethod = newPaymentMethod)
             onUpdate(newItem)
             updateInstallmentView(newItem)
@@ -159,7 +159,7 @@ class RegistrationPaymentMethodViewHolder(
                     position: Int, id: Long
                 ) {
                     val newPaymentMethod = paymentMethods[position]
-                    val amountFinalValue = amountFinalValue(newPaymentMethod.interestRate, amountInputText.text.toString())
+                    val amountFinalValue = amountFinalValue(newPaymentMethod.interestTax, amountInputText.text.toString())
 
                     val newItem = item.copy(
                         paymentMethod = newPaymentMethod,
@@ -194,8 +194,8 @@ class RegistrationPaymentMethodViewHolder(
 //                            .replace(".", "")
 //                            .replace(",", ".")
 //                            .replace("\\s".toRegex(), "").toDouble()
-//                        val interestRate = item.paymentMethod.interestRate ?: 0.0
-//                        val amountFinal = (paymentAmountValue + (paymentAmountValue * interestRate))
+//                        val interestTax = item.paymentMethod.interestTax ?: 0.0
+//                        val amountFinal = (paymentAmountValue + (paymentAmountValue * interestTax))
 //                        val amountFinalValue = "%,.2f".format(locale, amountFinal)
 //
 //                        onUpdate(
@@ -219,7 +219,7 @@ class RegistrationPaymentMethodViewHolder(
             installmentsSelectorLayout.visibility = View.VISIBLE
             installmentsAmount.text = installmentsDescription(
                         item.paymentMethod.maxInstallments,
-                        item.paymentMethod.interestRate,
+                        item.paymentMethod.interestTax,
                         amountInputText.text.toString()
                     )
 //            val allowedInstallments: List<Int> = (1..item.paymentMethod.maxInstallments).toList()
@@ -229,7 +229,7 @@ class RegistrationPaymentMethodViewHolder(
 //                allowedInstallments.map {
 //                    installmentsDescription(
 //                        it,
-//                        item.paymentMethod.interestRate,
+//                        item.paymentMethod.interestTax,
 //                        amountInputText.text.toString()
 //                    )
 //                }
@@ -241,7 +241,7 @@ class RegistrationPaymentMethodViewHolder(
     }
 
     private fun amountFinalValue(
-        interestRate: Double?,
+        interestTax: Double?,
         paymentAmount: String
     ): String {
         return try {
@@ -251,9 +251,9 @@ class RegistrationPaymentMethodViewHolder(
                 .replace(",", ".")
                 .replace("\\s".toRegex(), "").toDouble()
 
-            if (interestRate != null && interestRate > 0.0) {
-                val paymentAmountValueWithInterestRate = paymentAmountValue + (paymentAmountValue * interestRate)
-                "%,.2f".format(locale, paymentAmountValueWithInterestRate)
+            if (interestTax != null && interestTax > 0.0) {
+                val paymentAmountValueWithinterestTax = paymentAmountValue + (paymentAmountValue * interestTax)
+                "%,.2f".format(locale, paymentAmountValueWithinterestTax)
             } else {
                 paymentAmount
             }
@@ -264,7 +264,7 @@ class RegistrationPaymentMethodViewHolder(
 
     private fun installmentsDescription(
         installment: Int,
-        interestRate: Double?,
+        interestTax: Double?,
         paymentAmount: String
     ): String {
         return try {
@@ -274,13 +274,13 @@ class RegistrationPaymentMethodViewHolder(
                 .replace(",", ".")
                 .replace("\\s".toRegex(), "").toDouble()
 
-            if (interestRate != null && interestRate > 0.0) {
-                val paymentAmountValueWithInterestRate = paymentAmountValue + (paymentAmountValue * interestRate)
-                val paymentAmountValueWithInterestRateFormattedValue = "%,.2f".format(locale, paymentAmountValueWithInterestRate)
+            if (interestTax != null && interestTax > 0.0) {
+                val paymentAmountValueWithinterestTax = paymentAmountValue + (paymentAmountValue * interestTax)
+                val paymentAmountValueWithinterestTaxFormattedValue = "%,.2f".format(locale, paymentAmountValueWithinterestTax)
 
-                val installmentAmount = paymentAmountValueWithInterestRate / installment
+                val installmentAmount = paymentAmountValueWithinterestTax / installment
                 val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
-                "Em ${installment}x de R$${installmentFormattedValue} (R\$${paymentAmountValueWithInterestRateFormattedValue})"
+                "Em ${installment}x de R$${installmentFormattedValue} (R\$${paymentAmountValueWithinterestTaxFormattedValue})"
             } else {
                 val installmentAmount = paymentAmountValue / installment
                 val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)

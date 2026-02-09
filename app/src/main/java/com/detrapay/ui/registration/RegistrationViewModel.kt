@@ -87,7 +87,7 @@ class RegistrationViewModel @Inject constructor(
                     paymentMethod = it.paymentMethod,
                     amountOriginal = "%,.2f".format(locale, it.amountOriginal),
                     amountFinal = "%,.2f".format(locale, it.amountFinal),
-                    installment = it.installments
+                    installment = it.max_installments
                 )
             }.toMutableList()
         }

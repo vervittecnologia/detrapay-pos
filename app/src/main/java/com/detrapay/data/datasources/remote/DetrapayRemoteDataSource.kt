@@ -4,6 +4,7 @@ import com.detrapay.data.Result
 import com.detrapay.data.api.DetrapayService
 import com.detrapay.data.model.remote.AuthRequest
 import com.detrapay.data.model.remote.AuthResponse
+import com.detrapay.data.model.remote.CreateOrderResponse
 import com.detrapay.data.model.remote.CustomerSearchDataResponse
 import com.detrapay.data.model.remote.OrderCustomerRequest
 import com.detrapay.data.model.remote.OrderReceivableRequest
@@ -91,7 +92,7 @@ class DetrapayRemoteDataSource @Inject constructor(
             val result = detrapayService.getOrder(orderId)
             if (result.isSuccessful) {
                 Logger.d((result.body() ?: "").toString())
-                return Result.Success(result.body()!!)
+                return Result.Success(result.body()!!.data)
             } else {
                 Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
@@ -194,24 +195,22 @@ class DetrapayRemoteDataSource @Inject constructor(
     suspend fun createOrder(
         customer: OrderCustomerRequest,
         simulation: OrderSimulationRequest,
-        simulationItems: List<OrderSimulationItemRequest>,
+        items: List<OrderSimulationItemRequest>,
         receivables: List<OrderReceivableRequest>,
-        createdById: String? = null,
-        userId: String? = null
+        createdById: String? = null
     ): Result<OrderResponse> {
         try {
             val orderRequest = OrderRequest(
                 customer = customer,
                 simulation = simulation,
-                simulationItems = simulationItems,
+                items = items,
                 receivables = receivables,
-                createdById = createdById,
-                userId = userId
+                createdById = createdById
             )
             val result = detrapayService.createOrder(orderRequest)
             if (result.isSuccessful) {
                 Logger.d((result.body() ?: "").toString())
-                return Result.Success(result.body()!!)
+                return Result.Success(result.body()!!.data)
             } else {
                 Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
@@ -227,22 +226,22 @@ class DetrapayRemoteDataSource @Inject constructor(
         orderId: Int,
         customer: OrderCustomerRequest,
         simulation: OrderSimulationRequest,
-        simulationItems: List<OrderSimulationItemRequest>,
+        items: List<OrderSimulationItemRequest>,
         receivables: List<OrderReceivableRequest>,
-        userId: String? = null
+        createdById: String? = null
     ): Result<OrderResponse> {
         try {
             val orderRequest = OrderRequest(
                 customer = customer,
                 simulation = simulation,
-                simulationItems = simulationItems,
+                items = items,
                 receivables = receivables,
-                userId = userId
+                createdById = createdById
             )
             val result = detrapayService.updateOrder(orderId, orderRequest)
             if (result.isSuccessful) {
                 Logger.d((result.body() ?: "").toString())
-                return Result.Success(result.body()!!)
+                return Result.Success(result.body()!!.data)
             } else {
                 Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
