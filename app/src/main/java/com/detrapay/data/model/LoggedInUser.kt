@@ -8,5 +8,7 @@ data class LoggedInUser(
     val sessionToken: String,
     val displayName: String,
     val username: String,
-    val email: String
+    val email: String,
+    val companies: List<Company>,
+    val dispatchers: List<Dispatcher>
 )

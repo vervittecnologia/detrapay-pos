@@ -31,7 +31,11 @@ interface DetrapayService {
     suspend fun getCompanies(): Response<CompanyListResponse>
 
     @GET("orders")
-    suspend fun getOrders(@Query("populate") populate: String = "deep,3"): Response<PaginatedOrderResponse>
+    suspend fun getOrders(
+        @Query("filters[company][id][\$eq]") companyId: Int,
+        @Query("filters[dispatcher][id][\$eq]") dispatcherId: Int,
+        @Query("populate") populate: String = "deep,3"
+    ): Response<PaginatedOrderResponse>
 
     @GET("sales-orders/{id}")
     suspend fun getOrder(@Path("id") orderId: Int, @Query("populate") populate: String = "deep,3"): Response<CreateOrderResponse>

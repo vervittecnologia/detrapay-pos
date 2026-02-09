@@ -13,4 +13,6 @@ data class SimulationRequest(
     val vehicle_type_id: Int,
     val is_vehicle_financed: Boolean,
     val is_vehicle_special_plate: Boolean,
+    val company_id: Int,
+    val dispatcher_id: Int,
 )

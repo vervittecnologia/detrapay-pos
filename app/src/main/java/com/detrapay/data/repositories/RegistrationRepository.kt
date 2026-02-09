@@ -99,7 +99,9 @@ class RegistrationRepository @Inject constructor(
         vehicleValue: String,
         vehicleTypeId: Int,
         disposalVehicle: Boolean,
-        specialPlate: Boolean
+        specialPlate: Boolean,
+        companyId: Int,
+        dispatcherId: Int
     ): Result<Simulation> {
 
         val vehicleValueAmount = vehicleValue.replace("R$", "")
@@ -115,7 +117,9 @@ class RegistrationRepository @Inject constructor(
             vehicleValueAmount,
             vehicleTypeId,
             disposalVehicle,
-            specialPlate
+            specialPlate,
+            companyId,
+            dispatcherId
         )) {
             is Result.Success -> {
                 try {
@@ -156,79 +160,6 @@ class RegistrationRepository @Inject constructor(
                     }
                 } catch (e: Exception) {
                     Logger.d("UNABLE TO SIMULATE: ${e.message}")
-                    Result.Error(e)
-                }
-            }
-
-            is Result.Error -> result
-        }
-    }
-
-    suspend fun createOrder(
-        simulation: Simulation,
-        simulationPayments: List<SimulationPayment>,
-        createdById: String? = null
-    ): Result<Order> {
-        val clientCpfCnpj = simulation.customer.cpfCnpj.replace(".", "")
-            .replace("/", "")
-            .replace("-", "")
-
-        val customerRequest = OrderCustomerRequest(
-            name = simulation.customer.name,
-            cpfCnpj = clientCpfCnpj,
-            phoneNumber = simulation.customer.whatsapp.replace("(", "")
-                .replace(")", "")
-                .replace("-", "")
-        )
-        val simulationRequest = OrderSimulationRequest(
-            billingDate = formatDate(simulation.simulation.billingDate),
-            vehiclePrice = simulation.simulation.vehiclePrice,
-            vehicleFinanced = simulation.simulation.vehicleDisposal,
-            vehicleSpecialPlate = simulation.simulation.vehicleSpecialPlate,
-            totalPrice = simulation.simulation.totalPrice.toString(),
-            vehicleTypeId = simulation.simulation.vehicleTypeId,
-        )
-        val simulationItemsRequest = simulation.simulationItems.map { simulationItem ->
-            OrderSimulationItemRequest(
-                id = simulationItem.id,
-                price = calculateItemPrice(simulationItem.price, simulationItem.discount)
-            )
-        }
-
-        val receivablesRequest = simulationPayments.map { simulationPayment ->
-            OrderReceivableRequest(
-                paymentMethodId = simulationPayment.paymentMethod.id,
-                amountOriginal = simulationPayment.amountOriginal
-                    .replace("R$", "")
-                    .replace(".", "")
-                    .replace(",", ".")
-                    .replace("\\s".toRegex(), ""),
-                amountFinal = simulationPayment.amountFinal
-                    .replace("R$", "")
-                    .replace(".", "")
-                    .replace(",", ".")
-                    .replace("\\s".toRegex(), ""),
-                tax = simulationPayment.paymentMethod.interestTax,
-                installments = simulationPayment.installment,
-                paymentDate = ""
-            )
-        }
-
-        return when (val result = detrapayRemoteDataSource.createOrder(
-            customer = customerRequest,
-            simulation = simulationRequest,
-            items = simulationItemsRequest,
-            receivables = receivablesRequest,
-            createdById = createdById
-        )) {
-            is Result.Success -> {
-                try {
-                    result.data.let {
-                        val order = parseOrder(it)
-                        Result.Success(order)
-                    }
-                } catch (e: Exception) {
-                    Logger.d("UNABLE TO CREATE ORDER: ${e.message}")
                     Result.Error(e)
                 }
             }

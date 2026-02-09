@@ -1,7 +1,11 @@
 package com.detrapay.data.repositories
 
 import com.detrapay.data.datasources.local.UsersDao
+import com.detrapay.data.model.Company
+import com.detrapay.data.model.Dispatcher
 import com.detrapay.data.model.LoggedInUser
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,12 +28,31 @@ class AuthRepository @Inject constructor(
         val users = userLocalDataSource.getUsers()
         if (users.isNotEmpty()) {
             val user = users.first()
+
+            val gson = Gson()
+            val companyType = object : TypeToken<List<Company>>() {}.type
+            val dispatcherType = object : TypeToken<List<Dispatcher>>() {}.type
+
+            val companies: List<Company> = if (user.companies != null) {
+                gson.fromJson(user.companies, companyType)
+            } else {
+                emptyList()
+            }
+
+            val dispatchers: List<Dispatcher> = if (user.dispatchers != null) {
+                gson.fromJson(user.dispatchers, dispatcherType)
+            } else {
+                emptyList()
+            }
+
             val loggedInUser = LoggedInUser(
                 user.id,
                 user.token,
                 user.name,
                 user.email,
-                user.username
+                user.username,
+                companies,
+                dispatchers
             )
             this.user = loggedInUser
             return loggedInUser

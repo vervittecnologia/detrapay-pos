@@ -11,10 +11,11 @@ import com.detrapay.data.model.local.Payment
 
 @Database(
     entities = [User::class, Payment::class],
-    version = 2,
+    version = 3,
     exportSchema = true,
     autoMigrations = [
-        AutoMigration (from = 1, to = 2)
+        AutoMigration (from = 1, to = 2),
+        AutoMigration (from = 2, to = 3)
     ]
 )
 @TypeConverters(DataConverter::class)

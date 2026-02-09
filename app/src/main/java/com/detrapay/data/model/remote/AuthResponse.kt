@@ -9,6 +9,10 @@ data class AuthResponse(
     var token: String,
     @SerializedName("user")
     var user: UserResponse,
+    @SerializedName("companies")
+    var companies: List<LoginCompanyResponse>,
+    @SerializedName("dispatchers")
+    var dispatchers: List<DispatcherResponse>
 )
 
 @Serializable

@@ -24,10 +24,11 @@ class HomeViewModel @Inject constructor(private val authRepository: AuthReposito
         viewModelScope.launch(Dispatchers.IO) {
             val result = authRepository.getLoggedUser(firstInitialization)
             if (result != null) {
+                val companyName = result.companies.firstOrNull()?.name ?: ""
                 _homeState.postValue(
                     UIState.Success(
                         HomeState(
-                            companyName = result.displayName
+                            companyName = companyName
                         )
                     )
                 )

@@ -95,6 +95,7 @@
                     android:layout_margin="4dp"
                     android:textColor="@color/white"
                     android:textSize="12sp"
+                    android:textAllCaps="true"
                     tools:text="Autorizado" />
 
             </LinearLayout>

@@ -12,4 +12,6 @@ data class User(
     var name: String,
     var email: String,
     var username: String,
+    var companies: String?,
+    var dispatchers: String?
 )

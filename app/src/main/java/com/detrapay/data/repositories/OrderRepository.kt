@@ -12,18 +12,34 @@ import com.detrapay.data.model.OrderStatus
 import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.RefundPaymentData
+import com.detrapay.data.model.Simulation
+import com.detrapay.data.model.SimulationPayment
 import com.detrapay.data.model.VehicleType
+import com.detrapay.data.model.remote.OrderCustomerRequest
+import com.detrapay.data.model.remote.OrderReceivableRequest
 import com.detrapay.data.model.remote.OrderResponse
+import com.detrapay.data.model.remote.OrderSimulationItemRequest
+import com.detrapay.data.model.remote.OrderSimulationRequest
+import com.detrapay.ui.util.Logger
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class OrderRepository @Inject constructor(
-    private val detrapayRemoteDataSource: DetrapayRemoteDataSource
+    private val detrapayRemoteDataSource: DetrapayRemoteDataSource,
+    private val authRepository: AuthRepository
 ) {
 
     suspend fun getOrders(forceRefresh: Boolean = false): Result<List<Order>> {
-        when (val result = detrapayRemoteDataSource.getOrders()) {
+        val user = authRepository.getLoggedUser(true)
+        val companyId = user?.companies?.firstOrNull()?.id
+        val dispatcherId = user?.dispatchers?.firstOrNull()?.id
+
+        if (companyId == null || dispatcherId == null) {
+            return Result.Error(Exception("Usuário não configurado com empresa e despachante."))
+        }
+
+        when (val result = detrapayRemoteDataSource.getOrders(companyId, dispatcherId)) {
             is Result.Success -> {
                 try {
                     val orders: List<Order?> = result.data.map {
@@ -146,6 +162,85 @@ class OrderRepository @Inject constructor(
         return "$year-$month-$day"
     }
 
+    suspend fun createOrder(
+        simulation: Simulation,
+        simulationPayments: List<SimulationPayment>
+    ): Result<Order> {
+        val user = authRepository.getLoggedUser(true)
+        val salesCompanyId = user?.companies?.firstOrNull()?.id
+        val dispatcherId = user?.dispatchers?.firstOrNull()?.id
+        val clientCpfCnpj = simulation.customer.cpfCnpj.replace(".", "")
+            .replace("/", "")
+            .replace("-", "")
+
+        val customerRequest = OrderCustomerRequest(
+            name = simulation.customer.name,
+            cpfCnpj = clientCpfCnpj,
+            phoneNumber = simulation.customer.whatsapp.replace("(", "")
+                .replace(")", "")
+                .replace("-", "")
+        )
+        val simulationRequest = OrderSimulationRequest(
+            billingDate = formatDate(simulation.simulation.billingDate),
+            vehiclePrice = simulation.simulation.vehiclePrice,
+            vehicleFinanced = simulation.simulation.vehicleDisposal,
+            vehicleSpecialPlate = simulation.simulation.vehicleSpecialPlate,
+            totalPrice = simulation.simulation.totalPrice.toString(),
+            vehicleTypeId = simulation.simulation.vehicleTypeId,
+        )
+        val simulationItemsRequest = simulation.simulationItems.map { simulationItem ->
+            OrderSimulationItemRequest(
+                id = simulationItem.id,
+                price = calculateItemPrice(simulationItem.price, simulationItem.discount)
+            )
+        }
+
+        val receivablesRequest = simulationPayments.map { simulationPayment ->
+            OrderReceivableRequest(
+                paymentMethodId = simulationPayment.paymentMethod.id,
+                amountOriginal = simulationPayment.amountOriginal
+                    .replace("R$", "")
+                    .replace(".", "")
+                    .replace(",", ".")
+                    .replace(" ", ""),
+                amountFinal = simulationPayment.amountFinal
+                    .replace("R$", "")
+                    .replace(".", "")
+                    .replace(",", ".")
+                    .replace(" ", ""),
+                tax = simulationPayment.paymentMethod.interestTax,
+                installments = simulationPayment.installment,
+                paymentDate = ""
+            )
+        }
+
+        when (val result = detrapayRemoteDataSource.createOrder(
+            customer = customerRequest,
+            simulation = simulationRequest,
+            items = simulationItemsRequest,
+            receivables = receivablesRequest,
+            createdById = user?.id,
+            salesCompanyId = salesCompanyId,
+            dispatcherId = dispatcherId
+        )) {
+            is Result.Success -> {
+                try {
+                    val order = parseOrder(result.data)
+                    return Result.Success(order)
+                } catch (e: Exception) {
+                    Logger.d("UNABLE TO CREATE ORDER: ${e.message}")
+                    return Result.Error(e)
+                }
+            }
+            is Result.Error -> {
+                return result
+            }
+            else -> {
+                return Result.Error(Exception())
+            }
+        }
+    }
+
     suspend fun payOrder(
         orderId:Int,
         receivable: OrderReceivableItem,
@@ -188,5 +283,15 @@ class OrderRepository @Inject constructor(
                 return Result.Error(Exception("Tivemos um erro no reembolso do pagamento, por favor tente novamente."))
             }
         }
+    }
+
+    private fun calculateItemPrice(itemPrice: Double, discount: Double?): String {
+        val price = if (discount != null) {
+            itemPrice - discount
+        } else {
+            itemPrice
+        }
+
+        return price.toString()
     }
 }

@@ -70,9 +70,9 @@ class DetrapayRemoteDataSource @Inject constructor(
         }
     }
 
-    suspend fun getOrders(): Result<List<OrderResponse>> {
+    suspend fun getOrders(companyId: Int, dispatcherId: Int): Result<List<OrderResponse>> {
         try {
-            val result = detrapayService.getOrders()
+            val result = detrapayService.getOrders(companyId, dispatcherId)
             if (result.isSuccessful) {
                 Logger.d((result.body() ?: "").toString())
                 return Result.Success(result.body()!!.data)
@@ -163,7 +163,9 @@ class DetrapayRemoteDataSource @Inject constructor(
         vehicleValue: String,
         vehicleTypeId: Int,
         disposalVehicle: Boolean,
-        specialPlate: Boolean
+        specialPlate: Boolean,
+        companyId: Int,
+        dispatcherId: Int
     ): Result<SimulationResponse> {
         try {
             val simulationRequest = SimulationRequest(
@@ -174,7 +176,9 @@ class DetrapayRemoteDataSource @Inject constructor(
                 vehicle_price = vehicleValue,
                 vehicle_type_id = vehicleTypeId,
                 is_vehicle_financed = disposalVehicle,
-                is_vehicle_special_plate = specialPlate
+                is_vehicle_special_plate = specialPlate,
+                company_id = companyId,
+                dispatcher_id = dispatcherId
 
             )
             val result = detrapayService.simulate(simulationRequest)
@@ -197,10 +201,14 @@ class DetrapayRemoteDataSource @Inject constructor(
         simulation: OrderSimulationRequest,
         items: List<OrderSimulationItemRequest>,
         receivables: List<OrderReceivableRequest>,
-        createdById: String? = null
+        createdById: String? = null,
+        salesCompanyId: Int?,
+        dispatcherId: Int?
     ): Result<OrderResponse> {
         try {
             val orderRequest = OrderRequest(
+                salesCompanyId = salesCompanyId,
+                dispatcherId = dispatcherId,
                 customer = customer,
                 simulation = simulation,
                 items = items,

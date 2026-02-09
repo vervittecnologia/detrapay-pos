@@ -17,6 +17,7 @@ import com.detrapay.data.model.Simulation
 import com.detrapay.data.model.SimulationItem
 import com.detrapay.data.model.SimulationPayment
 import com.detrapay.data.repositories.AuthRepository
+import com.detrapay.data.repositories.OrderRepository
 import com.detrapay.data.repositories.RegistrationRepository
 import com.detrapay.ui.registration.order_data.OrderData
 import com.detrapay.ui.registration.order_data.RegistrationOrderInitialState
@@ -34,6 +35,7 @@ import javax.inject.Inject
 @HiltViewModel
 class RegistrationViewModel @Inject constructor(
     private val registrationRepository: RegistrationRepository,
+    private val orderRepository: OrderRepository,
     private val authRepository: AuthRepository,
     private val plugPag: IPlugPagWrapper
 ) : ViewModel() {
@@ -194,6 +196,23 @@ class RegistrationViewModel @Inject constructor(
         _orderDataState.postValue(UIState.Loading())
 
         viewModelScope.launch(Dispatchers.IO) {
+            if (loggedInUser == null) {
+                loggedInUser = authRepository.getLoggedUser(true)
+            }
+
+            val companyId = loggedInUser?.companies?.firstOrNull()?.id
+            val dispatcherId = loggedInUser?.dispatchers?.firstOrNull()?.id
+
+            if (companyId == null || dispatcherId == null) {
+                _orderDataState.postValue(
+                    UIState.Error(
+                        message = "ID da empresa ou do despachante não encontrado.",
+                        exception = Exception("CompanyId or DispatcherId is null")
+                    )
+                )
+                return@launch
+            }
+
             val result = registrationRepository.simulate(
                 cpfCnpj,
                 clientName,
@@ -202,7 +221,9 @@ class RegistrationViewModel @Inject constructor(
                 vehicleValue,
                 vehicleTypeId,
                 disposalVehicle,
-                specialPlate
+                specialPlate,
+                companyId,
+                dispatcherId
             )
             if (result is Result.Success) {
                 simulation = result.data
@@ -366,20 +387,10 @@ class RegistrationViewModel @Inject constructor(
 
         if (simulation != null) {
             viewModelScope.launch(Dispatchers.IO) {
-                val user = authRepository.getLoggedUser(true)
-                val result = if (inEditMode) {
-                    registrationRepository.updateOrder(
-                        orderId = order!!.id,
-                        simulation = simulation!!,
-                        simulationPayments = payments,
-                    )
-                } else {
-                    registrationRepository.createOrder(
-                        simulation = simulation!!,
-                        simulationPayments = payments,
-                        createdById = user?.id,
-                    )
-                }
+                val result = orderRepository.createOrder(
+                    simulation = simulation!!,
+                    simulationPayments = payments
+                )
                 if (result is Result.Success) {
                     _paymentSelectionCreateOrderState.postValue(
                         UIState.Success(
@@ -406,10 +417,9 @@ class RegistrationViewModel @Inject constructor(
         return try {
             payments.sumOf {
                 it.amountOriginal.replace("R$", "", true)
-                    .replace(" ", "")
+                    .replace("\\s".toRegex(), "")
                     .replace(".", "")
                     .replace(",", ".")
-                    .replace("\\s".toRegex(), "")
                     .toDouble()
             }
         } catch (e: Exception) {

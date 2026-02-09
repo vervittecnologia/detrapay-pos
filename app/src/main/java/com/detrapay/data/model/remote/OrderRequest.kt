@@ -5,6 +5,10 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class OrderRequest(
+    @SerializedName("sales_company_id")
+    val salesCompanyId: Int? = null,
+    @SerializedName("dispatcher_id")
+    val dispatcherId: Int? = null,
     @SerializedName("customer")
     val customer: OrderCustomerRequest,
     @SerializedName("simulation")

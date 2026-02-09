@@ -40,8 +40,11 @@ object RepositoryModule {
 
     @Singleton
     @Provides
-    fun provideOrderRepository(detrapayRemoteDataSource: DetrapayRemoteDataSource): OrderRepository {
-        return OrderRepository(detrapayRemoteDataSource)
+    fun provideOrderRepository(
+        detrapayRemoteDataSource: DetrapayRemoteDataSource,
+        authRepository: AuthRepository
+    ): OrderRepository {
+        return OrderRepository(detrapayRemoteDataSource, authRepository)
     }
 
     @Singleton

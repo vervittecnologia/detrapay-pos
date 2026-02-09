@@ -161,6 +161,8 @@
                     android:layout_margin="4dp"
                     android:textColor="@color/white"
                     android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textAllCaps="true"
                     tools:text="1029" />
 
             </LinearLayout>

@@ -27,7 +27,7 @@ class LoginViewModel @Inject constructor(private val loginRepository: LoginRepos
             val cnpjNumbers = cnpj.replace(".","").replace("-", "").replace("/","")
             val result = loginRepository.login(cnpjNumbers, password)
             if (result is Result.Success) {
-                _loginResult.postValue(LoginResult(success = true))
+                _loginResult.postValue(LoginResult(success = result.data))
             } else {
                 _loginResult.postValue(LoginResult(error = R.string.login_failed))
             }

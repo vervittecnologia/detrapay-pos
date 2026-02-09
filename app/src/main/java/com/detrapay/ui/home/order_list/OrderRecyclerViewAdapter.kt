@@ -101,7 +101,7 @@ class OrderRecyclerViewAdapter(
 
             val (cardBackground, textColor) = when (item.status) {
                 OrderStatus.PENDING -> R.drawable.pending_status_background to "#0E5FB2"
-                OrderStatus.PAID -> R.drawable.paid_status_background to "#805AD5"
+                OrderStatus.PAID -> R.drawable.payment_success_status_background to "#FFFFFF"
                 OrderStatus.AUTHORIZED -> R.drawable.authorized_status_background to "#B7791F"
                 OrderStatus.COMPLETED -> R.drawable.completed_status_background to "#2F855A"
                 OrderStatus.CANCELLED -> R.drawable.cancelled_status_background to "#FFFFFF"
