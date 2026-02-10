@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -18,6 +19,7 @@ import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.OrderReceivableItemStatus
 import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.RefundPaymentData
+import com.detrapay.data.model.Salesman
 import com.detrapay.databinding.ActivityOrderDetailsBinding
 //import com.detrapay.ui.employee_selection.EmployeeSelectionActivity
 import com.detrapay.ui.payment.PaymentDialogFragment
@@ -45,6 +47,7 @@ class OrderDetailsActivity : AppCompatActivity(),
         orderParam = intent.getSerializableExtra("order") as Order
         binding = ActivityOrderDetailsBinding.inflate(layoutInflater)
         viewModel.loadScreenContent(orderParam.id)
+        viewModel.loadSalesmen()
         setupToolbar(orderParam)
         setupObservers()
         setupErrorBtn()
@@ -87,6 +90,26 @@ class OrderDetailsActivity : AppCompatActivity(),
                         status.message ?: getString(R.string.employees_default_error_message)
                     binding.errorView.visibility = View.VISIBLE
                 }
+            }
+        })
+
+        viewModel.salesmenState.observe(this, Observer { status ->
+            when (status) {
+                is UIState.Success -> {
+                    status.data?.let { salesmen ->
+                        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, salesmen.map { it.name })
+                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                        binding.salesmanSpinner.adapter = adapter
+
+                        orderParam.salesman?.let { salesman ->
+                            val position = salesmen.indexOfFirst { it.id == salesman.id }
+                            if (position != -1) {
+                                binding.salesmanSpinner.setSelection(position)
+                            }
+                        }
+                    }
+                }
+                else -> {}
             }
         })
     }
@@ -173,6 +196,11 @@ class OrderDetailsActivity : AppCompatActivity(),
                     )
                 )
             }
+        }
+
+        binding.saveSalesmanButton.setOnClickListener {
+            val selectedSalesman = binding.salesmanSpinner.selectedItem as Salesman
+            viewModel.updateOrderSalesman(selectedSalesman)
         }
 
 //        binding.finishServiceBtn.setOnClickListener {

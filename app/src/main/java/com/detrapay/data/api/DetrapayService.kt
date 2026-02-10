@@ -13,6 +13,7 @@ import com.detrapay.data.model.remote.RefundOrderReceivableRequestDataWrapper
 import com.detrapay.data.model.remote.SimulationRequest
 import com.detrapay.data.model.remote.SimulationResponse
 import com.detrapay.data.model.remote.UpdateOrderReceivableRequestDataWrapper
+import com.detrapay.data.model.remote.UpdateOrderSalesmanRequest
 import com.detrapay.data.model.remote.VehicleTypeListResponse
 import retrofit2.Response
 import retrofit2.http.Body
@@ -39,6 +40,9 @@ interface DetrapayService {
 
     @GET("sales-orders/{id}")
     suspend fun getOrder(@Path("id") orderId: Int, @Query("populate") populate: String = "deep,3"): Response<CreateOrderResponse>
+
+    @PUT("sales-orders/{id}")
+    suspend fun updateOrderSalesman(@Path("id") orderId: Int, @Body payload: UpdateOrderSalesmanRequest): Response<OrderResponse>
 
     @GET("vehicle-types")
     suspend fun getVehicleTypes(): Response<VehicleTypeListResponse>

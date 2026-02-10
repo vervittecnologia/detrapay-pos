@@ -8,6 +8,7 @@ import com.detrapay.data.model.CustomerSearchData
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.OrderCustomer
 import com.detrapay.data.model.OrderStatus
+import com.detrapay.data.model.Salesman
 import com.detrapay.data.model.Simulation
 import com.detrapay.data.model.SimulationCustomer
 import com.detrapay.data.model.SimulationItem
@@ -264,7 +265,13 @@ class RegistrationRepository @Inject constructor(
             isVehicleSpecialPlate = false,
             vehicleType = VehicleType(0, ""),
             items = emptyList(),
-            receivables = emptyList()
+            receivables = emptyList(),
+            salesman = orderResponse.attributes.salesman?.data?.let {
+                Salesman(
+                    id = it.id,
+                    name = it.attributes.name
+                )
+            }
         )
     }
 

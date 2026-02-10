@@ -9,6 +9,8 @@ import com.detrapay.data.model.Order
 import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.RefundPaymentData
+import com.detrapay.data.model.Salesman
+import com.detrapay.data.repositories.AuthRepository
 import com.detrapay.data.repositories.OrderRepository
 import com.detrapay.ui.state.UIState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,17 +21,51 @@ import javax.inject.Inject
 @HiltViewModel
 class OrderDetailsViewModel @Inject constructor(
     private val orderRepository: OrderRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private var orderId: Int = 0
     private val _orderState = MutableLiveData<UIState<Order>>()
     val orderState: LiveData<UIState<Order>> = _orderState
 
+    private val _salesmenState = MutableLiveData<UIState<List<Salesman>>>()
+    val salesmenState: LiveData<UIState<List<Salesman>>> = _salesmenState
+
     fun loadScreenContent(orderId: Int) {
         this.orderId = orderId
         _orderState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
             val result = orderRepository.getOrder(orderId)
+            if (result is Result.Success) {
+                _orderState.postValue(UIState.Success(result.data))
+            } else {
+                val error = result as Result.Error
+                _orderState.postValue(
+                    UIState.Error(
+                        message = "Ops! Algo deu errado, tente novamente.",
+                        exception = error.exception
+                    )
+                )
+            }
+        }
+    }
+
+    fun loadSalesmen() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val user = authRepository.getLoggedUser(true)
+            val salesmen = user?.salesmen
+            if (salesmen != null) {
+                _salesmenState.postValue(UIState.Success(salesmen))
+            } else {
+                _salesmenState.postValue(UIState.Error("Nenhum vendedor encontrado"))
+            }
+        }
+    }
+
+    fun updateOrderSalesman(salesman: Salesman) {
+        _orderState.postValue(UIState.Loading())
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = orderRepository.updateOrderSalesman(orderId, salesman.id)
             if (result is Result.Success) {
                 _orderState.postValue(UIState.Success(result.data))
             } else {

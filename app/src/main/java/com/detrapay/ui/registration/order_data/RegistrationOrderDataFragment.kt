@@ -15,6 +15,7 @@ import androidx.navigation.findNavController
 import com.detrapay.R
 import com.detrapay.data.UnauthorizedException
 import com.detrapay.data.model.CustomerSearchData
+import com.detrapay.data.model.Salesman
 import com.detrapay.data.model.VehicleType
 import com.detrapay.databinding.FragmentRegistrationOrderDataBinding
 import com.detrapay.ui.registration.RegistrationViewModel
@@ -31,6 +32,8 @@ class RegistrationOrderDataFragment : Fragment() {
     private var canNavigate = false
     private var selectedVehicle: VehicleType? = null
     private var selectedVehicleType: Int? = null
+    private var selectedSalesman: Salesman? = null
+    private var selectedSalesmanId: String? = null
     private lateinit var binding: FragmentRegistrationOrderDataBinding
 
     override fun onCreateView(
@@ -168,7 +171,8 @@ class RegistrationOrderDataFragment : Fragment() {
                     vehicleValue,
                     vehicleTypeId!!,
                     binding.disposalVehicleCheckbox.isChecked,
-                    binding.specialPlateCheckBox.isChecked
+                    binding.specialPlateCheckBox.isChecked,
+                    selectedSalesmanId
                 )
             }
         }
@@ -200,6 +204,7 @@ class RegistrationOrderDataFragment : Fragment() {
                         binding.errorView.visibility = View.GONE
                         binding.contentView.visibility = View.VISIBLE
                         setupVehiclesTypesAdapter(it.vehicleTypes)
+                        setupSalesmanAdapter(it.salesmen)
 
                         it.orderData?.let { data ->
                             binding.clientNameInput.setText(data.name)
@@ -225,6 +230,7 @@ class RegistrationOrderDataFragment : Fragment() {
                             selectedVehicle = data.vehicleType
                             selectedVehicleType = data.vehicleType.id
                             binding.vehicleValueInput.setText(data.vehiclePrice)
+                            selectedSalesmanId = data.salesmanId
                         }
                     }
                 }
@@ -313,6 +319,32 @@ class RegistrationOrderDataFragment : Fragment() {
                 ) {
                     selectedVehicle = vehicleTypes[position]
                     selectedVehicleType = position
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>?) {}
+            }
+    }
+
+    private fun setupSalesmanAdapter(salesmen: List<Salesman>) {
+        val adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            salesmen.map { it.name })
+
+        binding.salesmanSpinner.setAdapter(adapter)
+
+        if (selectedSalesmanId != null) {
+            val salesmanPosition = salesmen.indexOfFirst { it.id == selectedSalesmanId }
+            binding.salesmanSpinner.setSelection(salesmanPosition)
+        }
+
+        binding.salesmanSpinner.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: AdapterView<*>, view: View?, position: Int, id: Long
+                ) {
+                    selectedSalesman = salesmen[position]
+                    selectedSalesmanId = salesmen[position].id
                 }
 
                 override fun onNothingSelected(parent: AdapterView<*>?) {}

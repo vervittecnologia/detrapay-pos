@@ -25,6 +25,7 @@ import com.detrapay.data.model.remote.RefundOrderReceivableRequest
 import com.detrapay.data.model.remote.RefundOrderReceivableRequestDataWrapper
 import com.detrapay.data.model.remote.UpdateOrderReceivableRequest
 import com.detrapay.data.model.remote.UpdateOrderReceivableRequestDataWrapper
+import com.detrapay.data.model.remote.UpdateOrderSalesmanRequest
 import com.detrapay.data.model.remote.VehicleTypeItemResponse
 import com.detrapay.ui.util.Logger
 import java.io.IOException
@@ -203,8 +204,9 @@ class DetrapayRemoteDataSource @Inject constructor(
         receivables: List<OrderReceivableRequest>,
         createdById: String? = null,
         salesCompanyId: Int?,
-        dispatcherId: Int?
-    ): Result<OrderResponse> {
+        dispatcherId: Int?,
+        salesmanId: String?
+    ): Result<CreateOrderResponse> {
         try {
             val orderRequest = OrderRequest(
                 salesCompanyId = salesCompanyId,
@@ -213,12 +215,13 @@ class DetrapayRemoteDataSource @Inject constructor(
                 simulation = simulation,
                 items = items,
                 receivables = receivables,
-                createdById = createdById
+                createdById = createdById,
+                  salesmanId = salesmanId
             )
             val result = detrapayService.createOrder(orderRequest)
             if (result.isSuccessful) {
                 Logger.d((result.body() ?: "").toString())
-                return Result.Success(result.body()!!.data)
+                return Result.Success(result.body()!!)
             } else {
                 Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
@@ -315,6 +318,22 @@ class DetrapayRemoteDataSource @Inject constructor(
         } catch (e: Throwable) {
             Logger.d(e.toString())
             return Result.Error(IOException("Erro no reembolso do pagamento", e))
+        }
+    }
+
+    suspend fun updateOrderSalesman(orderId: Int, salesmanId: String): Result<OrderResponse> {
+        try {
+            val request = UpdateOrderSalesmanRequest(salesmanId)
+            val result = detrapayService.updateOrderSalesman(orderId, request)
+
+            return if (result.isSuccessful) {
+                Result.Success(result.body()!!)
+            } else {
+                if (result.code() == 401) return Result.Error(UnauthorizedException())
+                Result.Error(Exception(ApiError(result.errorBody()).message))
+            }
+        } catch (e: Throwable) {
+            return Result.Error(IOException("Erro ao atualizar vendedor do pedido", e))
         }
     }
 }

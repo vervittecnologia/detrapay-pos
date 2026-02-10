@@ -10,5 +10,6 @@ data class LoggedInUser(
     val username: String,
     val email: String,
     val companies: List<Company>,
-    val dispatchers: List<Dispatcher>
+    val dispatchers: List<Dispatcher>,
+    val salesmen: List<Salesman>
 )

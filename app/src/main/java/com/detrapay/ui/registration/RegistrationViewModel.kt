@@ -13,6 +13,7 @@ import com.detrapay.data.model.CustomerSearchData
 import com.detrapay.data.model.LoggedInUser
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.PaymentMethod
+import com.detrapay.data.model.Salesman
 import com.detrapay.data.model.Simulation
 import com.detrapay.data.model.SimulationItem
 import com.detrapay.data.model.SimulationPayment
@@ -47,6 +48,7 @@ class RegistrationViewModel @Inject constructor(
 
     private var simulation: Simulation? = null
     private var loggedInUser: LoggedInUser? = null
+    private var salesmanId: String? = null
 
     private var paymentMethods: List<PaymentMethod> = emptyList()
 
@@ -111,9 +113,14 @@ class RegistrationViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             val result = registrationRepository.loadVehicleTypes()
             if (result is Result.Success) {
+                if (loggedInUser == null) {
+                    loggedInUser = authRepository.getLoggedUser(true)
+                }
+                val salesmen = loggedInUser?.salesmen ?: emptyList()
                 val initialState = if (inEditMode && firstInitialization) {
                     RegistrationOrderInitialState(
                         vehicleTypes = result.data,
+                        salesmen = salesmen,
                         orderData = OrderData(
                             cpfCnpj = order!!.customer.cpfCnpj,
                             phone = order!!.customer.phoneNumber,
@@ -123,11 +130,13 @@ class RegistrationViewModel @Inject constructor(
                             disposalVehicle = order!!.isVehicleFinanced,
                             vehicleType = order!!.vehicleType,
                             vehiclePrice = "%,.2f".format(locale, order!!.vehiclePrice),
+                            salesmanId = order!!.salesman?.id
                         )
                     )
                 } else {
                     RegistrationOrderInitialState(
-                        vehicleTypes = result.data
+                        vehicleTypes = result.data,
+                        salesmen = salesmen
                     )
                 }
                 _orderInitialState.postValue(UIState.Success(initialState))
@@ -191,8 +200,10 @@ class RegistrationViewModel @Inject constructor(
         vehicleValue: String,
         vehicleTypeId: Int,
         disposalVehicle: Boolean,
-        specialPlate: Boolean
+        specialPlate: Boolean,
+        salesmanId: String?
     ) {
+        this.salesmanId = salesmanId
         _orderDataState.postValue(UIState.Loading())
 
         viewModelScope.launch(Dispatchers.IO) {
@@ -389,7 +400,8 @@ class RegistrationViewModel @Inject constructor(
             viewModelScope.launch(Dispatchers.IO) {
                 val result = orderRepository.createOrder(
                     simulation = simulation!!,
-                    simulationPayments = payments
+                    simulationPayments = payments,
+                    salesmanId = salesmanId
                 )
                 if (result is Result.Success) {
                     _paymentSelectionCreateOrderState.postValue(

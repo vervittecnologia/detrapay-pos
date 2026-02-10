@@ -177,6 +177,34 @@
                     app:layout_constraintTop_toBottomOf="@+id/dividerVehicleValue"
                     tools:text="automóveis acima de 180cc" />
 
+                <com.google.android.material.divider.MaterialDivider
+                    android:id="@+id/dividerVehicleType"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="12dp"
+                    app:dividerColor="@color/shimmerColor"
+                    app:layout_constraintTop_toBottomOf="@+id/vehicleTypeValue"
+                    tools:layout_editor_absoluteX="16dp" />
+
+                <TextView
+                    android:id="@+id/salesmanLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Vendedor"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/dividerVehicleType" />
+
+                <Spinner
+                    android:id="@+id/salesmanSpinner"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textAlignment="textEnd"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/salesmanLabel"
+                    app:layout_constraintTop_toBottomOf="@+id/dividerVehicleType" />
+
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -247,6 +275,19 @@
                 tools:listitem="@layout/order_payment_list_item" />
 
             <Button
+                android:id="@+id/saveSalesmanButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_marginLeft="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginRight="16dp"
+                android:background="@drawable/default_button_background"
+                android:text="Salvar"
+                android:textColor="@color/white"
+                app:layout_constraintTop_toBottomOf="@+id/receivablesRecyclerView" />
+
+            <Button
                 android:id="@+id/finishServiceBtn"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -261,7 +302,7 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/receivablesRecyclerView" />
+                app:layout_constraintTop_toBottomOf="@+id/saveSalesmanButton" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -12,7 +12,9 @@ data class AuthResponse(
     @SerializedName("companies")
     var companies: List<LoginCompanyResponse>,
     @SerializedName("dispatchers")
-    var dispatchers: List<DispatcherResponse>
+    var dispatchers: List<DispatcherResponse>,
+    @SerializedName("salesmen")
+    var salesmen: List<LoginSalesmanResponse>
 )
 
 @Serializable
@@ -45,4 +47,12 @@ data class RoleResponse(
     val name: String,
     @SerializedName("type")
     val type: String
+)
+
+@Serializable
+data class LoginSalesmanResponse(
+    @SerializedName("id")
+    val id: String,
+    @SerializedName("name")
+    val name: String
 )

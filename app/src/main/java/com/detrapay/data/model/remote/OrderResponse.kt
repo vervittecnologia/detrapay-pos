@@ -1,5 +1,6 @@
 package com.detrapay.data.model.remote
 
+import com.detrapay.data.model.Salesman
 import com.google.gson.annotations.SerializedName
 import kotlinx.serialization.Serializable
 
@@ -34,7 +35,8 @@ data class OrderAttributesResponse(
     val isVehicleFinanced: Boolean,
     val isSpecialPlate: Boolean,
     val vehicle_types: VehicleTypeDataWrapper,
-    val sales_order_items: SalesOrderItemsDataWrapper
+    val sales_order_items: SalesOrderItemsDataWrapper,
+    val salesman: SalesmanDataWrapper? = null
 )
 
 @Serializable
@@ -170,5 +172,21 @@ data class SalesItemResponse(
 
 @Serializable
 data class SalesItemAttributesResponse(
+    val name: String
+)
+
+@Serializable
+data class SalesmanDataWrapper(
+    val data: SalesmanResponse
+)
+
+@Serializable
+data class SalesmanResponse(
+    val id: String,
+    val attributes: SalesmanAttributesResponse
+)
+
+@Serializable
+data class SalesmanAttributesResponse(
     val name: String
 )

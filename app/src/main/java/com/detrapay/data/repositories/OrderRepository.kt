@@ -12,6 +12,7 @@ import com.detrapay.data.model.OrderStatus
 import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.RefundPaymentData
+import com.detrapay.data.model.Salesman
 import com.detrapay.data.model.Simulation
 import com.detrapay.data.model.SimulationPayment
 import com.detrapay.data.model.VehicleType
@@ -42,9 +43,9 @@ class OrderRepository @Inject constructor(
         when (val result = detrapayRemoteDataSource.getOrders(companyId, dispatcherId)) {
             is Result.Success -> {
                 try {
-                    val orders: List<Order?> = result.data.map {
+                    val orders: List<Order?> = result.data.map { orderResponse ->
                         try {
-                            parseOrder(it)
+                            parseOrder(orderResponse)
                         } catch (e: Exception) {
                             null
                         }
@@ -151,7 +152,13 @@ class OrderRepository @Inject constructor(
                     authorizationCode = receivable.attributes.authorizationCode,
                     pixTxIdCode = null
                 )
-            } ?: emptyList()
+            } ?: emptyList(),
+            salesman = orderResponse.attributes.salesman?.data?.let {
+                Salesman(
+                    id = it.id,
+                    name = it.attributes.name
+                )
+            }
         )
     }
 
@@ -164,7 +171,8 @@ class OrderRepository @Inject constructor(
 
     suspend fun createOrder(
         simulation: Simulation,
-        simulationPayments: List<SimulationPayment>
+        simulationPayments: List<SimulationPayment>,
+        salesmanId: String?
     ): Result<Order> {
         val user = authRepository.getLoggedUser(true)
         val salesCompanyId = user?.companies?.firstOrNull()?.id
@@ -221,11 +229,12 @@ class OrderRepository @Inject constructor(
             receivables = receivablesRequest,
             createdById = user?.id,
             salesCompanyId = salesCompanyId,
-            dispatcherId = dispatcherId
+            dispatcherId = dispatcherId,
+            salesmanId = salesmanId
         )) {
             is Result.Success -> {
                 try {
-                    val order = parseOrder(result.data)
+                    val order = parseOrder(result.data.data)
                     return Result.Success(order)
                 } catch (e: Exception) {
                     Logger.d("UNABLE TO CREATE ORDER: ${e.message}")
@@ -282,6 +291,13 @@ class OrderRepository @Inject constructor(
             else -> {
                 return Result.Error(Exception("Tivemos um erro no reembolso do pagamento, por favor tente novamente."))
             }
+        }
+    }
+
+    suspend fun updateOrderSalesman(orderId: Int, salesmanId: String): Result<Order> {
+        return when (val result = detrapayRemoteDataSource.updateOrderSalesman(orderId, salesmanId)) {
+            is Result.Success -> getOrder(orderId)
+            is Result.Error -> result
         }
     }
 

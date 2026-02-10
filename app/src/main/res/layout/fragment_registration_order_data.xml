@@ -231,6 +231,30 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/disposalVehicleCheckbox" />
 
+            <LinearLayout
+                android:id="@+id/salesmanDropDownMenuLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="16dp"
+                android:orientation="vertical"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/specialPlateCheckBox">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Vendedor" />
+
+                <Spinner
+                    android:id="@+id/salesmanSpinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:selectAllOnFocus="true" />
+            </LinearLayout>
+
             <Button
                 android:id="@+id/registrationOrderDataNextBtn"
                 android:layout_width="match_parent"
@@ -245,7 +269,7 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/specialPlateCheckBox" />
+                app:layout_constraintTop_toBottomOf="@+id/salesmanDropDownMenuLayout" />
 
             <TextView
                 android:id="@+id/registrationOrderDataNextBtnError"
@@ -254,7 +278,7 @@
                 android:layout_marginStart="16dp"
                 android:layout_marginTop="8dp"
                 android:layout_marginEnd="16dp"
-                android:indeterminateTint="@color/primary_500"
+                android:indeterminateTint="@color/red"
                 android:textColor="@color/red"
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
