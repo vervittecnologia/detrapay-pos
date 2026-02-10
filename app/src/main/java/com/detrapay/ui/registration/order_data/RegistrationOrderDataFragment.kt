@@ -8,6 +8,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
@@ -103,6 +105,14 @@ class RegistrationOrderDataFragment : Fragment() {
 
         binding.registrationOrderDataNextBtn.setOnClickListener {
             var hasInvalidFields = false
+
+            if (selectedSalesmanId == null) {
+                hasInvalidFields = true
+                (binding.salesmanSpinner.selectedView as? TextView)?.error = "Campo obrigatório"
+            } else {
+                (binding.salesmanSpinner.selectedView as? TextView)?.error = null
+            }
+
             val cpfCnpj = binding.cpfCnpj.text.toString()
             val validCpfCnpj = isValidCpf(cpfCnpj) || isValidCpnj(cpfCnpj)
             if (cpfCnpj.length != 14 && cpfCnpj.length != 18) {
@@ -326,16 +336,50 @@ class RegistrationOrderDataFragment : Fragment() {
     }
 
     private fun setupSalesmanAdapter(salesmen: List<Salesman>) {
-        val adapter = ArrayAdapter(
+        val mutableSalesmen = salesmen.toMutableList()
+        mutableSalesmen.add(0, Salesman(null, "Selecione"))
+
+        val adapter = object : ArrayAdapter<Salesman>(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            salesmen.map { it.name })
+            mutableSalesmen
+        ) {
+            override fun isEnabled(position: Int): Boolean {
+                return position != 0
+            }
 
-        binding.salesmanSpinner.setAdapter(adapter)
+            override fun getDropDownView(
+                position: Int,
+                convertView: View?,
+                parent: ViewGroup
+            ): View {
+                val view = super.getDropDownView(position, convertView, parent)
+                val textView = view as TextView
+
+                if (position == 0) {
+                    textView.setTextColor(ContextCompat.getColor(context, R.color.neutral_400))
+                } else {
+                    textView.setTextColor(ContextCompat.getColor(context, R.color.black))
+                }
+
+                return view
+            }
+
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getView(position, convertView, parent)
+                val textView = view.findViewById<TextView>(android.R.id.text1)
+                textView.text = mutableSalesmen[position].name
+                return view
+            }
+        }
+
+        binding.salesmanSpinner.adapter = adapter
 
         if (selectedSalesmanId != null) {
             val salesmanPosition = salesmen.indexOfFirst { it.id == selectedSalesmanId }
             binding.salesmanSpinner.setSelection(salesmanPosition)
+        } else {
+            binding.salesmanSpinner.setSelection(0)
         }
 
         binding.salesmanSpinner.onItemSelectedListener =
@@ -343,8 +387,13 @@ class RegistrationOrderDataFragment : Fragment() {
                 override fun onItemSelected(
                     parent: AdapterView<*>, view: View?, position: Int, id: Long
                 ) {
-                    selectedSalesman = salesmen[position]
-                    selectedSalesmanId = salesmen[position].id
+                    if (position > 0) {
+                        selectedSalesman = mutableSalesmen[position]
+                        selectedSalesmanId = mutableSalesmen[position].id
+                    } else {
+                        selectedSalesman = null
+                        selectedSalesmanId = null
+                    }
                 }
 
                 override fun onNothingSelected(parent: AdapterView<*>?) {}

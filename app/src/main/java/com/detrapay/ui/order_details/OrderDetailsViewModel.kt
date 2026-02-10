@@ -65,6 +65,14 @@ class OrderDetailsViewModel @Inject constructor(
     fun updateOrderSalesman(salesman: Salesman) {
         _orderState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
+            if (salesman.id == null) {
+                _orderState.postValue(
+                    UIState.Error(
+                        message = "Ops! O vendedor selecionado não possui um ID."
+                    )
+                )
+                return@launch
+            }
             val result = orderRepository.updateOrderSalesman(orderId, salesman.id)
             if (result is Result.Success) {
                 _orderState.postValue(UIState.Success(result.data))

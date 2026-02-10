@@ -28,6 +28,30 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
+            <LinearLayout
+                android:id="@+id/salesmanDropDownMenuLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="16dp"
+                android:orientation="vertical"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Vendedor*" />
+
+                <Spinner
+                    android:id="@+id/salesmanSpinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:selectAllOnFocus="true" />
+            </LinearLayout>
+
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/cpfCnpjTextInputLayout"
                 android:layout_width="0dp"
@@ -41,7 +65,7 @@
                 app:hintTextAppearance="@style/TextAppearance.AppCompat.Medium"
                 app:layout_constraintEnd_toStartOf="@+id/cpfCnpjLoading"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
+                app:layout_constraintTop_toBottomOf="@+id/salesmanDropDownMenuLayout">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/cpfCnpj"
@@ -216,7 +240,7 @@
                 android:text="@string/disposal_vehicle_order_input"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/vehicleTypeTextInputLayout" />
+                app:layout_constraintTop_toBottomOf="@+id/dropDownMenuLayout" />
 
             <CheckBox
                 android:id="@+id/specialPlateCheckBox"
@@ -230,30 +254,6 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/disposalVehicleCheckbox" />
-
-            <LinearLayout
-                android:id="@+id/salesmanDropDownMenuLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginEnd="16dp"
-                android:orientation="vertical"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/specialPlateCheckBox">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Vendedor" />
-
-                <Spinner
-                    android:id="@+id/salesmanSpinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:selectAllOnFocus="true" />
-            </LinearLayout>
 
             <Button
                 android:id="@+id/registrationOrderDataNextBtn"
@@ -269,7 +269,7 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/salesmanDropDownMenuLayout" />
+                app:layout_constraintTop_toBottomOf="@+id/specialPlateCheckBox" />
 
             <TextView
                 android:id="@+id/registrationOrderDataNextBtnError"
