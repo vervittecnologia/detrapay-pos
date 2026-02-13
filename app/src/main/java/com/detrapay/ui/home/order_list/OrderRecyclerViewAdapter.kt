@@ -87,7 +87,7 @@ class OrderRecyclerViewAdapter(
                     val amountFinalFormatted = "%,.2f".format(locale, receivable.amountFinal)
                     val installmentAmount = receivable.amountFinal / installments
                     val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
-                    "$paymentMethodName ${installments}x\nR$ $amountOriginalFormatted em ${installments}x de R$ $installmentFormattedValue (R$ $amountFinalFormatted)"
+                    "$paymentMethodName\nR$ $amountOriginalFormatted em ${installments}x de R$ $installmentFormattedValue (R$ $amountFinalFormatted)"
                 } else {
                     val amountOriginalFormatted = "%,.2f".format(locale, receivable.amountOriginal)
                     "$paymentMethodName\nR$ $amountOriginalFormatted"

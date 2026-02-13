@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.room)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
@@ -22,6 +23,8 @@ android {
 
     buildFeatures {
         buildConfig = true
+        viewBinding = true
+        compose = true
     }
 
     buildTypes {
@@ -43,9 +46,6 @@ android {
     }
     kotlinOptions {
         jvmTarget = "11"
-    }
-    buildFeatures {
-        viewBinding = true
     }
 
     room {
@@ -74,7 +74,6 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
-    annotationProcessor(libs.room.compiler)
     ksp(libs.room.compiler)
     implementation(libs.pagseguro)
     implementation(libs.androidx.core.ktx)

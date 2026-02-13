@@ -1,6 +1,7 @@
 package com.detrapay.data.api
 
 import com.detrapay.data.repositories.AuthRepository
+import com.detrapay.ui.util.DeviceUtils
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
@@ -15,12 +16,13 @@ class AuthInterceptor @Inject constructor(
         val loggedInUser = runBlocking {
             return@runBlocking authRepository.getLoggedUser()
         }
+
+        val request = chain.request().newBuilder()
+            .addHeader("x-device-serial", DeviceUtils.getSerialNumber())
+
         if (loggedInUser != null) {
-            val request = chain.request().newBuilder()
-                .addHeader("Authorization", "Bearer " + loggedInUser.sessionToken).build()
-            return chain.proceed(request)
-        } else {
-            return chain.proceed(chain.request())
+            request.addHeader("Authorization", "Bearer " + loggedInUser.sessionToken)
         }
+        return chain.proceed(request.build())
     }
 }

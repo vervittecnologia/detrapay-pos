@@ -21,8 +21,10 @@ import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.OrderReceivableItemStatus
 import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.remote.ApiError
+import com.detrapay.data.model.remote.CreateOrderRequest
 import com.detrapay.data.model.remote.RefundOrderReceivableRequest
 import com.detrapay.data.model.remote.RefundOrderReceivableRequestDataWrapper
+import com.detrapay.data.model.remote.SplitConfigRequest
 import com.detrapay.data.model.remote.UpdateOrderReceivableRequest
 import com.detrapay.data.model.remote.UpdateOrderReceivableRequestDataWrapper
 import com.detrapay.data.model.remote.UpdateOrderSalesmanRequest
@@ -198,26 +200,9 @@ class DetrapayRemoteDataSource @Inject constructor(
     }
 
     suspend fun createOrder(
-        customer: OrderCustomerRequest,
-        simulation: OrderSimulationRequest,
-        items: List<OrderSimulationItemRequest>,
-        receivables: List<OrderReceivableRequest>,
-        createdById: String? = null,
-        salesCompanyId: Int?,
-        dispatcherId: Int?,
-        salesmanId: String?
+        orderRequest: CreateOrderRequest
     ): Result<CreateOrderResponse> {
         try {
-            val orderRequest = OrderRequest(
-                salesCompanyId = salesCompanyId,
-                dispatcherId = dispatcherId,
-                customer = customer,
-                simulation = simulation,
-                items = items,
-                receivables = receivables,
-                createdById = createdById,
-                  salesmanId = salesmanId
-            )
             val result = detrapayService.createOrder(orderRequest)
             if (result.isSuccessful) {
                 Logger.d((result.body() ?: "").toString())
@@ -334,6 +319,23 @@ class DetrapayRemoteDataSource @Inject constructor(
             }
         } catch (e: Throwable) {
             return Result.Error(IOException("Erro ao atualizar vendedor do pedido", e))
+        }
+    }
+    
+    suspend fun updateSplitConfig(payload: SplitConfigRequest): Result<Unit> {
+        try {
+            val result = detrapayService.updateSplitConfig(payload)
+            if (result.isSuccessful) {
+                Logger.d("updateSplitConfig success")
+                return Result.Success(Unit)
+            } else {
+                Logger.d((result.errorBody() ?: "").toString())
+                if (result.code() == 401) return Result.Error(UnauthorizedException())
+                return Result.Error(Exception(ApiError(result.errorBody()).message))
+            }
+        } catch (e: Throwable) {
+            Logger.d(e.toString())
+            return Result.Error(IOException("Error in update-split-config", e))
         }
     }
 }

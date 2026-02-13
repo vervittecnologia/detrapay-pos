@@ -38,9 +38,9 @@
                 android:layout_height="40dp"
                 android:layout_marginTop="16dp"
                 android:layout_marginEnd="4dp"
-                android:textAlignment="center"
                 android:gravity="center"
                 android:text="@string/order_details_edit_order_text_view"
+                android:textAllCaps="true"
                 android:textColor="@color/neutral_600"
                 app:layout_constraintEnd_toStartOf="@+id/editOrderImageView"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -70,7 +70,8 @@
                     android:id="@+id/cpfCnpjLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="CPF/CNPJ do cliente"
+                    android:text="CPF/CNPJ DO CLIENTE"
+                    android:textAllCaps="true"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
@@ -79,6 +80,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:textAlignment="textEnd"
+                    android:textAllCaps="true"
                     android:textStyle="bold"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@+id/cpfCnpjLabel"
@@ -91,7 +93,7 @@
                     android:layout_height="1dp"
                     android:layout_marginTop="12dp"
                     app:dividerColor="@color/shimmerColor"
-                    app:layout_constraintTop_toBottomOf="@id/cpfCnpjValue"
+                    app:layout_constraintTop_toBottomOf="@+id/cpfCnpjValue"
                     tools:layout_editor_absoluteX="16dp" />
 
                 <TextView
@@ -99,7 +101,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="Nome do cliente"
+                    android:text="NOME DO CLIENTE"
+                    android:textAllCaps="true"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/dividerCpfCnpj" />
 
@@ -111,6 +114,7 @@
                     android:ellipsize="end"
                     android:maxLines="2"
                     android:textAlignment="textEnd"
+                    android:textAllCaps="true"
                     android:textStyle="bold"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@+id/clientNameLabel"
@@ -131,7 +135,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="Valor do veículo"
+                    android:text="VALOR DO VEÍCULO"
+                    android:textAllCaps="true"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/dividerClientName" />
 
@@ -141,6 +146,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:textAlignment="textEnd"
+                    android:textAllCaps="true"
                     android:textStyle="bold"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@+id/vehicleValueLabel"
@@ -161,7 +167,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="Tipo"
+                    android:text="TIPO"
+                    android:textAllCaps="true"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/dividerVehicleValue" />
 
@@ -171,6 +178,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:textAlignment="textEnd"
+                    android:textAllCaps="true"
                     android:textStyle="bold"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@+id/vehicleTypeLabel"
@@ -191,16 +199,19 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="Vendedor"
+                    android:text="VENDEDOR"
+                    android:textAllCaps="true"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/dividerVehicleType" />
 
-                <Spinner
-                    android:id="@+id/salesmanSpinner"
+                <TextView
+                    android:id="@+id/salesmanValue"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:textAlignment="textEnd"
+                    android:textAllCaps="true"
+                    android:textStyle="bold"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@+id/salesmanLabel"
                     app:layout_constraintTop_toBottomOf="@+id/dividerVehicleType" />
@@ -224,7 +235,8 @@
                     android:id="@+id/totalAmountTxtView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Valor total"
+                    android:text="VALOR TOTAL"
+                    android:textAllCaps="true"
                     app:layout_constraintBottom_toBottomOf="@+id/totalAmountValueTxtView"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="@+id/totalAmountValueTxtView" />
@@ -266,8 +278,8 @@
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/receivablesRecyclerView"
                 android:layout_width="0dp"
-                android:layout_marginTop="16dp"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/constraintLayout"
@@ -284,6 +296,7 @@
                 android:layout_marginRight="16dp"
                 android:background="@drawable/default_button_background"
                 android:text="Salvar"
+                android:textAllCaps="true"
                 android:textColor="@color/white"
                 app:layout_constraintTop_toBottomOf="@+id/receivablesRecyclerView" />
 
@@ -298,7 +311,8 @@
                 android:layout_marginBottom="16dp"
                 android:background="@drawable/default_button_background"
                 android:text="@string/order_details_finish_service"
-                android:textColor="@color/white"
+                android:textAllCaps="true"
+                android.textColor="@color/white"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -346,6 +360,8 @@
                 android:layout_marginTop="26dp"
                 android:layout_marginRight="16dp"
                 android:background="@color/shimmerColor" />
+
+
 
             <View
                 android:layout_width="match_parent"
@@ -407,6 +423,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/default_error_message"
+            android:textAllCaps="true"
             android:textColor="@color/primary_500"
             android:textAlignment="center"
             android:textSize="25sp"
@@ -423,6 +440,7 @@
             android:layout_marginBottom="16dp"
             android:background="@drawable/default_button_background"
             android:text="@string/reload_btn"
+            android:textAllCaps="true"
             android:textColor="@color/white" />
     </LinearLayout>
 

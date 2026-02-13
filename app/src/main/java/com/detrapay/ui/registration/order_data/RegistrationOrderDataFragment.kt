@@ -353,22 +353,21 @@ class RegistrationOrderDataFragment : Fragment() {
                 convertView: View?,
                 parent: ViewGroup
             ): View {
-                val view = super.getDropDownView(position, convertView, parent)
-                val textView = view as TextView
+                val view = super.getDropDownView(position, convertView, parent) as TextView
+                view.text = mutableSalesmen[position].name
 
                 if (position == 0) {
-                    textView.setTextColor(ContextCompat.getColor(context, R.color.neutral_400))
+                    view.setTextColor(ContextCompat.getColor(context, R.color.neutral_400))
                 } else {
-                    textView.setTextColor(ContextCompat.getColor(context, R.color.black))
+                    view.setTextColor(ContextCompat.getColor(context, R.color.black))
                 }
 
                 return view
             }
 
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = super.getView(position, convertView, parent)
-                val textView = view.findViewById<TextView>(android.R.id.text1)
-                textView.text = mutableSalesmen[position].name
+                val view = super.getView(position, convertView, parent) as TextView
+                view.text = mutableSalesmen[position].name
                 return view
             }
         }

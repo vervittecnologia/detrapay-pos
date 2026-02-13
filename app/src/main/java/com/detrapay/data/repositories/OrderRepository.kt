@@ -16,11 +16,15 @@ import com.detrapay.data.model.Salesman
 import com.detrapay.data.model.Simulation
 import com.detrapay.data.model.SimulationPayment
 import com.detrapay.data.model.VehicleType
+import com.detrapay.data.model.remote.CreateOrderPaymentRequest
+import com.detrapay.data.model.remote.CreateOrderRequest
+import com.detrapay.data.model.remote.CreateOrderSimulationRequest
 import com.detrapay.data.model.remote.OrderCustomerRequest
 import com.detrapay.data.model.remote.OrderReceivableRequest
 import com.detrapay.data.model.remote.OrderResponse
 import com.detrapay.data.model.remote.OrderSimulationItemRequest
 import com.detrapay.data.model.remote.OrderSimulationRequest
+import com.detrapay.data.model.remote.SplitConfigRequest
 import com.detrapay.ui.util.Logger
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -175,8 +179,8 @@ class OrderRepository @Inject constructor(
         salesmanId: String?
     ): Result<Order> {
         val user = authRepository.getLoggedUser(true)
-        val salesCompanyId = user?.companies?.firstOrNull()?.id
-        val dispatcherId = user?.dispatchers?.firstOrNull()?.id
+        val salesCompanyId = user?.companies?.firstOrNull()?.id!!
+        val dispatcherId = user?.dispatchers?.firstOrNull()?.id!!
         val clientCpfCnpj = simulation.customer.cpfCnpj.replace(".", "")
             .replace("/", "")
             .replace("-", "")
@@ -188,50 +192,38 @@ class OrderRepository @Inject constructor(
                 .replace(")", "")
                 .replace("-", "")
         )
-        val simulationRequest = OrderSimulationRequest(
+
+        val simulationRequest = CreateOrderSimulationRequest(
             billingDate = formatDate(simulation.simulation.billingDate),
-            vehiclePrice = simulation.simulation.vehiclePrice,
-            vehicleFinanced = simulation.simulation.vehicleDisposal,
-            vehicleSpecialPlate = simulation.simulation.vehicleSpecialPlate,
-            totalPrice = simulation.simulation.totalPrice.toString(),
+            vehiclePrice = simulation.simulation.vehiclePrice.toDouble(),
+            isVehicleFinanced = simulation.simulation.vehicleDisposal,
+            isVehicleSpecialPlate = simulation.simulation.vehicleSpecialPlate,
             vehicleTypeId = simulation.simulation.vehicleTypeId,
         )
-        val simulationItemsRequest = simulation.simulationItems.map { simulationItem ->
-            OrderSimulationItemRequest(
-                id = simulationItem.id,
-                price = calculateItemPrice(simulationItem.price, simulationItem.discount)
-            )
-        }
 
-        val receivablesRequest = simulationPayments.map { simulationPayment ->
-            OrderReceivableRequest(
+        val paymentsRequest = simulationPayments.map { simulationPayment ->
+            CreateOrderPaymentRequest(
                 paymentMethodId = simulationPayment.paymentMethod.id,
                 amountOriginal = simulationPayment.amountOriginal
                     .replace("R$", "")
                     .replace(".", "")
                     .replace(",", ".")
-                    .replace(" ", ""),
-                amountFinal = simulationPayment.amountFinal
-                    .replace("R$", "")
-                    .replace(".", "")
-                    .replace(",", ".")
-                    .replace(" ", ""),
-                tax = simulationPayment.paymentMethod.interestTax,
+                    .trim().toDouble(),
                 installments = simulationPayment.installment,
-                paymentDate = ""
+                paymentDate = formatDate(simulation.simulation.billingDate)
             )
         }
 
-        when (val result = detrapayRemoteDataSource.createOrder(
+        val orderRequest = CreateOrderRequest(
             customer = customerRequest,
-            simulation = simulationRequest,
-            items = simulationItemsRequest,
-            receivables = receivablesRequest,
-            createdById = user?.id,
-            salesCompanyId = salesCompanyId,
+            salesmanId = salesmanId,
+            companyId = salesCompanyId,
             dispatcherId = dispatcherId,
-            salesmanId = salesmanId
-        )) {
+            simulation = simulationRequest,
+            payments = paymentsRequest
+        )
+
+        when (val result = detrapayRemoteDataSource.createOrder(orderRequest)) {
             is Result.Success -> {
                 try {
                     val order = parseOrder(result.data.data)
@@ -309,5 +301,9 @@ class OrderRepository @Inject constructor(
         }
 
         return price.toString()
+    }
+
+    suspend fun updateSplitConfig(receivableId: Int, serial: String): Result<Unit> {
+        return detrapayRemoteDataSource.updateSplitConfig(SplitConfigRequest(receivableId, serial))
     }
 }

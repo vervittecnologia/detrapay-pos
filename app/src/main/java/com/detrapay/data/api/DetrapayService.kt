@@ -3,6 +3,7 @@ package com.detrapay.data.api
 import com.detrapay.data.model.remote.AuthRequest
 import com.detrapay.data.model.remote.AuthResponse
 import com.detrapay.data.model.remote.CompanyListResponse
+import com.detrapay.data.model.remote.CreateOrderRequest
 import com.detrapay.data.model.remote.CreateOrderResponse
 import com.detrapay.data.model.remote.CustomerSearchDataResponse
 import com.detrapay.data.model.remote.OrderRequest
@@ -12,6 +13,7 @@ import com.detrapay.data.model.remote.PaymentMethodResponse
 import com.detrapay.data.model.remote.RefundOrderReceivableRequestDataWrapper
 import com.detrapay.data.model.remote.SimulationRequest
 import com.detrapay.data.model.remote.SimulationResponse
+import com.detrapay.data.model.remote.SplitConfigRequest
 import com.detrapay.data.model.remote.UpdateOrderReceivableRequestDataWrapper
 import com.detrapay.data.model.remote.UpdateOrderSalesmanRequest
 import com.detrapay.data.model.remote.VehicleTypeListResponse
@@ -57,7 +59,7 @@ interface DetrapayService {
     suspend fun simulate(@Body payload: SimulationRequest): Response<SimulationResponse>
 
     @POST("orders")
-    suspend fun createOrder(@Body payload: OrderRequest): Response<CreateOrderResponse>
+    suspend fun createOrder(@Body payload: CreateOrderRequest): Response<CreateOrderResponse>
 
     @POST("orders/{id}")
     suspend fun updateOrder(@Path("id") id: Int, @Body payload: OrderRequest): Response<CreateOrderResponse>
@@ -67,5 +69,8 @@ interface DetrapayService {
 
     @PUT("order-receivables/{id}")
     suspend fun refundOrderReceivableItem(@Path("id") id: String, @Body payload: RefundOrderReceivableRequestDataWrapper): Response<OrderResponse>
+
+    @POST("update-split-config")
+    suspend fun updateSplitConfig(@Body payload: SplitConfigRequest): Response<Unit>
 
 }

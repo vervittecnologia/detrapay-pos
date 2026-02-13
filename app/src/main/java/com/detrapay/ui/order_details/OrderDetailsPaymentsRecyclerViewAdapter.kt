@@ -92,7 +92,7 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
             paymentMethodImage.setImageDrawable(context.getDrawable(imageDrawable))
 
             if (item.max_installments > 1) {
-                paymentMethodName.text = "${paymentMethod.name} ${item.max_installments}x"
+                paymentMethodName.text = paymentMethod.name
                 paymentMethodInstallmentAmount.visibility = View.GONE
 
                 val amountOriginalFormatted = "%,.2f".format(locale, item.amountOriginal)

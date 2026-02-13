@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -12,6 +11,7 @@ import androidx.appcompat.content.res.AppCompatResources
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.detrapay.BuildConfig
 import com.detrapay.R
 import com.detrapay.data.UnauthorizedException
 import com.detrapay.data.model.Order
@@ -19,14 +19,13 @@ import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.OrderReceivableItemStatus
 import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.RefundPaymentData
-import com.detrapay.data.model.Salesman
 import com.detrapay.databinding.ActivityOrderDetailsBinding
-//import com.detrapay.ui.employee_selection.EmployeeSelectionActivity
 import com.detrapay.ui.payment.PaymentDialogFragment
 import com.detrapay.ui.refund.RefundPaymentDialogFragment
 import com.detrapay.ui.registration.RegistrationActivity
 import com.detrapay.ui.session_expired_dialog.SessionExpiredDialog
 import com.detrapay.ui.state.UIState
+import com.detrapay.ui.util.DeviceUtils
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
 
@@ -39,6 +38,8 @@ class OrderDetailsActivity : AppCompatActivity(),
     private val locale: Locale = Locale("pt", "BR")
     private var paymentsAdapter: OrderDetailsPaymentsRecyclerViewAdapter? = null
     private var orderListItemDetailsExpanded = false
+    private var selectedReceivable: OrderReceivableItem? = null
+    private var prePaymentRetryCount = 0
 
     private val viewModel: OrderDetailsViewModel by viewModels()
 
@@ -58,19 +59,12 @@ class OrderDetailsActivity : AppCompatActivity(),
         viewModel.orderState.observe(this, Observer { status ->
             when (status) {
                 is UIState.Loading -> {
-                    binding.contentView.visibility = View.GONE
-                    binding.errorView.visibility = View.GONE
-                    binding.loadingView.visibility = View.VISIBLE
-                    binding.loadingView.startShimmer()
+                    showLoading()
                 }
 
                 is UIState.Success -> {
                     status.data?.let {
-                        binding.errorView.visibility = View.GONE
-                        binding.loadingView.apply {
-                            stopShimmer()
-                            visibility = View.GONE
-                        }
+                        hideLoading()
                         setupOrderResume(it)
                         setupPayments(it)
                         binding.contentView.visibility = View.VISIBLE
@@ -97,27 +91,86 @@ class OrderDetailsActivity : AppCompatActivity(),
             when (status) {
                 is UIState.Success -> {
                     status.data?.let { salesmen ->
-                        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, salesmen.map { it.name })
-                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                        binding.salesmanSpinner.adapter = adapter
-
                         orderParam.salesman?.let { salesman ->
-                            val position = salesmen.indexOfFirst { it.id == salesman.id }
-                            if (position != -1) {
-                                binding.salesmanSpinner.setSelection(position)
-                            }
+                            val selectedSalesman = salesmen.find { it.id == salesman.id }
+                            binding.salesmanValue.text = selectedSalesman?.name
                         }
                     }
                 }
+
                 else -> {}
             }
         })
+
+        viewModel.prePaymentState.observe(this, Observer { status ->
+            when (status) {
+                is UIState.Loading -> {
+                    showLoading()
+                }
+
+                is UIState.Success -> {
+                    hideLoading()
+                    openPaymentDialog()
+                }
+
+                is UIState.Error -> {
+                    if (prePaymentRetryCount < 1) {
+                        prePaymentRetryCount++
+                        selectedReceivable?.let {
+                            viewModel.prePay(it, getSerialForPrePay())
+                        }
+                    } else {
+                        hideLoading()
+                        Toast.makeText(this, status.message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        })
+    }
+
+    private fun showLoading() {
+        binding.contentView.visibility = View.GONE
+        binding.errorView.visibility = View.GONE
+        binding.loadingView.visibility = View.VISIBLE
+        binding.loadingView.startShimmer()
+    }
+
+    private fun hideLoading() {
+        binding.errorView.visibility = View.GONE
+        binding.loadingView.apply {
+            stopShimmer()
+            visibility = View.GONE
+        }
+    }
+
+    private fun openPaymentDialog() {
+        selectedReceivable?.let {
+            val paymentDialogFragment = PaymentDialogFragment(listener = object : PaymentDialogFragment.PaymentListener {
+                override fun onResult(paymentData: PaymentData?) {
+                    if (paymentData != null) {
+                        viewModel.payOrder(it, paymentData)
+                        Toast.makeText(this@OrderDetailsActivity, "Pagamento realizado com sucesso!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this@OrderDetailsActivity, "Falha ao realizar pagamento", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }, orderParam.id, it)
+            paymentDialogFragment.show(this.supportFragmentManager, "PaymentDialogFragment")
+        }
     }
 
     private fun setupErrorBtnWithPaymentData(retryData: Any) {
         binding.reloadOrderDetails.setOnClickListener {
             val retryDataModel = retryData as RetryDataModel
             viewModel.payOrder(retryDataModel.receivableItem, retryDataModel.paymentData)
+        }
+    }
+
+    private fun getSerialForPrePay(): String {
+        return if (BuildConfig.DEBUG) {
+            "6001062507098048"
+        } else {
+            DeviceUtils.getSerialNumber()
         }
     }
 
@@ -198,16 +251,7 @@ class OrderDetailsActivity : AppCompatActivity(),
             }
         }
 
-        binding.saveSalesmanButton.setOnClickListener {
-            val selectedSalesman = binding.salesmanSpinner.selectedItem as Salesman
-            viewModel.updateOrderSalesman(selectedSalesman)
-        }
-
-//        binding.finishServiceBtn.setOnClickListener {
-//            val intent = Intent(this, EmployeeSelectionActivity::class.java)
-//            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
-//            startActivity(intent)
-//        }
+        binding.saveSalesmanButton.visibility = View.GONE
     }
 
     private fun formatCpfCnpj(cpfCnpj: String): String {
@@ -259,17 +303,9 @@ class OrderDetailsActivity : AppCompatActivity(),
     }
 
     override fun onItemClick(receivable: OrderReceivableItem) {
-        val paymentDialogFragment = PaymentDialogFragment(listener = object : PaymentDialogFragment.PaymentListener {
-                override fun onResult(paymentData: PaymentData?) {
-                    if (paymentData != null) {
-                        viewModel.payOrder(receivable, paymentData)
-                        Toast.makeText(this@OrderDetailsActivity, "Pagamento realizado com sucesso!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(this@OrderDetailsActivity, "Falha ao realizar pagamento", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }, orderParam.id, receivable)
-        paymentDialogFragment.show(this.supportFragmentManager, "PaymentDialogFragment")
+        prePaymentRetryCount = 0
+        selectedReceivable = receivable
+        viewModel.prePay(receivable, getSerialForPrePay())
     }
 
     override fun onRefundClick(receivable: OrderReceivableItem) {
