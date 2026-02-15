@@ -18,7 +18,8 @@ import java.util.Locale
 class PaymentDialogFragment(
     private val listener: PaymentListener,
     private val orderId: Int,
-    private val receivableItem: OrderReceivableItem
+    private val receivableItem: OrderReceivableItem,
+    private val serial: String
 ) : DialogFragment() {
 
     private val locale = Locale("pt", "BR")
@@ -47,7 +48,7 @@ class PaymentDialogFragment(
     }
 
     private fun startPayment(orderId: Int, receivable: OrderReceivableItem){
-        viewModel.payOrder(orderId, receivable)
+        viewModel.payOrder(orderId, receivable, serial)
     }
 
     private fun setupObservers() {
@@ -85,18 +86,19 @@ class PaymentDialogFragment(
     private fun setupView(orderId: Int, receivableItem: OrderReceivableItem) {
         val paymentMethodName = receivableItem.paymentMethod.name
 
+        val amountFinalFormatted = "%,.2f".format(locale, receivableItem.amountFinal)
+        binding.paymentAmount.text = "R$ $amountFinalFormatted"
+
         if (receivableItem.max_installments > 1) {
-            val amountFinalFormatted = "%,.2f".format(locale, receivableItem.amountFinal)
             val installmentAmount = receivableItem.amountFinal / receivableItem.max_installments
             val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
-
-            binding.paymentAmount.text = "R$$amountFinalFormatted em ${receivableItem.max_installments}x de R$$installmentFormattedValue"
+            binding.paymentInstallments.visibility = View.VISIBLE
+            binding.paymentInstallments.text = "em ${receivableItem.max_installments}x de R$ $installmentFormattedValue"
         } else {
-            val amount = "%,.2f".format(locale, receivableItem.amountFinal)
-            binding.paymentAmount.text = "R$ $amount"
+            binding.paymentInstallments.visibility = View.GONE
         }
 
-        binding.paymentMethod.text = paymentMethodName
+        binding.paymentMethod.text = paymentMethodName.uppercase()
 
         binding.retryAction.setOnClickListener {
             startPayment(orderId, receivableItem)

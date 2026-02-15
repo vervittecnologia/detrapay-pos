@@ -10,26 +10,23 @@
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/registrationToolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="?attr/actionBarSize"
         android:background="@color/primary_500"
-        android:paddingTop="24dp"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:title="@string/registration_title"
         app:titleTextColor="@color/white" />
 
-    <com.google.android.material.progressindicator.LinearProgressIndicator
-        android:id="@+id/linearProgressIndicator"
+    <include
+        android:id="@+id/registrationStepper"
+        layout="@layout/layout_registration_stepper"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:indeterminate="false"
-        android:max="100"
-        app:indicatorColor="@color/yellow"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/registrationToolbar"
-        tools:progress="25" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/registration_nav_host"
@@ -40,6 +37,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/linearProgressIndicator"
+        app:layout_constraintTop_toBottomOf="@+id/registrationStepper"
         app:navGraph="@navigation/registration_navigation" />
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,76 +1,108 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.appbar.AppBarLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/primary_500"
-    android:paddingLeft="16dp"
-    android:paddingTop="22dp"
-    android:paddingRight="16dp"
-    android:paddingBottom="20dp">
+    android:background="@color/primary_500">
 
-    <ImageView
-        android:id="@+id/companyIcon"
-        android:layout_width="14dp"
-        android:layout_height="14dp"
-        android:contentDescription="@string/toolbar_change_store_content_description"
-        android:src="@drawable/ic_location"
-        app:layout_constraintBottom_toBottomOf="@+id/companyName"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/companyName"
-        android:layout_width="wrap_content"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="@color/primary_200"
-        android:textSize="16sp"
-        app:layout_constraintStart_toEndOf="@+id/companyIcon"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:text="CONSESSIONARIA MITO" />
+        android:paddingHorizontal="@dimen/spacing_medium"
+        android:paddingVertical="@dimen/spacing_medium">
 
-    <ImageView
-        android:id="@+id/dispatcherIcon"
-        android:layout_width="14dp"
-        android:layout_height="14dp"
-        android:contentDescription="@string/toolbar_change_store_content_description"
-        android:src="@drawable/ic_location"
-        app:layout_constraintBottom_toBottomOf="@+id/dispatcherName"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/dispatcherName" />
+        <LinearLayout
+            android:id="@+id/locationContainer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/toolbarNotifications"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
-    <TextView
-        android:id="@+id/dispatcherName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textColor="@color/primary_200"
-        android:textSize="16sp"
-        app:layout_constraintStart_toEndOf="@+id/dispatcherIcon"
-        app:layout_constraintTop_toBottomOf="@+id/companyName"
-        tools:text="DESPACHANTE ABC" />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-    <ImageView
-        android:id="@+id/toolbarNotifications"
-        android:layout_width="28dp"
-        android:layout_height="28dp"
-        android:layout_marginEnd="16dp"
-        android:contentDescription="@string/toolbar_notifications_content_description"
-        android:src="@drawable/ic_notifications"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/toolbarLogout"
-        app:layout_constraintTop_toTopOf="parent" />
+                <ImageView
+                    android:id="@+id/companyIcon"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:contentDescription="@string/toolbar_change_store_content_description"
+                    android:src="@drawable/ic_location"
+                    app:tint="@color/primary_200" />
 
-    <ImageView
-        android:id="@+id/toolbarLogout"
-        android:layout_width="28dp"
-        android:layout_height="45dp"
-        android:contentDescription="@string/toolbar_content_description"
-        android:src="@drawable/ic_logout"
-        android:visibility="visible"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+                <TextView
+                    android:id="@+id/companyName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/spacing_xs"
+                    android:textColor="@color/primary_200"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    tools:text="CONSESSIONARIA MITO" />
+            </LinearLayout>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xs"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/dispatcherIcon"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:contentDescription="@string/toolbar_change_store_content_description"
+                    android:src="@drawable/ic_location"
+                    app:tint="@color/primary_200" />
+
+                <TextView
+                    android:id="@+id/dispatcherName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/spacing_xs"
+                    android:textColor="@color/primary_200"
+                    android:textSize="14sp"
+                    tools:text="DESPACHANTE ABC" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/toolbarNotifications"
+            style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="0dp"
+            android:visibility="gone"
+            app:icon="@drawable/ic_notifications"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            app:iconSize="24dp"
+            app:iconTint="@color/white"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/toolbarLogout"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/toolbarLogout"
+            style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="0dp"
+            app:icon="@drawable/ic_logout"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            app:iconSize="24dp"
+            app:iconTint="@color/white"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.appbar.AppBarLayout>

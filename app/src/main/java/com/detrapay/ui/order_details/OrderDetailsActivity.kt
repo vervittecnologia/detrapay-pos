@@ -101,31 +101,6 @@ class OrderDetailsActivity : AppCompatActivity(),
                 else -> {}
             }
         })
-
-        viewModel.prePaymentState.observe(this, Observer { status ->
-            when (status) {
-                is UIState.Loading -> {
-                    showLoading()
-                }
-
-                is UIState.Success -> {
-                    hideLoading()
-                    openPaymentDialog()
-                }
-
-                is UIState.Error -> {
-                    if (prePaymentRetryCount < 1) {
-                        prePaymentRetryCount++
-                        selectedReceivable?.let {
-                            viewModel.prePay(it, getSerialForPrePay())
-                        }
-                    } else {
-                        hideLoading()
-                        Toast.makeText(this, status.message, Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-        })
     }
 
     private fun showLoading() {
@@ -145,16 +120,21 @@ class OrderDetailsActivity : AppCompatActivity(),
 
     private fun openPaymentDialog() {
         selectedReceivable?.let {
-            val paymentDialogFragment = PaymentDialogFragment(listener = object : PaymentDialogFragment.PaymentListener {
-                override fun onResult(paymentData: PaymentData?) {
-                    if (paymentData != null) {
-                        viewModel.payOrder(it, paymentData)
-                        Toast.makeText(this@OrderDetailsActivity, "Pagamento realizado com sucesso!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(this@OrderDetailsActivity, "Falha ao realizar pagamento", Toast.LENGTH_SHORT).show()
+            val paymentDialogFragment = PaymentDialogFragment(
+                listener = object : PaymentDialogFragment.PaymentListener {
+                    override fun onResult(paymentData: PaymentData?) {
+                        if (paymentData != null) {
+                            viewModel.loadScreenContent(orderParam.id)
+                            Toast.makeText(this@OrderDetailsActivity, "Pagamento realizado com sucesso!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this@OrderDetailsActivity, "Falha ao realizar pagamento", Toast.LENGTH_SHORT).show()
+                        }
                     }
-                }
-            }, orderParam.id, it)
+                },
+                orderId = orderParam.id,
+                receivableItem = it,
+                serial = getSerialForPrePay()
+            )
             paymentDialogFragment.show(this.supportFragmentManager, "PaymentDialogFragment")
         }
     }
@@ -211,13 +191,22 @@ class OrderDetailsActivity : AppCompatActivity(),
             this.finish()
         }
 
-        val totalAmount = "%,.2f".format(locale, orderAmount)
+        val totalFinalAmount = order.receivables.sumOf { it.amountFinal }
+        val totalAmountStr = "%,.2f".format(locale, orderAmount)
+        val totalFinalAmountStr = "%,.2f".format(locale, totalFinalAmount)
 
         val cpfCnpjFormatted = formatCpfCnpj(order.customer.cpfCnpj)
         binding.cpfCnpjValue.text = cpfCnpjFormatted
         binding.clientNameValue.text = order.customer.name
         binding.vehicleValueValue.text = "R$ $vehiclePrice"
-        binding.totalAmountValueTxtView.text = "R$ $totalAmount"
+        
+        if (totalFinalAmount > orderAmount) {
+            binding.totalAmountValueTxtView.text = "R$ $totalFinalAmountStr"
+            binding.totalAmountTxtView.text = "VALOR TOTAL (COM JUROS)"
+        } else {
+            binding.totalAmountValueTxtView.text = "R$ $totalAmountStr"
+            binding.totalAmountTxtView.text = "VALOR TOTAL"
+        }
 
         if (order.vehicleType.name.isEmpty()) {
             binding.vehicleTypeValue.visibility = View.GONE
@@ -303,9 +292,8 @@ class OrderDetailsActivity : AppCompatActivity(),
     }
 
     override fun onItemClick(receivable: OrderReceivableItem) {
-        prePaymentRetryCount = 0
         selectedReceivable = receivable
-        viewModel.prePay(receivable, getSerialForPrePay())
+        openPaymentDialog()
     }
 
     override fun onRefundClick(receivable: OrderReceivableItem) {

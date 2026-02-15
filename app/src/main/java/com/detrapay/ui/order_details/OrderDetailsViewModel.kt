@@ -31,9 +31,6 @@ class OrderDetailsViewModel @Inject constructor(
     private val _salesmenState = MutableLiveData<UIState<List<Salesman>>>()
     val salesmenState: LiveData<UIState<List<Salesman>>> = _salesmenState
 
-    private val _prePaymentState = MutableLiveData<UIState<Unit>>()
-    val prePaymentState: LiveData<UIState<Unit>> = _prePaymentState
-
     fun loadScreenContent(orderId: Int) {
         this.orderId = orderId
         _orderState.postValue(UIState.Loading())
@@ -84,24 +81,6 @@ class OrderDetailsViewModel @Inject constructor(
                 _orderState.postValue(
                     UIState.Error(
                         message = "Ops! Algo deu errado, tente novamente.",
-                        exception = error.exception
-                    )
-                )
-            }
-        }
-    }
-
-    fun prePay(receivable: OrderReceivableItem, serial: String) {
-        _prePaymentState.postValue(UIState.Loading())
-        viewModelScope.launch(Dispatchers.IO) {
-            val result = orderRepository.updateSplitConfig(receivable.id, serial)
-            if (result is Result.Success) {
-                _prePaymentState.postValue(UIState.Success(Unit))
-            } else {
-                val error = result as Result.Error
-                _prePaymentState.postValue(
-                    UIState.Error(
-                        message = "Não é possível efetuar o pagamento",
                         exception = error.exception
                     )
                 )

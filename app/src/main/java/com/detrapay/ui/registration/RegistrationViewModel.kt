@@ -30,6 +30,7 @@ import com.detrapay.ui.util.Logger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.detrapay.ui.util.Mask
 import java.util.Locale
 import javax.inject.Inject
 
@@ -52,10 +53,17 @@ class RegistrationViewModel @Inject constructor(
 
     private var paymentMethods: List<PaymentMethod> = emptyList()
 
-    private var payments: MutableList<SimulationPayment> =
-        emptyList<SimulationPayment>().toMutableList()
+    private var payments: MutableList<SimulationPayment> = mutableListOf()
 
-    private val _registrationState = MutableLiveData<RegistrationState>()
+    private val _paymentsLiveData = MutableLiveData<List<SimulationPayment>>()
+    val paymentsLiveData: LiveData<List<SimulationPayment>> = _paymentsLiveData
+
+    private val _remainingBalanceLiveData = MutableLiveData<Double>()
+    val remainingBalanceLiveData: LiveData<Double> = _remainingBalanceLiveData
+
+    private val _registrationState = MutableLiveData<RegistrationState>().apply { 
+        value = RegistrationState(currentScreen = 1) 
+    }
     val registrationState: LiveData<RegistrationState> = _registrationState
 
     private val _orderInitialState = MutableLiveData<UIState<RegistrationOrderInitialState>>()
@@ -161,17 +169,6 @@ class RegistrationViewModel @Inject constructor(
             val result = registrationRepository.loadPaymentMethods()
             if (result is Result.Success) {
                 paymentMethods = result.data
-                if (payments.isEmpty()) {
-                    val paymentMethod = paymentMethods.first()
-                    val simulationPayment = SimulationPayment(
-                        id = 0,
-                        paymentMethod = paymentMethod,
-                        amountOriginal = "",
-                        amountFinal = "",
-                        installment = paymentMethod.maxInstallments
-                    )
-                    payments.add(simulationPayment)
-                }
                 _paymentSelectionInitialState.postValue(
                     UIState.Success(
                         RegistrationPaymentMethodInitialState(
@@ -180,6 +177,7 @@ class RegistrationViewModel @Inject constructor(
                         )
                     )
                 )
+                updatePaymentsList()
             } else {
                 val error = result as Result.Error
                 _paymentSelectionInitialState.postValue(
@@ -189,6 +187,72 @@ class RegistrationViewModel @Inject constructor(
                     )
                 )
             }
+        }
+    }
+
+    private fun updatePaymentsList() {
+        _paymentsLiveData.postValue(payments.toList())
+        calculateRemainingBalance()
+    }
+
+    private fun calculateRemainingBalance() {
+        val total = totalAmount()
+        val paid = paymentsAmountFinal()
+        val balance = total - paid
+        Logger.d("Remaining Balance: $balance (Total: $total, Paid: $paid)")
+        _remainingBalanceLiveData.postValue(balance)
+    }
+
+    private fun paymentsAmountFinal(): Double {
+        return try {
+            payments.fold(0.0) { acc, item ->
+                acc + Mask.doubleValue(item.amountOriginal)
+            }
+        } catch (e: Exception) {
+            0.0
+        }
+    }
+
+    private fun String.normalize(): String {
+        val normalized = java.text.Normalizer.normalize(this, java.text.Normalizer.Form.NFD)
+        return normalized.replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "").lowercase()
+    }
+
+    fun getPaymentMethodsByType(type: String): List<PaymentMethod> {
+        val normalizedType = type.normalize()
+        val filtered = paymentMethods.filter { 
+            val methodType = it.paymentType ?: ""
+            methodType.normalize() == normalizedType || it.name.normalize().contains(normalizedType)
+        }
+        Logger.d("Filtered methods for type $type: ${filtered.size} items found.")
+        return filtered
+    }
+
+    fun addPaymentByType(type: String) {
+        Logger.d("Attempting to add payment of type: $type")
+        val methods = getPaymentMethodsByType(type)
+        if (methods.isNotEmpty()) {
+            val remaining = totalAmount() - paymentsAmount()
+            val amountToPay = if (remaining > 0) remaining else 0.0
+            
+            val method = methods.firstOrNull { it.maxInstallments == 1 } ?: methods.first()
+            
+            // Calculate final amount including tax for the initial add
+            val tax = method.interestTax ?: 0.0
+            val amountFinal = amountToPay * (1 + tax)
+
+            val simulationPayment = SimulationPayment(
+                id = System.currentTimeMillis(),
+                paymentMethod = method,
+                amountOriginal = "%,.2f".format(locale, amountToPay),
+                amountFinal = "%,.2f".format(locale, amountFinal),
+                installment = method.maxInstallments
+            )
+            payments.add(simulationPayment)
+            Logger.d("Payment added. Current payments count: ${payments.size}")
+            updatePaymentsList()
+        } else {
+            Logger.d("No payment methods found for type: $type. Available types: ${paymentMethods.map { it.paymentType }.distinct()}")
         }
     }
 
@@ -290,12 +354,13 @@ class RegistrationViewModel @Inject constructor(
 
     private fun totalAmount(): Double {
         simulation?.let { simulation ->
-            return simulation.simulationItems.sumOf {
-                if (it.discount != null) {
-                    it.price - it.discount
+            return simulation.simulationItems.fold(0.0) { acc, item ->
+                val price = if (item.discount != null) {
+                    item.price - item.discount
                 } else {
-                    it.price
+                    item.price
                 }
+                acc + price
             }
         }
         return 0.0
@@ -319,24 +384,21 @@ class RegistrationViewModel @Inject constructor(
         return simulationItemsWhoSupportDiscount().isNotEmpty()
     }
 
-    fun removePayment(item: SimulationPayment) {
-        try {
-            payments.removeIf { it.id == item.id }
-        } catch (e: Exception) {
-            Logger.d(e.message ?: "")
-        }
-    }
-
     fun addPayment(item: SimulationPayment) {
         payments.add(item)
+        updatePaymentsList()
+    }
+
+    fun removePayment(item: SimulationPayment) {
+        payments.removeIf { it.id == item.id }
+        updatePaymentsList()
     }
 
     fun updateSimulationPayment(item: SimulationPayment) {
-        try {
-            val paymentIndex = payments.indexOfFirst { it.id == item.id }
-            payments[paymentIndex] = item
-        } catch (e: Exception) {
-            Logger.d("updateSimulationPayment: ${e.message}")
+        val index = payments.indexOfFirst { it.id == item.id }
+        if (index != -1) {
+            payments[index] = item
+            updatePaymentsList()
         }
     }
 
@@ -377,7 +439,7 @@ class RegistrationViewModel @Inject constructor(
     }
 
     fun createOrder() {
-        Logger.d(payments.toString())
+        Logger.d("Creating order with payments: $payments")
         _paymentSelectionCreateOrderState.postValue(UIState.Loading())
 
         val totalAmount = totalAmount()
@@ -386,38 +448,47 @@ class RegistrationViewModel @Inject constructor(
         val paymentsAmount = paymentsAmount()
         val roundedPaymentsAmount = paymentsAmount.roundTo2DecimalPlacesMath()
 
-        Logger.d("Expected: ${roundedTotalAmount}, Calculated: ${roundedPaymentsAmount}")
+        Logger.d("Validation check - Expected (Total): $roundedTotalAmount, Calculated (Payments Sum): $roundedPaymentsAmount")
+        
         if (roundedTotalAmount != roundedPaymentsAmount) {
-            if (payments.count() > 1) {
-                _paymentSelectionCreateOrderState.postValue(UIState.Error("A soma dos pagamentos deve ser igual ao valor total do pedido."))
+            val errorMsg = if (payments.count() > 1) {
+                "A soma dos pagamentos (R$ %,.2f) deve ser igual ao valor total do pedido (R$ %,.2f).".format(locale, paymentsAmount, totalAmount)
             } else {
-                _paymentSelectionCreateOrderState.postValue(UIState.Error("O valor do pagamento deve ser igual ao valor total do pedido."))
+                "O valor do pagamento (R$ %,.2f) deve ser igual ao valor total do pedido (R$ %,.2f).".format(locale, paymentsAmount, totalAmount)
             }
+            _paymentSelectionCreateOrderState.postValue(UIState.Error(errorMsg))
             return
         }
 
         if (simulation != null) {
             viewModelScope.launch(Dispatchers.IO) {
-                val result = orderRepository.createOrder(
-                    simulation = simulation!!,
-                    simulationPayments = payments,
-                    salesmanId = salesmanId
-                )
-                if (result is Result.Success) {
-                    _paymentSelectionCreateOrderState.postValue(
-                        UIState.Success(
-                            RegistrationPaymentMethodCreateOrderState(result.data)
-                        )
+                try {
+                    val result = orderRepository.createOrder(
+                        simulation = simulation!!,
+                        simulationPayments = payments,
+                        salesmanId = salesmanId
                     )
-                } else {
-                    val error = result as Result.Error
-                    _paymentSelectionCreateOrderState.postValue(
-                        UIState.Error(
-                            message = error.exception.message
-                                ?: "Ops! Algo deu errado, tente novamente.",
-                            exception = error.exception
+                    if (result is Result.Success) {
+                        Logger.d("Order created successfully: ${result.data.id}")
+                        _paymentSelectionCreateOrderState.postValue(
+                            UIState.Success(
+                                RegistrationPaymentMethodCreateOrderState(result.data)
+                            )
                         )
-                    )
+                    } else {
+                        val error = result as Result.Error
+                        Logger.d("Repository returned error: ${error.exception.message}")
+                        _paymentSelectionCreateOrderState.postValue(
+                            UIState.Error(
+                                message = error.exception.message
+                                    ?: "Erro ao processar pedido no servidor. Tente novamente.",
+                                exception = error.exception
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    Logger.d("Crash during createOrder: ${e.message}")
+                    _paymentSelectionCreateOrderState.postValue(UIState.Error("Erro inesperado: ${e.message}"))
                 }
             }
         } else {
@@ -427,12 +498,8 @@ class RegistrationViewModel @Inject constructor(
 
     private fun paymentsAmount(): Double {
         return try {
-            payments.sumOf {
-                it.amountOriginal.replace("R$", "", true)
-                    .replace("\\s".toRegex(), "")
-                    .replace(".", "")
-                    .replace(",", ".")
-                    .toDouble()
+            payments.fold(0.0) { acc, item ->
+                acc + Mask.doubleValue(item.amountOriginal)
             }
         } catch (e: Exception) {
             0.0

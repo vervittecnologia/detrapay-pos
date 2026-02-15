@@ -29,7 +29,7 @@ data class OrderAttributesResponse(
     val billingDate: String,
     val createdAt: String,
     val customers: CustomerDataWrapper,
-    val companies: CompanyDataWrapper,
+    val companies: CompanyDataWrapper? = null,
     val receivables: OrderReceivableDataWrapper? = null,
     val vehiclePrice: Double,
     val isVehicleFinanced: Boolean,

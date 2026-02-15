@@ -2,15 +2,14 @@ package com.detrapay.ui.registration.payment_method
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import com.detrapay.R
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.SimulationPayment
 import com.detrapay.databinding.FragmentRegistrationOrderPaymentMethodBinding
@@ -35,8 +34,16 @@ class RegistrationPaymentMethodFragment : Fragment(), OnItemClickListener{
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupObservers()
+        setupUI()
         registrationViewModel.loadPaymentSelectionScreenContent()
         binding.totalAmountValueTxtView.text = registrationViewModel.simulationTotalAmount()
+    }
+
+    private fun setupUI() {
+        binding.btnCredit.setOnClickListener { registrationViewModel.addPaymentByType("credito") }
+        binding.btnDebit.setOnClickListener { registrationViewModel.addPaymentByType("debito") }
+        binding.btnPix.setOnClickListener { registrationViewModel.addPaymentByType("pix") }
+        binding.btnCash.setOnClickListener { registrationViewModel.addPaymentByType("dinheiro") }
 
         binding.reloadPaymentMethodBtn.setOnClickListener {
             registrationViewModel.loadPaymentSelectionScreenContent()
@@ -45,72 +52,69 @@ class RegistrationPaymentMethodFragment : Fragment(), OnItemClickListener{
         binding.registrationPaymentMethodNextBtn.setOnClickListener {
             registrationViewModel.createOrder()
         }
-    }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        removeObservers()
-    }
-
-    private fun removeObservers() {
-        registrationViewModel.paymentSelectionInitialState.removeObservers(viewLifecycleOwner)
+        setupPaymentAdapter()
     }
 
     private fun setupObservers() {
-        registrationViewModel.paymentSelectionInitialState.observe(viewLifecycleOwner, { status ->
+        registrationViewModel.paymentSelectionInitialState.observe(viewLifecycleOwner) { status ->
             when (status) {
-                is UIState.Success<RegistrationPaymentMethodInitialState> -> {
-                    status.data?.let {
-                        binding.loadingView.stopShimmer()
-                        binding.loadingView.visibility = View.GONE
-                        binding.errorView.visibility = View.GONE
-                        binding.contentView.visibility = View.VISIBLE
-                        setupPaymentAdapter(it)
-                    }
+                is UIState.Success -> {
+                    binding.loadingView.visibility = View.GONE
+                    binding.errorView.visibility = View.GONE
                 }
-
                 is UIState.Error -> {
-                    binding.contentView.visibility = View.GONE
-                    binding.loadingView.stopShimmer()
                     binding.loadingView.visibility = View.GONE
                     binding.errorView.visibility = View.VISIBLE
                 }
-
                 is UIState.Loading -> {
-                    binding.contentView.visibility = View.GONE
                     binding.errorView.visibility = View.GONE
                     binding.loadingView.visibility = View.VISIBLE
                     binding.loadingView.startShimmer()
                 }
             }
-        })
+        }
 
-        registrationViewModel.paymentSelectionCreateOrderState.observe(
-            viewLifecycleOwner, Observer { status ->
-                when (status) {
-                    is UIState.Success<RegistrationPaymentMethodCreateOrderState> -> {
-                        status.data?.let {
-                            binding.registrationPaymentMethodNextBtn.isEnabled = false
-                            binding.registrationErrorTextView.visibility = View.GONE
-                            binding.registrationLoading.visibility = View.GONE
-                            openDetailsScreen(it.order)
-                        }
-                    }
+        registrationViewModel.paymentsLiveData.observe(viewLifecycleOwner) { payments ->
+            adapter?.submitList(payments.toList())
+            binding.emptyView.visibility = if (payments.isEmpty()) View.VISIBLE else View.GONE
+        }
 
-                    is UIState.Error -> {
-                        binding.registrationPaymentMethodNextBtn.isEnabled = true
-                        binding.registrationErrorTextView.text = status.message
-                        binding.registrationErrorTextView.visibility = View.VISIBLE
-                        binding.registrationLoading.visibility = View.GONE
-                    }
+        registrationViewModel.remainingBalanceLiveData.observe(viewLifecycleOwner) { balance ->
+            val formatted = "R$ %,.2f".format(java.util.Locale("pt", "BR"), balance)
+            binding.tvRemainingValue.text = formatted
+            binding.tvRemainingValue.setTextColor(
+                if (balance > 0) ContextCompat.getColor(requireContext(), R.color.orange)
+                else ContextCompat.getColor(requireContext(), R.color.green)
+            )
+        }
 
-                    is UIState.Loading -> {
-                        binding.registrationPaymentMethodNextBtn.isEnabled = false
-                        binding.registrationErrorTextView.visibility = View.GONE
-                        binding.registrationLoading.visibility = View.VISIBLE
-                    }
+        registrationViewModel.paymentSelectionCreateOrderState.observe(viewLifecycleOwner) { status ->
+            when (status) {
+                is UIState.Success -> {
+                    binding.registrationPaymentMethodNextBtn.isEnabled = false
+                    binding.registrationLoading.visibility = View.GONE
+                    status.data?.let { openDetailsScreen(it.order) }
                 }
-            })
+                is UIState.Error -> {
+                    binding.registrationPaymentMethodNextBtn.isEnabled = true
+                    binding.registrationErrorTextView.text = status.message
+                    binding.registrationErrorTextView.visibility = View.VISIBLE
+                    binding.registrationLoading.visibility = View.GONE
+                }
+                is UIState.Loading -> {
+                    binding.registrationPaymentMethodNextBtn.isEnabled = false
+                    binding.registrationErrorTextView.visibility = View.GONE
+                    binding.registrationLoading.visibility = View.VISIBLE
+                }
+            }
+        }
+    }
+
+    private fun setupPaymentAdapter() {
+        adapter = RegistrationPaymentMethodRecyclerViewAdapter(registrationViewModel, this)
+        binding.rvPaymentMethods.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvPaymentMethods.adapter = adapter
     }
 
     private fun openDetailsScreen(order: Order) {
@@ -121,22 +125,8 @@ class RegistrationPaymentMethodFragment : Fragment(), OnItemClickListener{
         orderDetailsActivityIntent.putExtra("order", order)
         orderDetailsActivityIntent.putExtra("orderId", order.id)
 
-
         this.startActivity(orderDetailsActivityIntent)
         requireActivity().finish()
-    }
-
-    private fun setupPaymentAdapter(registrationPaymentMethodInitialState: RegistrationPaymentMethodInitialState) {
-        if (adapter == null) {
-            adapter = RegistrationPaymentMethodRecyclerViewAdapter(
-                values = registrationPaymentMethodInitialState.payments.toMutableList(),
-                paymentMethods = registrationPaymentMethodInitialState.paymentMethods,
-                listener = this
-            )
-            val paymentsListView: RecyclerView = binding.rvPaymentMethods
-            paymentsListView.layoutManager = LinearLayoutManager(this.activity)
-            paymentsListView.adapter = adapter
-        }
     }
 
     override fun onAdd(item: SimulationPayment) {

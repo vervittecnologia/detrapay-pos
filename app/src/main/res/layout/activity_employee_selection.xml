@@ -5,159 +5,111 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/color_background"
     tools:context=".ui.employee_selection.EmployeeSelectionActivity">
 
     <ImageView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="32dp"
         android:importantForAccessibility="no"
         android:src="@drawable/employee_selection_background"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="@color/primary_100" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/contentView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="visible"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:visibility="visible">
 
         <TextView
             android:id="@+id/title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="24dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginStart="@dimen/spacing_medium"
+            android:layout_marginTop="@dimen/spacing_xl"
+            android:layout_marginEnd="@dimen/spacing_medium"
             android:text="@string/employee_selection_title"
             android:textColor="@color/primary_500"
-            android:textSize="30sp"
+            android:textSize="28sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
             android:id="@+id/subtitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginStart="@dimen/spacing_medium"
+            android:layout_marginTop="@dimen/spacing_medium"
+            android:layout_marginEnd="@dimen/spacing_medium"
             android:text="@string/employee_selection_subtitle"
             android:textColor="@color/neutral_700"
             android:textSize="16sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/title" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvEmployees"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp"
+            android:layout_marginTop="@dimen/spacing_medium"
+            android:clipToPadding="false"
             android:contentDescription="@string/employee_list_content_description"
+            android:paddingBottom="@dimen/spacing_medium"
+            app:layoutManager="LinearLayoutManager"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/subtitle"
-            tools:itemCount="4"
-            tools:listitem="@layout/order_list_item" />
+            tools:listitem="@layout/employee_list_item" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-
     <com.facebook.shimmer.ShimmerFrameLayout
         android:id="@+id/loadingView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone">
 
         <LinearLayout
-            android:id="@+id/shimmer_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp"
-            android:contentDescription="@string/employee_list_content_description"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="@dimen/spacing_medium">
 
-            <TextView
-                android:id="@+id/title_shimmer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="24dp"
-                android:layout_marginEnd="16dp"
-                android:background="@color/shimmerColor" />
-
-            <TextView
-                android:id="@+id/subtitle_shimmer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="24dp"
-                android:layout_marginEnd="16dp"
-                android:background="@color/shimmerColor" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="24dp" />
+            <View android:layout_width="200dp" android:layout_height="32dp" android:background="@color/shimmerColor" android:layout_marginBottom="16dp"/>
+            <View android:layout_width="match_parent" android:layout_height="20dp" android:background="@color/shimmerColor" android:layout_marginBottom="32dp"/>
 
             <include layout="@layout/employee_shimmer_item" />
-
             <include layout="@layout/employee_shimmer_item" />
-
             <include layout="@layout/employee_shimmer_item" />
-
             <include layout="@layout/employee_shimmer_item" />
         </LinearLayout>
-
     </com.facebook.shimmer.ShimmerFrameLayout>
 
     <LinearLayout
         android:id="@+id/errorView"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
         android:orientation="vertical"
-        android:padding="16dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:padding="@dimen/spacing_xl"
+        android:visibility="gone">
 
         <TextView
-            android:id="@+id/errorTxtView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/employees_default_error_message"
             android:textAlignment="center"
             android:textColor="@color/primary_500"
-            android:textSize="25sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:textSize="20sp"
+            android:textStyle="bold" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/reloadEmployees"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="start"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/default_button_background"
+            android:layout_marginTop="@dimen/spacing_large"
             android:text="@string/reload_btn"
-            android:textColor="@color/white" />
+            app:cornerRadius="@dimen/radius_medium" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

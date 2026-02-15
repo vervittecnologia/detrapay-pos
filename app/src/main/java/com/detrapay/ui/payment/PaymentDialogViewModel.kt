@@ -12,8 +12,11 @@ import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagEventListener
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagPaymentData
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagTransactionResult
 import br.com.uol.pagseguro.plugpagservice.wrapper.exception.PlugPagException
+import com.detrapay.data.Result
+import com.detrapay.data.model.Order
 import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.PaymentData
+import com.detrapay.data.repositories.OrderRepository
 import com.detrapay.data.repositories.PaymentRepository
 import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.Logger
@@ -27,7 +30,8 @@ import kotlin.math.roundToInt
 @HiltViewModel
 class PaymentDialogViewModel @Inject constructor(
     private val plugPag: IPlugPagWrapper,
-    private val paymentRepository: PaymentRepository
+    private val paymentRepository: PaymentRepository,
+    private val orderRepository: OrderRepository
 ) : ViewModel(), PlugPagEventListener {
 
     private val _paymentState = MutableLiveData<UIState<PaymentData>>()
@@ -59,17 +63,46 @@ class PaymentDialogViewModel @Inject constructor(
         )
     }
 
-    fun payOrder(orderId: Int, receivable: OrderReceivableItem) {
-        _paymentState.postValue(UIState.Loading())
+    private val loadingMessages = listOf(
+        "Configurando maquininha...",
+        "Processando pagamento...",
+        "Comunicando com a operadora...",
+        "Validando transação...",
+        "Confirmando com o servidor...",
+        "Quase lá...",
+        "Finalizando..."
+    )
+
+    fun payOrder(orderId: Int, receivable: OrderReceivableItem, serial: String) {
+        _paymentState.postValue(UIState.Loading(loadingMessages[0]))
         viewModelScope.launch(Dispatchers.Default) {
+            // Inicia um job para rotacionar as mensagens de loading
+            val messageRotationJob = launch {
+                var index = 0
+                while (true) {
+                    kotlinx.coroutines.delay(3000)
+                    index = (index + 1) % loadingMessages.size
+                    val currentState = _paymentState.value
+                    if (currentState is UIState.Loading) {
+                        _paymentState.postValue(UIState.Loading(loadingMessages[index]))
+                    } else {
+                        break
+                    }
+                }
+            }
+
             try {
+                // Primeiro faz a configuração do split (pre-pay)
+                val prePayResult = orderRepository.updateSplitConfig(receivable.id, serial)
+                if (prePayResult is Result.Error) {
+                    messageRotationJob.cancel()
+                    _paymentState.postValue(UIState.Error("Não foi possível configurar a maquininha: ${prePayResult.exception.message}"))
+                    return@launch
+                }
+
                 if (plugPag.isAuthenticated()) {
                     val amountInCents = receivable.amountFinal * 100
                     val roundedAmountInCents = amountInCents.roundToInt()
-
-//                    Logger.d( "amountFinal: ${receivable.amountFinal}")
-//                    Logger.d( "amount: $amountInCents")
-//                    Logger.d( "roundedAmount: $roundedAmountInCents")
 
                     val paymentType = getPaymentType(receivable.paymentMethod.name)
                     val installmentType = getInstallmentType(receivable.max_installments)
@@ -115,8 +148,18 @@ class PaymentDialogViewModel @Inject constructor(
                             message = plugPagResult.message,
                             errorCode = plugPagResult.errorCode
                         )
-                        _paymentState.postValue(UIState.Success(transactionResult))
+
+                        val apiResult = orderRepository.payOrder(orderId, receivable, transactionResult)
+                        
+                        messageRotationJob.cancel()
+                        if (apiResult is Result.Success) {
+                            _paymentState.postValue(UIState.Success(transactionResult))
+                        } else {
+                            val error = apiResult as Result.Error
+                            _paymentState.postValue(UIState.Error(error.exception.message ?: "Erro ao confirmar pagamento no servidor"))
+                        }
                     } else {
+                        messageRotationJob.cancel()
                         val errorCode = plugPagResult.errorCode.toString()
                         val errorMessage = plugPagResult.message.toString()
 
@@ -140,10 +183,15 @@ class PaymentDialogViewModel @Inject constructor(
                         _paymentState.postValue(UIState.Error("$errorCode - $errorMessage"))
                     }
                 } else {
+                    messageRotationJob.cancel()
                     _paymentState.postValue(UIState.Error("Nenhum usuario autenticado, contate o suporte."))
                 }
             } catch (e: PlugPagException) {
+                messageRotationJob.cancel()
                 _paymentState.postValue(UIState.Error("${e.errorCode} - ${e.message}"))
+            } catch (e: Exception) {
+                messageRotationJob.cancel()
+                _paymentState.postValue(UIState.Error(e.message ?: "Erro inesperado"))
             }
         }
     }

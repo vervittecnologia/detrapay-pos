@@ -43,37 +43,12 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="16dp"
-                android:textColor="@color/primary_500"
-                android:textSize="16sp"
-                android:textStyle="bold"
+                android:textColor="@color/neutral_700"
+                android:textSize="14sp"
+                android:textStyle="normal"
                 app:layout_constraintStart_toEndOf="@id/paymentMethodImage"
                 app:layout_constraintTop_toTopOf="parent"
                 tools:text="Cartão de crédito" />
-
-            <TextView
-                android:id="@+id/paymentMethodAmount"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="8dp"
-                android:textColor="@color/neutral_700"
-                android:textSize="16sp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/paymentMethodName"
-                tools:text="R$ 500,00 (10x de R$50,00)" />
-
-            <TextView
-                android:id="@+id/paymentMethodInstallmentAmount"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="8dp"
-                android:textColor="@color/neutral_700"
-                android:textSize="16sp"
-                android:visibility="gone"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/paymentMethodAmount"
-                tools:text="R$ 500,00 (10x de R$50,00)" />
 
             <LinearLayout
                 android:id="@+id/paymentMethodStatusView"
@@ -81,9 +56,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:background="@drawable/paid_status_background"
-                android:elevation="0dp"
-                android:orientation="vertical"
-                app:cardCornerRadius="4dp"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="2dp"
                 app:layout_constraintBottom_toBottomOf="@id/paymentMethodName"
                 app:layout_constraintStart_toEndOf="@id/paymentMethodName"
                 app:layout_constraintTop_toTopOf="@id/paymentMethodName">
@@ -92,24 +66,63 @@
                     android:id="@+id/status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
                     android:textColor="@color/white"
-                    android:textSize="12sp"
+                    android:textSize="10sp"
                     android:textAllCaps="true"
+                    android:textStyle="bold"
                     tools:text="Autorizado" />
 
             </LinearLayout>
 
+            <TextView
+                android:id="@+id/paymentMethodInstallmentAmount"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/primary_500"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/paymentMethodName"
+                tools:text="10x de R$ 50,00" />
+
+            <TextView
+                android:id="@+id/paymentMethodAmount"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/neutral_500"
+                android:textSize="12sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/paymentMethodInstallmentAmount"
+                tools:text="Total com juros: R$ 500,00" />
+
+            <TextView
+                android:id="@+id/paymentActionLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="PAGAR"
+                android:textColor="@color/primary_500"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="@+id/cardArrow"
+                app:layout_constraintEnd_toStartOf="@+id/cardArrow"
+                app:layout_constraintTop_toTopOf="@+id/cardArrow" />
+
             <ImageView
                 android:id="@+id/cardArrow"
-                android:layout_width="35dp"
-                android:layout_height="35dp"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
                 android:layout_marginEnd="16dp"
                 android:contentDescription="Pagar"
                 android:src="@drawable/ic_chevron_right"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="@color/primary_500" />
 
 
             <LinearLayout

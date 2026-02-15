@@ -3,6 +3,7 @@ package com.detrapay.data.api
 import com.detrapay.data.model.remote.AuthRequest
 import com.detrapay.data.model.remote.AuthResponse
 import com.detrapay.data.model.remote.CompanyListResponse
+import com.detrapay.data.model.remote.ConfirmPaymentRequest
 import com.detrapay.data.model.remote.CreateOrderRequest
 import com.detrapay.data.model.remote.CreateOrderResponse
 import com.detrapay.data.model.remote.CustomerSearchDataResponse
@@ -10,13 +11,13 @@ import com.detrapay.data.model.remote.OrderRequest
 import com.detrapay.data.model.remote.OrderResponse
 import com.detrapay.data.model.remote.PaginatedOrderResponse
 import com.detrapay.data.model.remote.PaymentMethodResponse
-import com.detrapay.data.model.remote.RefundOrderReceivableRequestDataWrapper
+import com.detrapay.data.model.remote.RefundOrderReceivableRequest
 import com.detrapay.data.model.remote.SimulationRequest
 import com.detrapay.data.model.remote.SimulationResponse
 import com.detrapay.data.model.remote.SplitConfigRequest
-import com.detrapay.data.model.remote.UpdateOrderReceivableRequestDataWrapper
 import com.detrapay.data.model.remote.UpdateOrderSalesmanRequest
 import com.detrapay.data.model.remote.VehicleTypeListResponse
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -64,11 +65,11 @@ interface DetrapayService {
     @POST("orders/{id}")
     suspend fun updateOrder(@Path("id") id: Int, @Body payload: OrderRequest): Response<CreateOrderResponse>
 
-    @PUT("order-receivables/{id}")
-    suspend fun updateOrderReceivableItem(@Path("id") id: String, @Body payload: UpdateOrderReceivableRequestDataWrapper): Response<OrderResponse>
+    @POST("receivables/{id}/confirm-payment")
+    suspend fun confirmPayment(@Path("id") id: String, @Body payload: ConfirmPaymentRequest): Response<ResponseBody>
 
     @PUT("order-receivables/{id}")
-    suspend fun refundOrderReceivableItem(@Path("id") id: String, @Body payload: RefundOrderReceivableRequestDataWrapper): Response<OrderResponse>
+    suspend fun refundOrderReceivableItem(@Path("id") id: String, @Body payload: RefundOrderReceivableRequest): Response<ResponseBody>
 
     @POST("update-split-config")
     suspend fun updateSplitConfig(@Body payload: SplitConfigRequest): Response<Unit>

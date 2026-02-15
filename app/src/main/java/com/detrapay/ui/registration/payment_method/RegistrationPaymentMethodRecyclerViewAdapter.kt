@@ -1,22 +1,20 @@
 package com.detrapay.ui.registration.payment_method
 
 import android.content.Context
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.Spinner
-import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.detrapay.R
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.SimulationPayment
-import com.detrapay.databinding.RegistrationPaymentMethodListItemBinding
-import com.detrapay.ui.util.Logger
+import com.detrapay.databinding.RegistrationPaymentLaunchedItemBinding
+import com.detrapay.ui.registration.RegistrationViewModel
 import com.detrapay.ui.util.Mask
 import java.util.Locale
 
@@ -27,267 +25,149 @@ interface OnItemClickListener {
 }
 
 class RegistrationPaymentMethodRecyclerViewAdapter(
-    private var values: MutableList<SimulationPayment>,
-    private val paymentMethods: List<PaymentMethod>,
-    private val listener: OnItemClickListener,
-) : RecyclerView.Adapter<RegistrationPaymentMethodViewHolder>() {
+    private val viewModel: RegistrationViewModel,
+    private val listener: OnItemClickListener
+) : ListAdapter<SimulationPayment, RegistrationPaymentMethodRecyclerViewAdapter.ViewHolder>(DiffCallback()) {
 
-    override fun getItemId(position: Int): Long {
-        return values[position].id
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val binding = RegistrationPaymentLaunchedItemBinding.inflate(
+            LayoutInflater.from(parent.context), parent, false
+        )
+        return ViewHolder(binding)
     }
 
-    override fun onCreateViewHolder(
-        parent: ViewGroup,
-        viewType: Int
-    ): RegistrationPaymentMethodViewHolder {
-        val itemBinding = RegistrationPaymentMethodListItemBinding.inflate(
-            LayoutInflater.from(parent.context),
-            parent,
-            false
-        )
-        return RegistrationPaymentMethodViewHolder(
-            parent.context,
-            itemBinding,
-            paymentMethods
-        )
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        holder.bind(getItem(position))
     }
 
-    override fun onBindViewHolder(holder: RegistrationPaymentMethodViewHolder, position: Int) {
-        val item: SimulationPayment = values[position]
-        holder.bind(
-            item = item,
-            itemPosition = position,
-            onAdd = {
-                val paymentMethod = paymentMethods.first()
-                val simulationPayment = SimulationPayment(
-                    id = values.size.toLong() + 1,
-                    paymentMethod = paymentMethod,
-                    amountOriginal = "",
-                    amountFinal = "",
-                    installment = paymentMethod.maxInstallments
+    inner class ViewHolder(private val binding: RegistrationPaymentLaunchedItemBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+
+        private val locale = Locale("pt", "BR")
+        private var isInternalUpdate = false
+        private var currentTextWatcher: TextWatcher? = null
+
+        fun bind(item: SimulationPayment) {
+            val context = binding.root.context
+            
+            // Icon and Name based on Type
+            val type = item.paymentMethod.paymentType ?: ""
+            setupTypeUI(type, binding)
+
+            binding.tvId.text = "LANÇAMENTO #${item.id.toString().takeLast(4)}"
+            
+            val tax = item.paymentMethod.interestTax ?: 0.0
+            binding.tvTax.text = "Taxa: ${"%.2f".format(tax * 100)}%"
+            binding.tvTax.visibility = if (tax > 0) android.view.View.VISIBLE else android.view.View.GONE
+
+            binding.tvAmountFinal.text = "Total c/ juros: R$ ${item.amountFinal}"
+            binding.tvAmountFinal.visibility = if (tax > 0) android.view.View.VISIBLE else android.view.View.GONE
+
+            // Amount Mask
+            isInternalUpdate = true
+            binding.etAmount.setText(item.amountOriginal)
+            isInternalUpdate = false
+
+            currentTextWatcher?.let { binding.etAmount.removeTextChangedListener(it) }
+            
+            currentTextWatcher = Mask.moneyMask(binding.etAmount) { stringValue ->
+                if (isInternalUpdate) return@moneyMask
+                val newItem = item.copy(
+                    amountOriginal = stringValue,
+                    amountFinal = calculateAmountFinal(item.paymentMethod.interestTax, stringValue)
                 )
-                values.add(simulationPayment)
-                notifyItemChanged(values.size)
-                listener.onAdd(simulationPayment)
-            },
-            onUpdate = { newItem ->
-                try {
-                    val itemPosition = values.indexOfFirst { it.id == newItem.id }
-                    values[itemPosition] = newItem
-                    listener.onItemUpdated(newItem)
-                } catch (e: Exception) {
-                    Logger.d(e.message ?: "")
-                }
-            },
-            onDelete = {
-                try {
-                    val itemPosition = values.indexOfFirst { it.id == item.id }
-                    values.removeAt(itemPosition)
-                    listener.onDelete(item)
-                    notifyItemRemoved(itemPosition)
-                } catch (e: Exception) {
-                    Logger.d(e.message ?: "")
+                listener.onItemUpdated(newItem)
+            }
+            binding.etAmount.addTextChangedListener(currentTextWatcher)
+
+            binding.etAmount.setOnClickListener {
+                binding.etAmount.setSelection(binding.etAmount.text?.length ?: 0)
+            }
+
+            binding.etAmount.setOnFocusChangeListener { _, hasFocus ->
+                if (hasFocus) {
+                    binding.etAmount.setSelection(binding.etAmount.text?.length ?: 0)
                 }
             }
-        )
-    }
 
-    override fun getItemCount(): Int = values.size
-}
+            // Installments Dropdown
+            val methods = viewModel.getPaymentMethodsByType(type)
+            val adapter = ArrayAdapter(
+                context,
+                android.R.layout.simple_dropdown_item_1line,
+                methods.map { it.name }
+            )
+            binding.atvInstallments.setAdapter(adapter)
+            binding.atvInstallments.setText(item.paymentMethod.name, false)
 
+            binding.atvInstallments.setOnItemClickListener { _, _, pos, _ ->
+                val newMethod = methods[pos]
+                val newItem = item.copy(
+                    paymentMethod = newMethod,
+                    installment = newMethod.maxInstallments,
+                    amountFinal = calculateAmountFinal(newMethod.interestTax, binding.etAmount.text.toString())
+                )
+                listener.onItemUpdated(newItem)
+            }
 
-class RegistrationPaymentMethodViewHolder(
-    val context: Context,
-    val binding: RegistrationPaymentMethodListItemBinding,
-    val paymentMethods: List<PaymentMethod>
-) : RecyclerView.ViewHolder(
-    binding.root
-) {
-    private val locale = Locale("pt", "BR")
-    private val amountInputText: EditText = binding.amountInput
-    private val actionButton: ImageView = binding.actionButton
-    private val paymentMethodSpinner: Spinner = binding.paymentMethodSpinner
-    private val installmentsSelectorLayout: LinearLayout = binding.installmentSelectorLayout
-    private val installmentsAmount: TextView = binding.installmentsValue
-//    private val installmentsSelectorSpinner: Spinner = binding.installmentsSelectorSpinner
-    private val paymentMethodAdapter = ArrayAdapter(
-        context,
-        android.R.layout.simple_spinner_dropdown_item,
-        paymentMethods.map { it.name }
-    )
-
-    fun bind(
-        item: SimulationPayment,
-        itemPosition: Int,
-        onAdd: () -> Unit,
-        onUpdate: (item: SimulationPayment) -> Unit,
-        onDelete: () -> Unit
-    ) {
-
-        amountInputText.setText(item.amountOriginal)
-        val textWatcher = Mask.moneyMask(amountInputText, { value ->
-            val stringValue = amountInputText.text.toString()
-            val newPaymentMethod = paymentMethods[paymentMethodSpinner.selectedItemPosition]
-            val amountFinalValue = amountFinalValue(newPaymentMethod.interestTax, stringValue)
-            val newItem = item.copy(amountOriginal = stringValue, amountFinal = amountFinalValue, paymentMethod = newPaymentMethod)
-            onUpdate(newItem)
-            updateInstallmentView(newItem)
-        })
-        amountInputText.addTextChangedListener(textWatcher)
-
-        val buttonImage =
-            if (itemPosition == 0) R.drawable.ic_add
-            else R.drawable.ic_delete
-
-        actionButton.setImageResource(buttonImage)
-        actionButton.setOnClickListener {
-            if (itemPosition == 0) {
-                onAdd()
-            } else {
-                amountInputText.removeTextChangedListener(textWatcher)
-                onDelete()
+            binding.btnDelete.setOnClickListener {
+                listener.onDelete(item)
             }
         }
 
-        paymentMethodSpinner.setAdapter(paymentMethodAdapter)
-        paymentMethodSpinner.setSelection(paymentMethods.indexOf(item.paymentMethod))
-
-        paymentMethodSpinner.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    parent: AdapterView<*>, view: View?,
-                    position: Int, id: Long
-                ) {
-                    val newPaymentMethod = paymentMethods[position]
-                    val amountFinalValue = amountFinalValue(newPaymentMethod.interestTax, amountInputText.text.toString())
-
-                    val newItem = item.copy(
-                        paymentMethod = newPaymentMethod,
-                        amountOriginal = amountInputText.text.toString(),
-                        amountFinal = amountFinalValue,
-                        installment = newPaymentMethod.maxInstallments
-                    )
-                    onUpdate(newItem)
-                    updateInstallmentView(newItem)
+        private fun setupTypeUI(type: String, binding: RegistrationPaymentLaunchedItemBinding) {
+            val context = binding.root.context
+            when (type.lowercase()) {
+                "credito" -> {
+                    binding.ivIcon.setImageResource(R.drawable.ic_credit_card_outline)
+                    binding.ivIcon.backgroundTintList = ContextCompat.getColorStateList(context, R.color.primary_500)
+                    binding.tvMethodName.text = "CARTÃO DE CRÉDITO"
+                    binding.tilInstallments.visibility = android.view.View.VISIBLE
+                    binding.lblParcelas.visibility = android.view.View.VISIBLE
                 }
-
-                override fun onNothingSelected(parent: AdapterView<*>?) {}
+                "debito" -> {
+                    binding.ivIcon.setImageResource(R.drawable.ic_credit_card_outline)
+                    binding.ivIcon.backgroundTintList = ContextCompat.getColorStateList(context, R.color.primary_400)
+                    binding.tvMethodName.text = "CARTÃO DE DÉBITO"
+                    binding.tilInstallments.visibility = android.view.View.GONE
+                    binding.lblParcelas.visibility = android.view.View.GONE
+                }
+                "pix" -> {
+                    binding.ivIcon.setImageResource(R.drawable.ic_pix)
+                    binding.ivIcon.backgroundTintList = ContextCompat.getColorStateList(context, R.color.green)
+                    binding.tvMethodName.text = "PIX"
+                    binding.tilInstallments.visibility = android.view.View.GONE
+                    binding.lblParcelas.visibility = android.view.View.GONE
+                }
+                "dinheiro" -> {
+                    binding.ivIcon.setImageResource(R.drawable.ic_money)
+                    binding.ivIcon.backgroundTintList = ContextCompat.getColorStateList(context, R.color.green)
+                    binding.tvMethodName.text = "DINHEIRO"
+                    binding.tilInstallments.visibility = android.view.View.GONE
+                    binding.lblParcelas.visibility = android.view.View.GONE
+                }
+                else -> {
+                    binding.tvMethodName.text = type.uppercase()
+                    binding.ivIcon.setImageResource(R.drawable.ic_article)
+                    binding.ivIcon.backgroundTintList = ContextCompat.getColorStateList(context, R.color.neutral_500)
+                }
             }
+        }
 
-        updateInstallmentView(item)
-
-//        installmentsSelectorSpinner.onItemSelectedListener =
-//            object : AdapterView.OnItemSelectedListener {
-//                override fun onItemSelected(
-//                    parent: AdapterView<*>, view: View?,
-//                    position: Int,
-//                    id: Long
-//                ) {
-//                    try {
-//                        val allowedInstallments: List<Int> =
-//                            (1..item.paymentMethod.maxInstallments).toList()
-//                        val newInstallment = allowedInstallments[position]
-//
-//                        val paymentAmountValue = amountInputText.text.toString()
-//                            .replace("R$", "")
-//                            .replace(" ", "")
-//                            .replace(".", "")
-//                            .replace(",", ".")
-//                            .replace("\\s".toRegex(), "").toDouble()
-//                        val interestTax = item.paymentMethod.interestTax ?: 0.0
-//                        val amountFinal = (paymentAmountValue + (paymentAmountValue * interestTax))
-//                        val amountFinalValue = "%,.2f".format(locale, amountFinal)
-//
-//                        onUpdate(
-//                            item.copy(
-//                                installment = newInstallment,
-//                                amountOriginal = amountInputText.text.toString(),
-//                                amountFinal = amountFinalValue
-//                            ),
-//                        )
-//                    } catch (_: Exception) {
-//                        // TODO LOG ERROR
-//                    }
-//                }
-//
-//                override fun onNothingSelected(parent: AdapterView<*>?) {}
-//            }
-    }
-
-    private fun updateInstallmentView(item: SimulationPayment) {
-        if (item.paymentMethod.maxInstallments > 0) {
-            installmentsSelectorLayout.visibility = View.VISIBLE
-            installmentsAmount.text = installmentsDescription(
-                        item.paymentMethod.maxInstallments,
-                        item.paymentMethod.interestTax,
-                        amountInputText.text.toString()
-                    )
-//            val allowedInstallments: List<Int> = (1..item.paymentMethod.maxInstallments).toList()
-//            val installmentsAdapter = ArrayAdapter(
-//                context,
-//                android.R.layout.simple_spinner_dropdown_item,
-//                allowedInstallments.map {
-//                    installmentsDescription(
-//                        it,
-//                        item.paymentMethod.interestTax,
-//                        amountInputText.text.toString()
-//                    )
-//                }
-//            )
-//            installmentsSelectorSpinner.setAdapter(installmentsAdapter)
-        } else {
-            installmentsSelectorLayout.visibility = View.GONE
+        private fun calculateAmountFinal(interestTax: Double?, amountStr: String): String {
+            return try {
+                val value = Mask.doubleValue(amountStr)
+                val tax = interestTax ?: 0.0
+                val total = value * (1 + tax)
+                "%,.2f".format(locale, total)
+            } catch (e: Exception) {
+                amountStr
+            }
         }
     }
 
-    private fun amountFinalValue(
-        interestTax: Double?,
-        paymentAmount: String
-    ): String {
-        return try {
-            val paymentAmountValue = paymentAmount.replace("R$", "")
-                .replace(" ", "")
-                .replace(".", "")
-                .replace(",", ".")
-                .replace("\\s".toRegex(), "").toDouble()
-
-            if (interestTax != null && interestTax > 0.0) {
-                val paymentAmountValueWithinterestTax = paymentAmountValue + (paymentAmountValue * interestTax)
-                "%,.2f".format(locale, paymentAmountValueWithinterestTax)
-            } else {
-                paymentAmount
-            }
-        } catch (e: Exception) {
-            paymentAmount
-        }
-    }
-
-    private fun installmentsDescription(
-        installment: Int,
-        interestTax: Double?,
-        paymentAmount: String
-    ): String {
-        return try {
-            val paymentAmountValue = paymentAmount.replace("R$", "")
-                .replace(" ", "")
-                .replace(".", "")
-                .replace(",", ".")
-                .replace("\\s".toRegex(), "").toDouble()
-
-            if (interestTax != null && interestTax > 0.0) {
-                val paymentAmountValueWithinterestTax = paymentAmountValue + (paymentAmountValue * interestTax)
-                val paymentAmountValueWithinterestTaxFormattedValue = "%,.2f".format(locale, paymentAmountValueWithinterestTax)
-
-                val installmentAmount = paymentAmountValueWithinterestTax / installment
-                val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
-                "Em ${installment}x de R$${installmentFormattedValue} (R\$${paymentAmountValueWithinterestTaxFormattedValue})"
-            } else {
-                val installmentAmount = paymentAmountValue / installment
-                val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
-                "Em ${installment}x de R$${installmentFormattedValue} sem juros"
-            }
-        } catch (e: Exception) {
-            "Em ${installment}x"
-        }
+    class DiffCallback : DiffUtil.ItemCallback<SimulationPayment>() {
+        override fun areItemsTheSame(oldItem: SimulationPayment, newItem: SimulationPayment) = oldItem.id == newItem.id
+        override fun areContentsTheSame(oldItem: SimulationPayment, newItem: SimulationPayment) = oldItem == newItem
     }
 }

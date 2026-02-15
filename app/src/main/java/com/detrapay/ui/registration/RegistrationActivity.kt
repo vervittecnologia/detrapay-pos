@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
+import androidx.core.content.ContextCompat
 import com.detrapay.R
 import com.detrapay.data.model.Order
 import com.detrapay.databinding.ActivityRegistrationBinding
@@ -21,20 +22,36 @@ class RegistrationActivity : AppCompatActivity() {
     private lateinit var binding: ActivityRegistrationBinding
     private lateinit var navController: NavController
     private lateinit var navHostFragment: NavHostFragment
-    private lateinit var progressBar: LinearProgressIndicator
 
     private var currentScreen: Int = 1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Fullscreen / Immersive mode
+        window.decorView.systemUiVisibility = (android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                or android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                or android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                or android.view.View.SYSTEM_UI_FLAG_FULLSCREEN)
+        
         binding = ActivityRegistrationBinding.inflate(layoutInflater)
-        progressBar = binding.linearProgressIndicator
-        progressBar.progress = 25
         initializeViewModelMode()
         setupObservers()
         setupNavigation()
-        setupToolbar()
+        setupStepperActions()
         setContentView(binding.root)
+    }
+
+    private fun setupStepperActions() {
+        val stepperBinding = com.detrapay.databinding.LayoutRegistrationStepperBinding.bind(binding.registrationStepper.root)
+        
+        stepperBinding.btnBack.setOnClickListener {
+            onBackPressed()
+        }
+        
+        stepperBinding.btnExit.setOnClickListener {
+            ExitConfirmationDialog().show(supportFragmentManager, "ExitConfirmationDialog")
+        }
     }
 
     override fun onBackPressed() {
@@ -52,43 +69,47 @@ class RegistrationActivity : AppCompatActivity() {
         viewModel.initialize(orderParam)
     }
 
-    private fun setupToolbar() {
-        setSupportActionBar(binding.registrationToolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.registration_menu, menu)
+        return true
+    }
 
-        binding.registrationToolbar.setNavigationOnClickListener {
-            if (currentScreen == 1) {
+    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_exit -> {
                 ExitConfirmationDialog().show(supportFragmentManager, "ExitConfirmationDialog")
-            }  else {
-                navController.navigateUp() || super.onSupportNavigateUp()
+                true
             }
-            viewModel.navigateBack()
+            else -> super.onOptionsItemSelected(item)
         }
     }
 
     private fun setupObservers() {
         viewModel.registrationState.observe(this, Observer { state ->
-            updateToolbar(state.currentScreen)
+            this.currentScreen = state.currentScreen
+            updateStepper(state.currentScreen)
         })
     }
 
-    private fun updateToolbar(currentScreen: Int) {
-        this.currentScreen = currentScreen
-        progressBar.progress = currentScreen * 25
-        val toolbarTitle = when (currentScreen) {
-            1 -> {
-                "Dados do pedido"
-            }
-
-            2 -> {
-                "Detalhamento do pagamento"
-            }
-
-            else -> {
-                "Forma de pagamento"
-            }
+    private fun updateStepper(currentScreen: Int) {
+        val stepperBinding = com.detrapay.databinding.LayoutRegistrationStepperBinding.bind(binding.registrationStepper.root)
+        
+        val progress = when (currentScreen) {
+            1 -> 33
+            2 -> 66
+            3 -> 100
+            else -> 0
         }
-        binding.registrationToolbar.title = toolbarTitle
+        
+        stepperBinding.registrationProgress.setProgress(progress, true)
+        stepperBinding.tvProgressLabel.text = when(currentScreen) {
+            1 -> "DADOS DO CLIENTE"
+            2 -> "RESUMO DO PEDIDO"
+            3 -> "FORMA DE PAGAMENTO"
+            else -> "Passo $currentScreen de 3"
+        }
+        
+        stepperBinding.btnBack.visibility = if (currentScreen == 1) android.view.View.GONE else android.view.View.VISIBLE
     }
 
     private fun setupNavigation() {

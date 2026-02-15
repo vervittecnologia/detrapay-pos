@@ -59,7 +59,8 @@ class RegistrationRepository @Inject constructor(
                             id = it.id,
                             name = it.name,
                             maxInstallments = it.maxInstallments,
-                            interestTax = it.interestTax)
+                            interestTax = it.interestTax,
+                            paymentType = it.paymentType)
                     }
                     Logger.d(paymentMethods.toString())
                     Result.Success(paymentMethods)
@@ -254,7 +255,7 @@ class RegistrationRepository @Inject constructor(
                 phoneNumber = "",
                 email = ""
             ),
-            serviceName = orderResponse.attributes.companies.data.attributes.tradeName,
+            serviceName = orderResponse.attributes.companies?.data?.attributes?.tradeName ?: "",
             creationDate = orderResponse.attributes.createdAt,
             status = OrderStatus.valueOf(orderResponse.attributes.status.uppercase()),
             vehiclePrice = 0.0,

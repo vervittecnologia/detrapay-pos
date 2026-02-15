@@ -12,86 +12,92 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="24dp"
         android:layout_marginEnd="16dp"
-        android:text="Pagamento"
-        android:textColor="@color/neutral_700"
-        android:textSize="16sp"
+        android:text="Pagar Pedido"
+        android:textColor="@color/primary_500"
+        android:textSize="20sp"
         android:textStyle="bold"
-        app:layout_constraintEnd_toStartOf="@+id/closeDialog"
+        android:textAlignment="center"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/closeDialog"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
+        android:padding="4dp"
         android:src="@drawable/ic_close"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:tint="@color/black" />
+        app:tint="@color/neutral_400" />
 
     <com.google.android.material.divider.MaterialDivider
         android:id="@+id/materialDivider2"
         android:layout_width="match_parent"
-        android:layout_height="2dp"
+        android:layout_height="1dp"
         android:layout_marginTop="16dp"
         app:dividerColor="@color/neutral_200"
-        app:layout_constraintTop_toBottomOf="@+id/dialogTitle"
-        tools:layout_editor_absoluteX="0dp" />
+        app:layout_constraintTop_toBottomOf="@+id/dialogTitle" />
 
     <LinearLayout
         android:id="@+id/infoSection"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="24dp"
         android:orientation="vertical"
+        android:gravity="center"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/materialDivider2">
 
         <TextView
-            android:id="@+id/paymentAmount"
-            android:layout_width="match_parent"
+            android:id="@+id/paymentMethod"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Valor: R$5,00"
-            android:textColor="@color/neutral_700"
-            android:textSize="18sp" />
+            android:text="CARTÃO DE CRÉDITO"
+            android:textColor="@color/neutral_500"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textAllCaps="true"/>
 
         <TextView
-            android:id="@+id/paymentMethod"
-            android:layout_width="match_parent"
+            android:id="@+id/paymentAmount"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Pagamento via: PIX"
-            android:textColor="@color/neutral_700"
-            android:textSize="18sp"
-            android:layout_marginTop="8dp"
-            android:visibility="visible"/>
+            android:layout_marginTop="4dp"
+            android:text="R$ 2.184,26"
+            android:textColor="@color/neutral_900"
+            android:textSize="32sp"
+            android:textStyle="bold" />
 
-        <com.google.android.material.divider.MaterialDivider
-            android:id="@+id/infoDivider"
-            android:layout_width="match_parent"
-            android:layout_height="2dp"
-            android:layout_marginTop="16dp"
-            app:dividerColor="@color/neutral_200"
-            app:layout_constraintTop_toBottomOf="@+id/dialogTitle"
-            tools:layout_editor_absoluteX="0dp" />
+        <TextView
+            android:id="@+id/paymentInstallments"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="em 10x de R$ 218,42"
+            android:textColor="@color/primary_500"
+            android:textSize="16sp"
+            android:textStyle="bold" />
 
     </LinearLayout>
-
 
     <LinearLayout
         android:id="@+id/contentView"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="32dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="32dp"
         android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/infoSection">
@@ -101,25 +107,34 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp"
-            android:visibility="gone">
+            android:gravity="center"
+            android:visibility="visible">
 
             <ProgressBar
                 android:id="@+id/progressIndicator"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
                 android:indeterminateTint="@color/primary_500" />
 
             <TextView
                 android:id="@+id/transactionMessage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAllCaps="true"
-                android:textColor="@color/neutral_700"
-                tools:text="Processando"
+                android:layout_marginTop="24dp"
+                android:text="Aguardando maquininha..."
                 android:textAlignment="center"
-                android:textSize="20sp"
-                android:layout_marginTop="12dp"/>
+                android:textColor="@color/neutral_700"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Siga as instruções na tela da maquininha para concluir o pagamento."
+                android:textAlignment="center"
+                android:textColor="@color/neutral_500"
+                android:textSize="14sp" />
 
         </LinearLayout>
 

@@ -1,36 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="Theme.Detrapay" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="colorPrimary">@color/primary_500</item>
-        <item name="colorPrimaryDark">@color/primary_500</item>
-        <item name="colorPrimaryVariant">@color/primary_500</item>
+    <style name="Theme.Detrapay" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/color_primary</item>
+        <item name="colorPrimaryDark">@color/color_primary_variant</item>
+        <item name="colorSecondary">@color/color_secondary</item>
+        <item name="android:statusBarColor">@color/color_primary</item>
+        <item name="android:windowLightStatusBar">false</item>
+        
+        <!-- Material Design Components Defaults -->
+        <item name="materialButtonStyle">@style/Widget.MaterialComponents.Button</item>
+        <item name="textInputStyle">@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox</item>
+        <item name="materialCardViewStyle">@style/Widget.MaterialComponents.CardView</item>
+
         <item name="android:fontFamily">@font/font</item>
         <item name="android:homeAsUpIndicator">@drawable/ic_arrow_left</item>
-
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
-        <item name="android:statusBarColor">@color/primary_500</item>
-        <item name="android:windowLightStatusBar">false</item>
-
         <item name="android:windowActivityTransitions">true</item>
         <item name="android:windowEnterTransition">@android:transition/explode</item>
         <item name="android:windowExitTransition">@android:transition/explode</item>
     </style>
 
-    <style name="Theme.Detrapay.NoActionBar" parent="Theme.AppCompat.Light.NoActionBar">
+    <style name="Theme.Detrapay.NoActionBar" parent="Theme.Detrapay">
         <item name="colorPrimary">@color/primary_800</item>
         <item name="colorPrimaryVariant">@color/primary_500</item>
         <item name="colorOnPrimary">@color/white</item>
         <item name="android:fontFamily">@font/font</item>
     </style>
 
-    <style name="Theme.Detrapay.Login" parent="Theme.AppCompat.Light.NoActionBar">
+    <style name="Theme.Detrapay.Login" parent="Theme.Detrapay">
         <item name="colorPrimary">@color/primary_800</item>
         <item name="colorPrimaryVariant">@color/primary_500</item>
         <item name="colorOnPrimary">@color/white</item>
         <item name="android:fontFamily">@font/font</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@color/primary_100</item>
     </style>
 
-    <style name="Theme.Detrapay.Splash" parent="Theme.MaterialComponents.Light.NoActionBar">
+    <style name="Theme.Detrapay.Splash" parent="Theme.Detrapay">
         <item name="android:windowDisablePreview">true</item>
         <item name="android:windowBackground">@drawable/splash_background</item>
         <item name="colorPrimary">@color/primary_500</item>

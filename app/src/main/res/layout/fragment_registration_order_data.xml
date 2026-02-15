@@ -4,395 +4,315 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/color_background"
     tools:context=".ui.registration.order_data.RegistrationOrderDataFragment">
 
     <ScrollView
         android:id="@+id/contentView"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:orientation="vertical"
+        android:clipToPadding="false"
         android:visibility="visible"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0">
+        app:layout_constraintBottom_toTopOf="@+id/footerView"
+        app:layout_constraintTop_toTopOf="parent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/contentViewsss"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            android:padding="@dimen/spacing_medium">
 
-            <LinearLayout
-                android:id="@+id/salesmanDropDownMenuLayout"
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/formCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginEnd="16dp"
-                android:orientation="vertical"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="@dimen/radius_medium"
+                app:cardElevation="@dimen/elevation_low"
                 app:layout_constraintTop_toTopOf="parent">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Vendedor*" />
+                    android:orientation="vertical"
+                    android:padding="@dimen/spacing_medium">
 
-                <Spinner
-                    android:id="@+id/salesmanSpinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:selectAllOnFocus="true" />
-            </LinearLayout>
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/spacing_xs"
+                        android:text="Vendedor*"
+                        android:textColor="@color/neutral_600"
+                        android:textSize="12sp" />
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/cpfCnpjTextInputLayout"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginEnd="16dp"
-                android:hint="@string/cpf_cnpj_registration_order_input"
-                app:endIconDrawable="@drawable/ic_search"
-                app:endIconMode="custom"
-                app:hintTextAppearance="@style/TextAppearance.AppCompat.Medium"
-                app:layout_constraintEnd_toStartOf="@+id/cpfCnpjLoading"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/salesmanDropDownMenuLayout">
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        app:cardBackgroundColor="@color/neutral_100"
+                        app:cardCornerRadius="@dimen/radius_small"
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/neutral_300"
+                        app:strokeWidth="1dp">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/cpfCnpj"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:inputType="number"
-                    android:maxLength="18"
-                    android:selectAllOnFocus="true" />
-            </com.google.android.material.textfield.TextInputLayout>
+                        <Spinner
+                            android:id="@+id/salesmanSpinner"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:paddingStart="@dimen/spacing_small" />
+                    </com.google.android.material.card.MaterialCardView>
 
-            <ProgressBar
-                android:id="@+id/cpfCnpjLoading"
-                android:layout_width="wrap_content"
-                android:layout_height="0dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginEnd="16dp"
-                android:layout_marginBottom="16dp"
-                android:indeterminateTint="@color/primary_500"
-                android:visibility="gone"
-                app:layout_constraintBottom_toBottomOf="@+id/cpfCnpjTextInputLayout"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@+id/cpfCnpjTextInputLayout" />
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_medium">
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/clientNameTextInputLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginEnd="16dp"
-                android:hint="@string/client_name_order_input"
-                app:hintTextAppearance="@style/TextAppearance.AppCompat.Medium"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/cpfCnpjTextInputLayout">
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/cpfCnpjTextInputLayout"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:hint="@string/cpf_cnpj_registration_order_input"
+                            app:boxCornerRadiusBottomEnd="@dimen/radius_medium"
+                            app:boxCornerRadiusBottomStart="@dimen/radius_medium"
+                            app:boxCornerRadiusTopEnd="@dimen/radius_medium"
+                            app:boxCornerRadiusTopStart="@dimen/radius_medium"
+                            app:endIconDrawable="@drawable/ic_search"
+                            app:endIconMode="custom"
+                            app:layout_constraintEnd_toStartOf="@+id/cpfCnpjLoading"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/clientNameInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:autofillHints="username"
-                    android:inputType="text"
-                    android:selectAllOnFocus="true" />
-            </com.google.android.material.textfield.TextInputLayout>
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/cpfCnpj"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="number"
+                                android:imeOptions="actionNext"
+                                android:maxLength="18" />
+                        </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/whatsappTextInputLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginEnd="16dp"
-                android:hint="@string/whatsapp_order_input"
-                app:hintTextAppearance="@style/TextAppearance.AppCompat.Medium"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/clientNameTextInputLayout">
+                        <ProgressBar
+                            android:id="@+id/cpfCnpjLoading"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/spacing_small"
+                            android:indeterminateTint="@color/primary_500"
+                            android:visibility="gone"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+                    </androidx.constraintlayout.widget.ConstraintLayout>
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/whatsappInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:autofillHints="phone"
-                    android:inputType="phone"
-                    android:selectAllOnFocus="true" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/clientNameTextInputLayout"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_small"
+                        android:hint="@string/client_name_order_input"
+                        app:boxCornerRadiusBottomEnd="@dimen/radius_medium"
+                        app:boxCornerRadiusBottomStart="@dimen/radius_medium"
+                        app:boxCornerRadiusTopEnd="@dimen/radius_medium"
+                        app:boxCornerRadiusTopStart="@dimen/radius_medium">
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/invoiceDateTextInputLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginEnd="16dp"
-                android:hint="@string/invoice_date_order_input"
-                app:endIconDrawable="@drawable/ic_calendar"
-                app:endIconMode="custom"
-                app:hintTextAppearance="@style/TextAppearance.AppCompat.Medium"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/whatsappTextInputLayout">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/clientNameInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionNext"
+                            android:inputType="text" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/invoiceDateInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:inputType="date"
-                    android:maxLength="10"
-                    android:selectAllOnFocus="true" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/whatsappTextInputLayout"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_small"
+                        android:hint="@string/whatsapp_order_input"
+                        app:boxCornerRadiusBottomEnd="@dimen/radius_medium"
+                        app:boxCornerRadiusBottomStart="@dimen/radius_medium"
+                        app:boxCornerRadiusTopEnd="@dimen/radius_medium"
+                        app:boxCornerRadiusTopStart="@dimen/radius_medium">
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/vehicleValueTextInputLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginEnd="16dp"
-                android:hint="@string/vehicle_value_order_input"
-                app:hintTextAppearance="@style/TextAppearance.AppCompat.Medium"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/invoiceDateTextInputLayout"
-                app:prefixTextAppearance="@style/TextAppearance.AppCompat.Medium">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/whatsappInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionNext"
+                            android:inputType="phone" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/vehicleValueInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:ems="10"
-                    android:inputType="numberDecimal"
-                    android:maxLength="17"
-                    android:selectAllOnFocus="true" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/invoiceDateTextInputLayout"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_small"
+                        android:hint="@string/invoice_date_order_input"
+                        app:boxCornerRadiusBottomEnd="@dimen/radius_medium"
+                        app:boxCornerRadiusBottomStart="@dimen/radius_medium"
+                        app:boxCornerRadiusTopEnd="@dimen/radius_medium"
+                        app:boxCornerRadiusTopStart="@dimen/radius_medium"
+                        app:endIconDrawable="@drawable/ic_calendar"
+                        app:endIconMode="custom">
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/vehicleTypeTextInputLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginEnd="16dp"
-                android:hint="@string/vehicle_type_order_input"
-                android:visibility="invisible"
-                app:hintTextAppearance="@style/TextAppearance.AppCompat.Medium"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/vehicleValueTextInputLayout">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/invoiceDateInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionNext"
+                            android:inputType="date"
+                            android:maxLength="10" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/vehicleTypeInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:drawableEnd="@drawable/ic_search"
-                    android:inputType="number"
-                    android:selectAllOnFocus="true" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/vehicleValueTextInputLayout"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_small"
+                        android:hint="@string/vehicle_value_order_input"
+                        app:boxCornerRadiusBottomEnd="@dimen/radius_medium"
+                        app:boxCornerRadiusBottomStart="@dimen/radius_medium"
+                        app:boxCornerRadiusTopEnd="@dimen/radius_medium"
+                        app:boxCornerRadiusTopStart="@dimen/radius_medium">
 
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/vehicleValueInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:minHeight="64dp"
+                            android:paddingVertical="@dimen/spacing_medium"
+                            android:imeOptions="actionDone"
+                            android:inputType="numberDecimal" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-            <LinearLayout
-                android:id="@+id/dropDownMenuLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginEnd="16dp"
-                android:orientation="vertical"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/vehicleValueTextInputLayout">
+                    <!-- Hidden but required by code -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/vehicleTypeTextInputLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/vehicleTypeInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/vehicle_type_order_input" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_medium"
+                        android:layout_marginBottom="@dimen/spacing_xs"
+                        android:text="@string/vehicle_type_order_input"
+                        android:textColor="@color/neutral_600"
+                        android:textSize="12sp" />
 
-                <Spinner
-                    android:id="@+id/vehicleTypeSpinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:selectAllOnFocus="true" />
-            </LinearLayout>
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        app:cardBackgroundColor="@color/neutral_100"
+                        app:cardCornerRadius="@dimen/radius_small"
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/neutral_300"
+                        app:strokeWidth="1dp">
 
-            <CheckBox
-                android:id="@+id/disposalVehicleCheckbox"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginEnd="16dp"
-                android:buttonTint="@color/primary_500"
-                android:text="@string/disposal_vehicle_order_input"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/dropDownMenuLayout" />
+                        <Spinner
+                            android:id="@+id/vehicleTypeSpinner"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:paddingStart="@dimen/spacing_small" />
+                    </com.google.android.material.card.MaterialCardView>
 
-            <CheckBox
-                android:id="@+id/specialPlateCheckBox"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginEnd="16dp"
-                android:buttonTint="@color/primary_500"
-                android:text="@string/special_plate_order_input"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/disposalVehicleCheckbox" />
+                    <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/disposalVehicleCheckbox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_medium"
+                        android:text="@string/disposal_vehicle_order_input"
+                        app:buttonTint="@color/primary_500" />
 
-            <Button
-                android:id="@+id/registrationOrderDataNextBtn"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginEnd="16dp"
-                android:layout_marginBottom="16dp"
-                android:background="@drawable/default_button_background"
-                android:text="@string/registration_next_button"
-                android:textColor="@color/white"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/specialPlateCheckBox" />
+                    <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/specialPlateCheckBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_xs"
+                        android:text="@string/special_plate_order_input"
+                        app:buttonTint="@color/primary_500" />
 
-            <TextView
-                android:id="@+id/registrationOrderDataNextBtnError"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="8dp"
-                android:layout_marginEnd="16dp"
-                android:indeterminateTint="@color/red"
-                android:textColor="@color/red"
-                android:visibility="gone"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/registrationOrderDataNextBtn" />
-
-            <ProgressBar
-                android:id="@+id/loading"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginEnd="16dp"
-                android:indeterminateTint="@color/primary_500"
-                android:visibility="gone"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/registrationOrderDataNextBtn" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 
+    <LinearLayout
+        android:id="@+id/footerView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:elevation="8dp"
+        android:orientation="vertical"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/registrationOrderDataNextBtn"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="@string/registration_next_button"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            app:cornerRadius="@dimen/radius_medium" />
+
+        <TextView
+            android:id="@+id/registrationOrderDataNextBtnError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_small"
+            android:textAlignment="center"
+            android:textColor="@color/red"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <ProgressBar
+            android:id="@+id/loading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="8dp"
+            android:indeterminateTint="@color/primary_500"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
     <com.facebook.shimmer.ShimmerFrameLayout
         android:id="@+id/loadingView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="@dimen/spacing_medium">
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="15dp"
-                android:layout_marginLeft="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginRight="16dp"
-                android:background="@color/shimmerColor" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="45dp"
-                android:layout_marginLeft="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginRight="16dp"
-                android:background="@color/shimmerColor" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="15dp"
-                android:layout_marginLeft="16dp"
-                android:layout_marginTop="26dp"
-                android:layout_marginRight="16dp"
-                android:background="@color/shimmerColor" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="45dp"
-                android:layout_marginLeft="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginRight="16dp"
-                android:background="@color/shimmerColor" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="15dp"
-                android:layout_marginLeft="16dp"
-                android:layout_marginTop="26dp"
-                android:layout_marginRight="16dp"
-                android:background="@color/shimmerColor" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="45dp"
-                android:layout_marginLeft="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginRight="16dp"
-                android:background="@color/shimmerColor" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="15dp"
-                android:layout_marginLeft="16dp"
-                android:layout_marginTop="26dp"
-                android:layout_marginRight="16dp"
-                android:background="@color/shimmerColor" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="45dp"
-                android:layout_marginLeft="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginRight="16dp"
-                android:background="@color/shimmerColor" />
+            <View android:layout_width="match_parent" android:layout_height="50dp" android:background="@color/shimmerColor" android:layout_marginBottom="16dp"/>
+            <View android:layout_width="match_parent" android:layout_height="50dp" android:background="@color/shimmerColor" android:layout_marginBottom="16dp"/>
+            <View android:layout_width="match_parent" android:layout_height="50dp" android:background="@color/shimmerColor" android:layout_marginBottom="16dp"/>
+            <View android:layout_width="match_parent" android:layout_height="50dp" android:background="@color/shimmerColor" android:layout_marginBottom="16dp"/>
         </LinearLayout>
     </com.facebook.shimmer.ShimmerFrameLayout>
 
     <LinearLayout
         android:id="@+id/errorView"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
         android:orientation="vertical"
-        android:padding="16dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:padding="@dimen/spacing_xl"
+        android:visibility="gone">
 
         <TextView
             android:id="@+id/errorTxtView"
@@ -401,21 +321,16 @@
             android:text="@string/registration_default_error_message"
             android:textAlignment="center"
             android:textColor="@color/primary_500"
-            android:textSize="25sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:textSize="20sp"
+            android:textStyle="bold" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/reloadRegistration"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="start"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/default_button_background"
+            android:layout_marginTop="@dimen/spacing_large"
             android:text="@string/reload_btn"
-            android:textColor="@color/white" />
+            app:cornerRadius="@dimen/radius_medium" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

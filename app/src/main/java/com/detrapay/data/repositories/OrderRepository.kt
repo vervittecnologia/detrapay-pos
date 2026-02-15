@@ -26,6 +26,7 @@ import com.detrapay.data.model.remote.OrderSimulationItemRequest
 import com.detrapay.data.model.remote.OrderSimulationRequest
 import com.detrapay.data.model.remote.SplitConfigRequest
 import com.detrapay.ui.util.Logger
+import com.detrapay.ui.util.Mask
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -102,7 +103,7 @@ class OrderRepository @Inject constructor(
                 phoneNumber = orderResponse.attributes.customers.data.attributes.phoneNumber,
                 email = orderResponse.attributes.customers.data.attributes.email
             ),
-            serviceName = orderResponse.attributes.companies.data.attributes.tradeName,
+            serviceName = orderResponse.attributes.companies?.data?.attributes?.tradeName ?: "",
             creationDate = orderResponse.attributes.createdAt,
             status = OrderStatus.valueOf(orderResponse.attributes.status.uppercase()),
             vehiclePrice = orderResponse.attributes.vehiclePrice,
@@ -167,10 +168,20 @@ class OrderRepository @Inject constructor(
     }
 
     private fun formatDate(date: String): String {
-        val day = date.substring(0, 2)
-        val month = date.substring(3, 5)
-        val year = date.substring(6, 10)
-        return "$year-$month-$day"
+        return try {
+            if (date.contains("-")) {
+                // Already in YYYY-MM-DD format
+                date.take(10)
+            } else {
+                // Assume DD/MM/YYYY
+                val day = date.substring(0, 2)
+                val month = date.substring(3, 5)
+                val year = date.substring(6, 10)
+                "$year-$month-$day"
+            }
+        } catch (e: Exception) {
+            date
+        }
     }
 
     suspend fun createOrder(
@@ -179,8 +190,13 @@ class OrderRepository @Inject constructor(
         salesmanId: String?
     ): Result<Order> {
         val user = authRepository.getLoggedUser(true)
-        val salesCompanyId = user?.companies?.firstOrNull()?.id!!
-        val dispatcherId = user?.dispatchers?.firstOrNull()?.id!!
+        val salesCompanyId = user?.companies?.firstOrNull()?.id
+        val dispatcherId = user?.dispatchers?.firstOrNull()?.id
+
+        if (salesCompanyId == null || dispatcherId == null) {
+            return Result.Error(Exception("ID da empresa ou do despachante não encontrado."))
+        }
+
         val clientCpfCnpj = simulation.customer.cpfCnpj.replace(".", "")
             .replace("/", "")
             .replace("-", "")
@@ -195,22 +211,32 @@ class OrderRepository @Inject constructor(
 
         val simulationRequest = CreateOrderSimulationRequest(
             billingDate = formatDate(simulation.simulation.billingDate),
-            vehiclePrice = simulation.simulation.vehiclePrice.toDouble(),
+            vehiclePrice = simulation.simulation.vehiclePrice,
             isVehicleFinanced = simulation.simulation.vehicleDisposal,
             isVehicleSpecialPlate = simulation.simulation.vehicleSpecialPlate,
             vehicleTypeId = simulation.simulation.vehicleTypeId,
+            totalPrice = simulation.simulation.totalPrice.toString()
         )
 
-        val paymentsRequest = simulationPayments.map { simulationPayment ->
+        val receivablesRequest = simulationPayments.map { simulationPayment ->
+            val amountOriginal = Mask.doubleValue(simulationPayment.amountOriginal)
+            val tax = simulationPayment.paymentMethod.interestTax ?: 0.0
+            val amountFinal = amountOriginal * (1 + tax)
+
             CreateOrderPaymentRequest(
                 paymentMethodId = simulationPayment.paymentMethod.id,
-                amountOriginal = simulationPayment.amountOriginal
-                    .replace("R$", "")
-                    .replace(".", "")
-                    .replace(",", ".")
-                    .trim().toDouble(),
+                amountOriginal = amountOriginal.toString(),
+                amountFinal = amountFinal.toString(),
+                tax = tax,
                 installments = simulationPayment.installment,
                 paymentDate = formatDate(simulation.simulation.billingDate)
+            )
+        }
+
+        val itemsRequest = simulation.simulationItems.map { simulationItem ->
+            OrderSimulationItemRequest(
+                id = simulationItem.id,
+                price = calculateItemPrice(simulationItem.price, simulationItem.discount)
             )
         }
 
@@ -220,24 +246,25 @@ class OrderRepository @Inject constructor(
             companyId = salesCompanyId,
             dispatcherId = dispatcherId,
             simulation = simulationRequest,
-            payments = paymentsRequest
+            receivables = receivablesRequest,
+            items = itemsRequest
         )
 
-        when (val result = detrapayRemoteDataSource.createOrder(orderRequest)) {
+        Logger.d("Sending CreateOrderRequest: $orderRequest")
+
+        return when (val result = detrapayRemoteDataSource.createOrder(orderRequest)) {
             is Result.Success -> {
                 try {
                     val order = parseOrder(result.data.data)
-                    return Result.Success(order)
+                    Result.Success(order)
                 } catch (e: Exception) {
-                    Logger.d("UNABLE TO CREATE ORDER: ${e.message}")
-                    return Result.Error(e)
+                    Logger.d("Error parsing order after creation: ${e.message}")
+                    Result.Error(e)
                 }
             }
             is Result.Error -> {
-                return result
-            }
-            else -> {
-                return Result.Error(Exception())
+                Logger.d("Server returned error in createOrder: ${result.exception.message}")
+                result
             }
         }
     }
@@ -258,7 +285,7 @@ class OrderRepository @Inject constructor(
                 }
             }
             is Result.Error -> {
-                return result
+                return Result.Error(result.exception)
             }
             else -> {
                 return Result.Error(Exception("Tivemos um erro na atualização do pagamento do pedido com nosso servidor, por favor tente novamente."))
@@ -278,7 +305,7 @@ class OrderRepository @Inject constructor(
                 }
             }
             is Result.Error -> {
-                return result
+                return Result.Error(result.exception)
             }
             else -> {
                 return Result.Error(Exception("Tivemos um erro no reembolso do pagamento, por favor tente novamente."))

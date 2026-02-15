@@ -68,6 +68,7 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
         private val paymentDate: TextView = binding.paymentDate
         private val paymentInfo: TextView = binding.paymentInfo
         private val cardArrow: ImageView = binding.cardArrow
+        private val paymentActionLabel: TextView = binding.paymentActionLabel
 
         @SuppressLint("UseCompatLoadingForDrawables", "SetTextI18n")
         fun bind(
@@ -91,21 +92,22 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
 
             paymentMethodImage.setImageDrawable(context.getDrawable(imageDrawable))
 
-            if (item.max_installments > 1) {
-                paymentMethodName.text = paymentMethod.name
-                paymentMethodInstallmentAmount.visibility = View.GONE
+            paymentMethodName.text = paymentMethod.name
 
-                val amountOriginalFormatted = "%,.2f".format(locale, item.amountOriginal)
-                val amountFinalFormatted = "%,.2f".format(locale, item.amountFinal)
+            val amountOriginalFormatted = "%,.2f".format(locale, item.amountOriginal)
+            val amountFinalFormatted = "%,.2f".format(locale, item.amountFinal)
+
+            if (item.max_installments > 1) {
                 val installmentAmount = item.amountFinal / item.max_installments
                 val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
 
-                paymentMethodAmount.text = "R$$amountOriginalFormatted em ${item.max_installments}x de R$$installmentFormattedValue (R$$amountFinalFormatted)"
+                paymentMethodInstallmentAmount.visibility = View.VISIBLE
+                paymentMethodInstallmentAmount.text = "${item.max_installments}x de R$ $installmentFormattedValue"
+                paymentMethodAmount.text = "Total com juros: R$ $amountFinalFormatted (Base: R$ $amountOriginalFormatted)"
             } else {
-                paymentMethodName.text = paymentMethod.name
-                paymentMethodInstallmentAmount.visibility = View.GONE
-                val amount = "%,.2f".format(locale, item.amountFinal)
-                paymentMethodAmount.text = "R$ $amount"
+                paymentMethodInstallmentAmount.visibility = View.VISIBLE
+                paymentMethodInstallmentAmount.text = "À vista: R$ $amountFinalFormatted"
+                paymentMethodAmount.text = "Valor original: R$ $amountOriginalFormatted"
             }
 
             statusTextView.text = item.status.toString()
@@ -119,6 +121,7 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
 
             if (item.status == PAID ) {
                 cardArrow.visibility = View.GONE
+                paymentActionLabel.visibility = View.GONE
                 paymentDetails.visibility = View.VISIBLE
                 paymentDate.text = "Pagamento realizado em ${item.paymentDate}"
 
@@ -134,6 +137,7 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
                 }
             } else if (item.status == REFUNDED) {
                 cardArrow.visibility = View.GONE
+                paymentActionLabel.visibility = View.GONE
                 paymentDetails.visibility = View.VISIBLE
                 paymentRefundDate.visibility = View.VISIBLE
                 paymentInfo.visibility = View.VISIBLE
@@ -141,15 +145,20 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
                 paymentDate.text = "Pagamento realizado em ${item.paymentDate}"
                 paymentInfo.text = "Com cartão com final ${item.cardLast4} do titular ${item.cardHolder}"
                 paymentRefundDate.text = "Pagamento estornado em ${item.refundDate}"
-            } else {
+            } else if (item.status == PENDING) {
                 cardArrow.visibility = View.VISIBLE
+                paymentActionLabel.visibility = View.VISIBLE
+                paymentDetails.visibility = View.GONE
+            } else {
+                cardArrow.visibility = View.GONE
+                paymentActionLabel.visibility = View.GONE
                 paymentDetails.visibility = View.GONE
             }
 
             paymentMethodStatusView.background = context.getDrawable(cardBackground)
 
             paymentMethodCard.setOnClickListener {
-                if (item.status != PAID && item.status != REFUNDED && item.status != CANCELLED) listener.onItemClick(item)
+                if (item.status == PENDING) listener.onItemClick(item)
             }
 
             paymentRefund.setOnClickListener{

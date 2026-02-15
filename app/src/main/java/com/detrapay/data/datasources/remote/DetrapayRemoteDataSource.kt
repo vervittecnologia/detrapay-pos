@@ -21,15 +21,15 @@ import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.OrderReceivableItemStatus
 import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.remote.ApiError
+import com.detrapay.data.model.remote.ConfirmPaymentRequest
 import com.detrapay.data.model.remote.CreateOrderRequest
 import com.detrapay.data.model.remote.RefundOrderReceivableRequest
-import com.detrapay.data.model.remote.RefundOrderReceivableRequestDataWrapper
 import com.detrapay.data.model.remote.SplitConfigRequest
-import com.detrapay.data.model.remote.UpdateOrderReceivableRequest
-import com.detrapay.data.model.remote.UpdateOrderReceivableRequestDataWrapper
 import com.detrapay.data.model.remote.UpdateOrderSalesmanRequest
 import com.detrapay.data.model.remote.VehicleTypeItemResponse
 import com.detrapay.ui.util.Logger
+import com.google.gson.Gson
+import com.google.gson.JsonElement
 import java.io.IOException
 import javax.inject.Inject
 
@@ -252,26 +252,26 @@ class DetrapayRemoteDataSource @Inject constructor(
     suspend fun payOrderReceivable(
         receivable: OrderReceivableItem,
         paymentData: PaymentData
-    ): Result<OrderResponse> {
+    ): Result<Unit> {
         try {
-            val updateReceivableItemRequest = UpdateOrderReceivableRequest(
-                authorizationId = paymentData.transactionId,
+            val transactionLogJson: JsonElement? = try {
+                paymentData.transactionLog?.let { Gson().fromJson(it, JsonElement::class.java) }
+            } catch (e: Exception) {
+                null
+            }
+
+            val confirmPaymentRequest = ConfirmPaymentRequest(
                 authorizationCode = paymentData.transactionCode,
-                status = OrderReceivableItemStatus.PAID.name.lowercase(),
                 paymentDate = paymentData.date,
-                cardBrand = paymentData.cardBrand,
-                cardHolder = paymentData.cardHolder,
-                cardLast4 = paymentData.cardLast4,
-                pixTxIdCode = paymentData.pixTxIdCode,
-                transactionLog = paymentData.transactionLog
+                cardBrand = paymentData.cardBrand ?: "",
+                cardHolder = paymentData.cardHolder ?: "",
+                cardLast4 = paymentData.cardLast4 ?: "",
+                transactionLog = transactionLogJson
             )
-            val updateOrderReceivableRequestDataWrapper = UpdateOrderReceivableRequestDataWrapper(data = updateReceivableItemRequest)
-            val result = detrapayService.updateOrderReceivableItem(receivable.documentId, updateOrderReceivableRequestDataWrapper)
+            val result = detrapayService.confirmPayment(receivable.id.toString(), confirmPaymentRequest)
             if (result.isSuccessful) {
-                Logger.d((result.body() ?: "").toString())
-                return Result.Success(result.body()!!)
+                return Result.Success(Unit)
             } else {
-                Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }
@@ -284,19 +284,16 @@ class DetrapayRemoteDataSource @Inject constructor(
     suspend fun refundOrderReceivableItem(
         receivableId: String,
         refundDate: String
-    ): Result<OrderResponse> {
+    ): Result<Unit> {
         try {
             val updateReceivableItemRequest = RefundOrderReceivableRequest(
                 refundDate = refundDate,
                 status =  OrderReceivableItemStatus.REFUNDED.name.lowercase(),
             )
-            val refundOrderReceivableRequestDataWrapper = RefundOrderReceivableRequestDataWrapper(data = updateReceivableItemRequest)
-            val result = detrapayService.refundOrderReceivableItem(receivableId, refundOrderReceivableRequestDataWrapper)
+            val result = detrapayService.refundOrderReceivableItem(receivableId, updateReceivableItemRequest)
             if (result.isSuccessful) {
-                Logger.d((result.body() ?: "").toString())
-                return Result.Success(result.body()!!)
+                return Result.Success(Unit)
             } else {
-                Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }

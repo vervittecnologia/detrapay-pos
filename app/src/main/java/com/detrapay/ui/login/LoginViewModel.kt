@@ -35,12 +35,13 @@ class LoginViewModel @Inject constructor(private val loginRepository: LoginRepos
     }
 
     fun loginDataChanged(cnpj: String, password: String) {
-        if (!isCnpjValid(cnpj)) {
+        val cnpjClean = cnpj.replace(".", "").replace("-", "").replace("/", "")
+        if (cnpjClean.isNotEmpty() && !isCnpjValid(cnpj)) {
             _loginForm.value = LoginFormState(cnpjError = R.string.invalid_cnpj)
-        } else if (!isPasswordValid(password)) {
+        } else if (password.isNotEmpty() && !isPasswordValid(password)) {
             _loginForm.value = LoginFormState(passwordError = R.string.invalid_password)
         } else {
-            _loginForm.value = LoginFormState(isDataValid = true)
+            _loginForm.value = LoginFormState(isDataValid = isCnpjValid(cnpj) && isPasswordValid(password))
         }
     }
 

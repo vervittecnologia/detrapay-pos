@@ -4,26 +4,29 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/color_background"
     tools:context=".ui.home.order_list.OrderListFragment">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/contentView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:visibility="visible"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="visible">
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/searchOrderTextInputLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginHorizontal="@dimen/spacing_medium"
+            android:layout_marginTop="@dimen/spacing_medium"
             android:hint="Nome ou CPF do cliente"
-            app:hintTextAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:boxCornerRadiusBottomEnd="@dimen/radius_medium"
+            app:boxCornerRadiusBottomStart="@dimen/radius_medium"
+            app:boxCornerRadiusTopEnd="@dimen/radius_medium"
+            app:boxCornerRadiusTopStart="@dimen/radius_medium"
+            app:endIconMode="custom"
+            app:endIconDrawable="@drawable/ic_search"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
@@ -31,9 +34,7 @@
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/searchOrderTextInput"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:autofillHints="username"
-                android:drawableRight="@drawable/ic_search"
+                android:layout_height="wrap_content"
                 android:inputType="text"
                 android:selectAllOnFocus="true" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -42,77 +43,65 @@
             android:id="@+id/emptyListTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="gone"
-            android:text="Nenhum pedido cadastrado"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="@dimen/spacing_xl"
             android:gravity="center"
-            app:layout_constraintTop_toTopOf="@+id/swipeRefreshLayout" />
+            android:text="Nenhum pedido cadastrado"
+            android:textColor="@color/neutral_500"
+            android:textSize="16sp"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@+id/searchOrderTextInputLayout" />
 
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/swipeRefreshLayout"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="@dimen/spacing_medium"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/searchOrderTextInputLayout">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/orderList"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:clipToPadding="false"
                 android:contentDescription="@string/order_list_content_description"
-                android:orientation="vertical"
+                android:paddingBottom="@dimen/spacing_medium"
                 app:layoutManager="LinearLayoutManager"
-                tools:itemCount="3"
+                tools:itemCount="5"
                 tools:listitem="@layout/order_list_item" />
 
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-
     <com.facebook.shimmer.ShimmerFrameLayout
         android:id="@+id/loadingView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone">
 
         <LinearLayout
-            android:id="@+id/shimmer_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingTop="@dimen/spacing_medium">
 
             <include layout="@layout/order_shimmer_item" />
-
             <include layout="@layout/order_shimmer_item" />
-
             <include layout="@layout/order_shimmer_item" />
-
+            <include layout="@layout/order_shimmer_item" />
             <include layout="@layout/order_shimmer_item" />
         </LinearLayout>
     </com.facebook.shimmer.ShimmerFrameLayout>
 
     <LinearLayout
         android:id="@+id/errorView"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
         android:orientation="vertical"
-        android:padding="16dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app.layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:padding="@dimen/spacing_xl"
+        android:visibility="gone">
 
         <TextView
             android:id="@+id/errorTxtView"
@@ -121,21 +110,16 @@
             android:text="@string/orders_default_error_message"
             android:textAlignment="center"
             android:textColor="@color/primary_500"
-            android:textSize="25sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:textSize="20sp"
+            android:textStyle="bold" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/reloadOrders"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="start"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/default_button_background"
+            android:layout_marginTop="@dimen/spacing_large"
             android:text="@string/reload_btn"
-            android:textColor="@color/white" />
+            app:cornerRadius="@dimen/radius_medium" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

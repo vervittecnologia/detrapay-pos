@@ -319,7 +319,10 @@ class RegistrationOrderDataFragment : Fragment() {
         binding.vehicleTypeSpinner.setAdapter(adapter)
 
         if (selectedVehicleType != null) {
-            binding.vehicleTypeSpinner.setSelection(selectedVehicleType!!)
+            val position = vehicleTypes.indexOfFirst { it.id == selectedVehicleType }
+            if (position != -1) {
+                binding.vehicleTypeSpinner.setSelection(position)
+            }
         }
 
         binding.vehicleTypeSpinner.onItemSelectedListener =
@@ -376,7 +379,9 @@ class RegistrationOrderDataFragment : Fragment() {
 
         if (selectedSalesmanId != null) {
             val salesmanPosition = salesmen.indexOfFirst { it.id == selectedSalesmanId }
-            binding.salesmanSpinner.setSelection(salesmanPosition)
+            if (salesmanPosition != -1) {
+                binding.salesmanSpinner.setSelection(salesmanPosition + 1)
+            }
         } else {
             binding.salesmanSpinner.setSelection(0)
         }
