@@ -2,6 +2,7 @@ package com.detrapay.data.api
 
 import com.detrapay.data.model.remote.AuthRequest
 import com.detrapay.data.model.remote.AuthResponse
+import com.detrapay.data.model.remote.CardBrandIconResponse
 import com.detrapay.data.model.remote.CompanyListResponse
 import com.detrapay.data.model.remote.ConfirmPaymentRequest
 import com.detrapay.data.model.remote.CreateOrderRequest
@@ -17,6 +18,7 @@ import com.detrapay.data.model.remote.SimulationResponse
 import com.detrapay.data.model.remote.SplitConfigRequest
 import com.detrapay.data.model.remote.UpdateOrderSalesmanRequest
 import com.detrapay.data.model.remote.VehicleTypeListResponse
+import retrofit2.http.Url
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
@@ -73,5 +75,8 @@ interface DetrapayService {
 
     @POST("update-split-config")
     suspend fun updateSplitConfig(@Body payload: SplitConfigRequest): Response<Unit>
+
+    @GET
+    suspend fun downloadFile(@Url url: String): Response<ResponseBody>
 
 }

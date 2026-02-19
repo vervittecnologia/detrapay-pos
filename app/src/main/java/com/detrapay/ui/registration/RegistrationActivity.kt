@@ -57,11 +57,19 @@ class RegistrationActivity : AppCompatActivity() {
     override fun onBackPressed() {
         if (currentScreen == 1) {
             ExitConfirmationDialog().show(supportFragmentManager, "ExitConfirmationDialog")
-            if (false) super.onBackPressed()
         } else {
-            navController.navigateUp() || super.onSupportNavigateUp()
+            val previousDestinationId = navController.currentDestination?.id
+            val handled = navController.navigateUp()
+            val currentDestinationId = navController.currentDestination?.id
+
+            // Avoid navigating back in ViewModel if we just moved from payment detail to payment method
+            // (both are part of Step 3)
+            if (handled && previousDestinationId == R.id.paymentDetailFragment && currentDestinationId == R.id.paymentMethodFragment) {
+                // Stayed in Step 3
+            } else {
+                viewModel.navigateBack()
+            }
         }
-        viewModel.navigateBack()
     }
 
     private fun initializeViewModelMode(){

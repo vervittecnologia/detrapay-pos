@@ -10,6 +10,7 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.activity.viewModels
+import com.detrapay.BuildConfig
 import com.detrapay.databinding.ActivityLoginBinding
 import com.detrapay.ui.home.HomeActivity
 import com.detrapay.ui.util.Mask
@@ -72,6 +73,15 @@ class LoginActivity : AppCompatActivity() {
         })
 
         cnpj.addTextChangedListener(Mask.mask("##.###.###/####-##", cnpj))
+
+        if (BuildConfig.DEBUG) {
+            cnpj.setText("47351133000176")
+            password.setText("12345678")
+            loginViewModel.loginDataChanged(
+                cnpj.text.toString(),
+                password.text.toString()
+            )
+        }
 
         cnpj.afterTextChanged {
             loginViewModel.loginDataChanged(

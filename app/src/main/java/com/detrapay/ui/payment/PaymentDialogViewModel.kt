@@ -198,7 +198,7 @@ class PaymentDialogViewModel @Inject constructor(
 
     private fun getInstallmentType(installments: Int): Int {
         return if (installments > 1) {
-            PlugPag.INSTALLMENT_TYPE_PARC_COMPRADOR
+            PlugPag.INSTALLMENT_TYPE_PARC_VENDEDOR
         } else {
             PlugPag.INSTALLMENT_TYPE_A_VISTA
         }

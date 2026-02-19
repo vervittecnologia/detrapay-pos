@@ -36,29 +36,23 @@
                     android:orientation="vertical"
                     android:padding="@dimen/spacing_medium">
 
-                    <TextView
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/salesmanTextInputLayout"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="@dimen/spacing_xs"
-                        android:text="Vendedor*"
-                        android:textColor="@color/neutral_600"
-                        android:textSize="12sp" />
+                        android:hint="Vendedor*"
+                        app:boxCornerRadiusBottomEnd="@dimen/radius_medium"
+                        app:boxCornerRadiusBottomStart="@dimen/radius_medium"
+                        app:boxCornerRadiusTopEnd="@dimen/radius_medium"
+                        app:boxCornerRadiusTopStart="@dimen/radius_medium">
 
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="match_parent"
-                        android:layout_height="50dp"
-                        app:cardBackgroundColor="@color/neutral_100"
-                        app:cardCornerRadius="@dimen/radius_small"
-                        app:cardElevation="0dp"
-                        app:strokeColor="@color/neutral_300"
-                        app:strokeWidth="1dp">
-
-                        <Spinner
-                            android:id="@+id/salesmanSpinner"
+                        <AutoCompleteTextView
+                            android:id="@+id/salesmanAutoComplete"
                             android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:paddingStart="@dimen/spacing_small" />
-                    </com.google.android.material.card.MaterialCardView>
+                            android:layout_height="wrap_content"
+                            android:inputType="none" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
@@ -87,7 +81,8 @@
                                 android:layout_height="wrap_content"
                                 android:inputType="number"
                                 android:imeOptions="actionNext"
-                                android:maxLength="18" />
+                                android:maxLength="18"
+                                android:selectAllOnFocus="true" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <ProgressBar
@@ -112,14 +107,16 @@
                         app:boxCornerRadiusBottomEnd="@dimen/radius_medium"
                         app:boxCornerRadiusBottomStart="@dimen/radius_medium"
                         app:boxCornerRadiusTopEnd="@dimen/radius_medium"
-                        app:boxCornerRadiusTopStart="@dimen/radius_medium">
+                        app:boxCornerRadiusTopStart="@dimen/radius_medium"
+                        app:endIconMode="clear_text">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/clientNameInput"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:imeOptions="actionNext"
-                            android:inputType="text" />
+                            android:inputType="text"
+                            android:selectAllOnFocus="true" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -132,14 +129,16 @@
                         app:boxCornerRadiusBottomEnd="@dimen/radius_medium"
                         app:boxCornerRadiusBottomStart="@dimen/radius_medium"
                         app:boxCornerRadiusTopEnd="@dimen/radius_medium"
-                        app:boxCornerRadiusTopStart="@dimen/radius_medium">
+                        app:boxCornerRadiusTopStart="@dimen/radius_medium"
+                        app:endIconMode="clear_text">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/whatsappInput"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:imeOptions="actionNext"
-                            android:inputType="phone" />
+                            android:inputType="phone"
+                            android:selectAllOnFocus="true" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -162,7 +161,8 @@
                             android:layout_height="wrap_content"
                             android:imeOptions="actionNext"
                             android:inputType="date"
-                            android:maxLength="10" />
+                            android:maxLength="10"
+                            android:selectAllOnFocus="true" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -175,7 +175,8 @@
                         app:boxCornerRadiusBottomEnd="@dimen/radius_medium"
                         app:boxCornerRadiusBottomStart="@dimen/radius_medium"
                         app:boxCornerRadiusTopEnd="@dimen/radius_medium"
-                        app:boxCornerRadiusTopStart="@dimen/radius_medium">
+                        app:boxCornerRadiusTopStart="@dimen/radius_medium"
+                        app:endIconMode="clear_text">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/vehicleValueInput"
@@ -184,7 +185,8 @@
                             android:minHeight="64dp"
                             android:paddingVertical="@dimen/spacing_medium"
                             android:imeOptions="actionDone"
-                            android:inputType="numberDecimal" />
+                            android:inputType="numberDecimal"
+                            android:selectAllOnFocus="true" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <!-- Hidden but required by code -->
@@ -199,30 +201,24 @@
                             android:layout_height="wrap_content" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <TextView
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/vehicleTypeDropdownLayout"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/spacing_medium"
-                        android:layout_marginBottom="@dimen/spacing_xs"
-                        android:text="@string/vehicle_type_order_input"
-                        android:textColor="@color/neutral_600"
-                        android:textSize="12sp" />
+                        android:hint="@string/vehicle_type_order_input"
+                        app:boxCornerRadiusBottomEnd="@dimen/radius_medium"
+                        app:boxCornerRadiusBottomStart="@dimen/radius_medium"
+                        app:boxCornerRadiusTopEnd="@dimen/radius_medium"
+                        app:boxCornerRadiusTopStart="@dimen/radius_medium">
 
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="match_parent"
-                        android:layout_height="50dp"
-                        app:cardBackgroundColor="@color/neutral_100"
-                        app:cardCornerRadius="@dimen/radius_small"
-                        app:cardElevation="0dp"
-                        app:strokeColor="@color/neutral_300"
-                        app:strokeWidth="1dp">
-
-                        <Spinner
-                            android:id="@+id/vehicleTypeSpinner"
+                        <AutoCompleteTextView
+                            android:id="@+id/vehicleTypeAutoComplete"
                             android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:paddingStart="@dimen/spacing_small" />
-                    </com.google.android.material.card.MaterialCardView>
+                            android:layout_height="wrap_content"
+                            android:inputType="none" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.checkbox.MaterialCheckBox
                         android:id="@+id/disposalVehicleCheckbox"

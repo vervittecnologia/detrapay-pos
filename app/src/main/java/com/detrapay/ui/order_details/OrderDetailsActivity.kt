@@ -47,12 +47,38 @@ class OrderDetailsActivity : AppCompatActivity(),
         super.onCreate(savedInstanceState)
         orderParam = intent.getSerializableExtra("order") as Order
         binding = ActivityOrderDetailsBinding.inflate(layoutInflater)
-        viewModel.loadScreenContent(orderParam.id)
+        setContentView(binding.root)
+
+        val isSuccess = intent.getBooleanExtra("isSuccess", false)
+        if (isSuccess) {
+            showSuccess()
+        } else {
+            viewModel.loadScreenContent(orderParam.id)
+        }
+        
         viewModel.loadSalesmen()
         setupToolbar(orderParam)
         setupObservers()
         setupErrorBtn()
-        setContentView(binding.root)
+        setupSuccessActions()
+    }
+
+    private fun showSuccess() {
+        binding.successView.visibility = View.VISIBLE
+        binding.contentView.visibility = View.GONE
+        binding.tvSuccessMessage.text = "O pedido #${orderParam.id} foi finalizado com sucesso e o recibo foi enviado ao cliente."
+    }
+
+    private fun setupSuccessActions() {
+        binding.btnNewOrder.setOnClickListener {
+            val intent = Intent(this, RegistrationActivity::class.java)
+            startActivity(intent)
+            finish()
+        }
+        binding.btnPrintReceipt.setOnClickListener {
+            // Logic for printing receipt if needed
+            Toast.makeText(this, "Imprimindo comprovante...", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun setupObservers() {

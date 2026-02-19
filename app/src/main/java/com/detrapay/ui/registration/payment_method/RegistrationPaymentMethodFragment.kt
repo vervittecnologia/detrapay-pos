@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.detrapay.R
 import com.detrapay.data.model.Order
@@ -36,12 +37,12 @@ class RegistrationPaymentMethodFragment : Fragment(), OnItemClickListener{
         setupObservers()
         setupUI()
         registrationViewModel.loadPaymentSelectionScreenContent()
-        binding.totalAmountValueTxtView.text = registrationViewModel.simulationTotalAmount()
+        binding.tvTotalValue.text = registrationViewModel.simulationTotalAmount()
     }
 
     private fun setupUI() {
-        binding.btnCredit.setOnClickListener { registrationViewModel.addPaymentByType("credito") }
-        binding.btnDebit.setOnClickListener { registrationViewModel.addPaymentByType("debito") }
+        binding.btnCredit.setOnClickListener { navigateToDetail("credito") }
+        binding.btnDebit.setOnClickListener { navigateToDetail("debito") }
         binding.btnPix.setOnClickListener { registrationViewModel.addPaymentByType("pix") }
         binding.btnCash.setOnClickListener { registrationViewModel.addPaymentByType("dinheiro") }
 
@@ -56,7 +57,21 @@ class RegistrationPaymentMethodFragment : Fragment(), OnItemClickListener{
         setupPaymentAdapter()
     }
 
+    private fun navigateToDetail(type: String, paymentId: Long = -1L) {
+        val bundle = Bundle().apply {
+            putString("paymentType", type)
+            putLong("paymentId", paymentId)
+        }
+        findNavController().navigate(R.id.action_paymentMethodFragment_to_paymentDetailFragment, bundle)
+    }
+
     private fun setupObservers() {
+        registrationViewModel.registrationState.observe(viewLifecycleOwner) { state ->
+            if (state.currentScreen == 2) {
+                findNavController().popBackStack()
+            }
+        }
+
         registrationViewModel.paymentSelectionInitialState.observe(viewLifecycleOwner) { status ->
             when (status) {
                 is UIState.Success -> {
@@ -77,16 +92,21 @@ class RegistrationPaymentMethodFragment : Fragment(), OnItemClickListener{
 
         registrationViewModel.paymentsLiveData.observe(viewLifecycleOwner) { payments ->
             adapter?.submitList(payments.toList())
-            binding.emptyView.visibility = if (payments.isEmpty()) View.VISIBLE else View.GONE
+            binding.llLaunchedContainer.visibility = if (payments.isEmpty()) View.GONE else View.VISIBLE
+            binding.tvLaunchedCount.text = payments.size.toString()
+            binding.tvWaitPayment.visibility = if (payments.isEmpty()) View.VISIBLE else View.GONE
         }
 
         registrationViewModel.remainingBalanceLiveData.observe(viewLifecycleOwner) { balance ->
             val formatted = "R$ %,.2f".format(java.util.Locale("pt", "BR"), balance)
             binding.tvRemainingValue.text = formatted
-            binding.tvRemainingValue.setTextColor(
-                if (balance > 0) ContextCompat.getColor(requireContext(), R.color.orange)
-                else ContextCompat.getColor(requireContext(), R.color.green)
-            )
+            binding.tvStatusMessage.text = "SALDO DE $formatted ${if (balance > 0) "PENDENTE" else "QUITADO"}"
+            
+            val color = if (balance > 0) ContextCompat.getColor(requireContext(), R.color.orange)
+                        else ContextCompat.getColor(requireContext(), R.color.green)
+            
+            binding.tvRemainingValue.setTextColor(color)
+            binding.tvStatusMessage.setTextColor(color)
         }
 
         registrationViewModel.paymentSelectionCreateOrderState.observe(viewLifecycleOwner) { status ->
@@ -124,6 +144,7 @@ class RegistrationPaymentMethodFragment : Fragment(), OnItemClickListener{
         )
         orderDetailsActivityIntent.putExtra("order", order)
         orderDetailsActivityIntent.putExtra("orderId", order.id)
+        orderDetailsActivityIntent.putExtra("isSuccess", false)
 
         this.startActivity(orderDetailsActivityIntent)
         requireActivity().finish()
@@ -139,5 +160,9 @@ class RegistrationPaymentMethodFragment : Fragment(), OnItemClickListener{
 
     override fun onItemUpdated(newItem: SimulationPayment) {
         registrationViewModel.updateSimulationPayment(newItem)
+    }
+
+    override fun onItemClicked(item: SimulationPayment) {
+        navigateToDetail(item.paymentMethod.paymentType ?: "credito", item.id)
     }
 }

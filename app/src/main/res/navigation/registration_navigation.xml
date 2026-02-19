@@ -30,7 +30,17 @@
     <fragment
         android:id="@+id/paymentMethodFragment"
         android:name="com.detrapay.ui.registration.payment_method.RegistrationPaymentMethodFragment"
-        tools:layout="@layout/fragment_registration_order_payment_method"/>
+        tools:layout="@layout/fragment_registration_order_payment_method">
+        <action
+            android:id="@+id/action_paymentMethodFragment_to_paymentDetailFragment"
+            app:destination="@id/paymentDetailFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+    </fragment>
 
+    <fragment
+        android:id="@+id/paymentDetailFragment"
+        android:name="com.detrapay.ui.registration.payment_method.RegistrationPaymentDetailFragment"
+        tools:layout="@layout/fragment_registration_payment_detail" />
 
 </navigation>

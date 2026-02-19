@@ -70,7 +70,8 @@
                 app:boxCornerRadiusBottomEnd="@dimen/radius_medium"
                 app:boxCornerRadiusBottomStart="@dimen/radius_medium"
                 app:boxCornerRadiusTopEnd="@dimen/radius_medium"
-                app:boxCornerRadiusTopStart="@dimen/radius_medium">
+                app:boxCornerRadiusTopStart="@dimen/radius_medium"
+                app:endIconMode="clear_text">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/cnpj"

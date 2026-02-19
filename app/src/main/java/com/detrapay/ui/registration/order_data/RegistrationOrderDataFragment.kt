@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
 import androidx.navigation.findNavController
+import com.detrapay.BuildConfig
 import com.detrapay.R
 import com.detrapay.data.UnauthorizedException
 import com.detrapay.data.model.CustomerSearchData
@@ -108,9 +109,9 @@ class RegistrationOrderDataFragment : Fragment() {
 
             if (selectedSalesmanId == null) {
                 hasInvalidFields = true
-                (binding.salesmanSpinner.selectedView as? TextView)?.error = "Campo obrigatório"
+                binding.salesmanTextInputLayout.error = "Campo obrigatório"
             } else {
-                (binding.salesmanSpinner.selectedView as? TextView)?.error = null
+                binding.salesmanTextInputLayout.error = null
             }
 
             val cpfCnpj = binding.cpfCnpj.text.toString()
@@ -241,6 +242,14 @@ class RegistrationOrderDataFragment : Fragment() {
                             selectedVehicleType = data.vehicleType.id
                             binding.vehicleValueInput.setText(data.vehiclePrice)
                             selectedSalesmanId = data.salesmanId
+                        } ?: run {
+                            if (BuildConfig.DEBUG) {
+                                binding.cpfCnpj.setText("05257121352")
+                                binding.clientNameInput.setText("Antonio")
+                                binding.whatsappInput.setText("88982168007")
+                                binding.invoiceDateInput.setText("01/01/2026")
+                                binding.vehicleValueInput.setText("5000000")
+                            }
                         }
                     }
                 }
@@ -316,92 +325,51 @@ class RegistrationOrderDataFragment : Fragment() {
             android.R.layout.simple_spinner_dropdown_item,
             vehicleTypes.map { it.name })
 
-        binding.vehicleTypeSpinner.setAdapter(adapter)
+        binding.vehicleTypeAutoComplete.setAdapter(adapter)
 
         if (selectedVehicleType != null) {
-            val position = vehicleTypes.indexOfFirst { it.id == selectedVehicleType }
-            if (position != -1) {
-                binding.vehicleTypeSpinner.setSelection(position)
+            val vehicle = vehicleTypes.getOrNull(selectedVehicleType!!)
+            vehicle?.let {
+                binding.vehicleTypeAutoComplete.setText(it.name, false)
             }
+        } else if (BuildConfig.DEBUG && vehicleTypes.isNotEmpty()) {
+            binding.vehicleTypeAutoComplete.setText(vehicleTypes[0].name, false)
+            selectedVehicle = vehicleTypes[0]
+            selectedVehicleType = 0
         }
 
-        binding.vehicleTypeSpinner.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    parent: AdapterView<*>, view: View?, position: Int, id: Long
-                ) {
-                    selectedVehicle = vehicleTypes[position]
-                    selectedVehicleType = position
-                }
-
-                override fun onNothingSelected(parent: AdapterView<*>?) {}
-            }
+        binding.vehicleTypeAutoComplete.setOnItemClickListener { _, _, position, _ ->
+            selectedVehicle = vehicleTypes[position]
+            selectedVehicleType = position
+            binding.vehicleTypeDropdownLayout.error = null
+        }
     }
 
     private fun setupSalesmanAdapter(salesmen: List<Salesman>) {
-        val mutableSalesmen = salesmen.toMutableList()
-        mutableSalesmen.add(0, Salesman(null, "Selecione"))
-
-        val adapter = object : ArrayAdapter<Salesman>(
+        val adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            mutableSalesmen
-        ) {
-            override fun isEnabled(position: Int): Boolean {
-                return position != 0
-            }
+            salesmen.map { it.name }
+        )
 
-            override fun getDropDownView(
-                position: Int,
-                convertView: View?,
-                parent: ViewGroup
-            ): View {
-                val view = super.getDropDownView(position, convertView, parent) as TextView
-                view.text = mutableSalesmen[position].name
-
-                if (position == 0) {
-                    view.setTextColor(ContextCompat.getColor(context, R.color.neutral_400))
-                } else {
-                    view.setTextColor(ContextCompat.getColor(context, R.color.black))
-                }
-
-                return view
-            }
-
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = super.getView(position, convertView, parent) as TextView
-                view.text = mutableSalesmen[position].name
-                return view
-            }
-        }
-
-        binding.salesmanSpinner.adapter = adapter
+        binding.salesmanAutoComplete.setAdapter(adapter)
 
         if (selectedSalesmanId != null) {
-            val salesmanPosition = salesmen.indexOfFirst { it.id == selectedSalesmanId }
-            if (salesmanPosition != -1) {
-                binding.salesmanSpinner.setSelection(salesmanPosition + 1)
+            val salesman = salesmen.find { it.id == selectedSalesmanId }
+            salesman?.let {
+                binding.salesmanAutoComplete.setText(it.name, false)
             }
-        } else {
-            binding.salesmanSpinner.setSelection(0)
+        } else if (BuildConfig.DEBUG && salesmen.isNotEmpty()) {
+            binding.salesmanAutoComplete.setText(salesmen[0].name, false)
+            selectedSalesman = salesmen[0]
+            selectedSalesmanId = salesmen[0].id
         }
 
-        binding.salesmanSpinner.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    parent: AdapterView<*>, view: View?, position: Int, id: Long
-                ) {
-                    if (position > 0) {
-                        selectedSalesman = mutableSalesmen[position]
-                        selectedSalesmanId = mutableSalesmen[position].id
-                    } else {
-                        selectedSalesman = null
-                        selectedSalesmanId = null
-                    }
-                }
-
-                override fun onNothingSelected(parent: AdapterView<*>?) {}
-            }
+        binding.salesmanAutoComplete.setOnItemClickListener { _, _, position, _ ->
+            selectedSalesman = salesmen[position]
+            selectedSalesmanId = salesmen[position].id
+            binding.salesmanTextInputLayout.error = null
+        }
     }
 
     private fun navigateNextScreen() {

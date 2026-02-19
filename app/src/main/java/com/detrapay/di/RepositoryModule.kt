@@ -20,18 +20,6 @@ object RepositoryModule {
 
     @Singleton
     @Provides
-    fun provideLoginRepository(
-        userLocalDatasource: UsersDao,
-        detrapayRemoteDataSource: DetrapayRemoteDataSource
-    ): LoginRepository {
-        return LoginRepository(
-            userLocalDatasource,
-            detrapayRemoteDataSource
-        )
-    }
-
-    @Singleton
-    @Provides
     fun provideAuthRepository(
         userLocalDatasource: UsersDao,
     ): AuthRepository {

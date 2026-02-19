@@ -6,365 +6,370 @@
     android:layout_height="match_parent"
     android:background="@color/white">
 
+    <!-- Top Progress Bar -->
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/registrationProgress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:progress="66"
+        app:indicatorColor="@color/primary_500"
+        app:layout_constraintTop_toTopOf="parent"
+        app:trackColor="#E5E7EB"
+        app:trackThickness="4dp" />
+
     <ScrollView
-        android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@+id/footerView"
-        app:layout_constraintTop_toTopOf="parent">
+        android:background="#F9FAFB"
+        app:layout_constraintBottom_toTopOf="@id/statusFooter"
+        app:layout_constraintTop_toBottomOf="@id/registrationProgress">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="24dp">
+            android:orientation="vertical"
+            android:padding="16dp">
 
-            <TextView
-                android:id="@+id/tvAddPaymentTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
-                android:text="ADICIONAR PAGAMENTO"
-                android:textColor="@color/neutral_900"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <TextView
-                android:id="@+id/tvRemainingLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="16dp"
-                android:text="SALDO RESTANTE"
-                android:textColor="@color/neutral_500"
-                android:textSize="9sp"
-                android:textStyle="bold"
-                app:layout_constraintBottom_toTopOf="@+id/tvRemainingValue"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@+id/tvAddPaymentTitle" />
-
-            <TextView
-                android:id="@+id/tvRemainingValue"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="R$ 1.577,20"
-                android:textColor="@color/orange"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="@+id/tvRemainingLabel"
-                app:layout_constraintTop_toBottomOf="@+id/tvRemainingLabel"
-                tools:text="R$ 1.577,20" />
-
-            <TextView
-                android:id="@+id/tvSubtitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="TOQUE PARA SELECIONAR"
-                android:textColor="@color/neutral_500"
-                android:textSize="10sp"
-                app:layout_constraintStart_toStartOf="@+id/tvAddPaymentTitle"
-                app:layout_constraintTop_toBottomOf="@+id/tvAddPaymentTitle" />
-
-            <LinearLayout
-                android:id="@+id/llPaymentButtons"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal"
-                android:paddingHorizontal="12dp"
-                app:layout_constraintTop_toBottomOf="@+id/tvSubtitle">
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/btnCredit"
-                    android:layout_width="0dp"
-                    android:layout_height="80dp"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp"
-                    app:strokeColor="@color/neutral_200"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:gravity="center"
-                        android:orientation="vertical">
-
-                        <ImageView
-                            android:layout_width="28dp"
-                            android:layout_height="28dp"
-                            android:background="@drawable/circular_image_background"
-                            android:backgroundTint="@color/primary_500"
-                            android:padding="5dp"
-                            android:src="@drawable/ic_credit_card_outline"
-                            app:tint="@color/white" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="CRÉDITO"
-                            android:textColor="@color/neutral_900"
-                            android:textSize="9sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/btnDebit"
-                    android:layout_width="0dp"
-                    android:layout_height="80dp"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp"
-                    app:strokeColor="@color/neutral_200"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:gravity="center"
-                        android:orientation="vertical">
-
-                        <ImageView
-                            android:layout_width="28dp"
-                            android:layout_height="28dp"
-                            android:background="@drawable/circular_image_background"
-                            android:backgroundTint="@color/primary_400"
-                            android:padding="5dp"
-                            android:src="@drawable/ic_credit_card_outline"
-                            app:tint="@color/white" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="DÉBITO"
-                            android:textColor="@color/neutral_900"
-                            android:textSize="9sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/btnPix"
-                    android:layout_width="0dp"
-                    android:layout_height="80dp"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp"
-                    app:strokeColor="@color/neutral_200"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:gravity="center"
-                        android:orientation="vertical">
-
-                        <ImageView
-                            android:layout_width="28dp"
-                            android:layout_height="28dp"
-                            android:background="@drawable/circular_image_background"
-                            android:backgroundTint="@color/green"
-                            android:padding="5dp"
-                            android:src="@drawable/ic_pix"
-                            app:tint="@color/white" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="PIX"
-                            android:textColor="@color/neutral_900"
-                            android:textSize="9sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/btnCash"
-                    android:layout_width="0dp"
-                    android:layout_height="80dp"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp"
-                    app:strokeColor="@color/neutral_200"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:gravity="center"
-                        android:orientation="vertical">
-
-                        <ImageView
-                            android:layout_width="28dp"
-                            android:layout_height="28dp"
-                            android:background="@drawable/circular_image_background"
-                            android:backgroundTint="@color/green"
-                            android:padding="5dp"
-                            android:src="@drawable/ic_money"
-                            app:tint="@color/white" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="DINHEIRO"
-                            android:textColor="@color/neutral_900"
-                            android:textSize="9sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
-
-            <View
-                android:id="@+id/divider"
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="16dp"
-                android:background="@color/neutral_200"
-                app:layout_constraintTop_toBottomOf="@+id/llPaymentButtons" />
-
-            <TextView
-                android:id="@+id/tvLaunchedTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
-                android:text="PAGAMENTOS LANÇADOS"
-                android:textColor="@color/neutral_400"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/divider" />
-
-            <View
-                android:id="@+id/indicator"
-                android:layout_width="3dp"
-                android:layout_height="0dp"
-                android:layout_marginEnd="8dp"
-                android:background="@color/neutral_200"
-                app:layout_constraintBottom_toBottomOf="@id/tvLaunchedTitle"
-                app:layout_constraintEnd_toStartOf="@id/tvLaunchedTitle"
-                app:layout_constraintTop_toTopOf="@id/tvLaunchedTitle" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvPaymentMethods"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:nestedScrollingEnabled="false"
-                app:layout_constraintTop_toBottomOf="@+id/tvLaunchedTitle"
-                tools:itemCount="2"
-                tools:listitem="@layout/registration_payment_launched_item" />
-
+            <!-- Summary Card -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/emptyView"
                 android:layout_width="match_parent"
-                android:layout_height="150dp"
-                android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="8dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/neutral_200"
-                app:strokeWidth="1dp"
-                app:layout_constraintTop_toBottomOf="@+id/tvLaunchedTitle">
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp"
+                app:strokeColor="#F3F4F6"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:orientation="vertical">
+                    android:layout_height="wrap_content"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal"
+                    android:padding="20dp">
 
-                    <ImageView
-                        android:layout_width="48dp"
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="TOTAL"
+                            android:textColor="@color/neutral_500"
+                            android:textSize="@dimen/text_size_label"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvTotalValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:textColor="@color/primary_800"
+                            android:textSize="24sp"
+                            android:textStyle="bold"
+                            tools:text="R$ 3.516,94" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="1dp"
                         android:layout_height="48dp"
-                        android:background="@drawable/circular_image_background"
-                        android:backgroundTint="@color/neutral_100"
-                        android:padding="12dp"
-                        android:src="@drawable/ic_add"
-                        app:tint="@color/neutral_300" />
+                        android:layout_gravity="center_vertical"
+                        android:background="#F3F4F6" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="A PAGAR"
+                            android:textColor="#F59E0B"
+                            android:textSize="@dimen/text_size_label"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvRemainingValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:textColor="#F59E0B"
+                            android:textSize="24sp"
+                            android:textStyle="bold"
+                            tools:text="R$ -0,00" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Launched Payments -->
+            <LinearLayout
+                android:id="@+id/llLaunchedContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:gravity="center"
-                        android:text="NENHUM PAGAMENTO\nSELECIONADO AINDA"
-                        android:textColor="@color/neutral_400"
-                        android:textSize="12sp"
+                        android:text="PAGAMENTOS LANÇADOS"
+                        android:textColor="#1E2939"
+                        android:textSize="@dimen/text_size_label"
                         android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvLaunchedCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:textColor="@color/primary_500"
+                        android:textSize="@dimen/text_size_label"
+                        android:textStyle="bold"
+                        tools:text="1" />
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
-    </ScrollView>
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvPaymentMethods"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:nestedScrollingEnabled="false"
+                    tools:itemCount="1"
+                    tools:listitem="@layout/registration_payment_launched_item" />
+            </LinearLayout>
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/footerView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/neutral_100"
-        android:padding="16dp"
-        app:layout_constraintBottom_toBottomOf="parent">
+            <!-- New Payment Selection -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="NOVO PAGAMENTO"
+                android:textColor="#1E2939"
+                android:textSize="@dimen/text_size_label"
+                android:textStyle="bold" />
 
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cvTotal"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="12dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="0dp"
-            app:layout_constraintEnd_toStartOf="@+id/registrationPaymentMethodNextBtn"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:strokeColor="@color/neutral_200"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
+            <GridLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp">
+                android:layout_marginTop="8dp"
+                android:columnCount="2">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="TOTAL GERAL"
-                    android:textColor="@color/neutral_400"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
+                <!-- Crédito -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnCredit"
+                    android:layout_width="0dp"
+                    android:layout_height="72dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="6dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="2dp"
+                    app:strokeColor="#F3F4F6"
+                    app:strokeWidth="1dp">
 
-                <TextView
-                    android:id="@+id/totalAmountValueTxtView"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/neutral_900"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    tools:text="R$ 1.577,20" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="horizontal"
+                        android:padding="12dp">
 
-        <Button
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_card_blue" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:text="CRÉDITO"
+                            android:textColor="#364153"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Débito -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnDebit"
+                    android:layout_width="0dp"
+                    android:layout_height="72dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="6dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="2dp"
+                    app:strokeColor="#F3F4F6"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="horizontal"
+                        android:padding="12dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_card_blue" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:text="DÉBITO"
+                            android:textColor="#364153"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- PIX -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnPix"
+                    android:layout_width="0dp"
+                    android:layout_height="72dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="6dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="2dp"
+                    app:strokeColor="#F3F4F6"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="horizontal"
+                        android:padding="12dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_pix_green" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:text="PIX"
+                            android:textColor="#364153"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Dinheiro -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnCash"
+                    android:layout_width="0dp"
+                    android:layout_height="72dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="6dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="2dp"
+                    app:strokeColor="#F3F4F6"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="horizontal"
+                        android:padding="12dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_money_green" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:text="DINHEIRO"
+                            android:textColor="#364153"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </GridLayout>
+
+            <TextView
+                android:id="@+id/tvWaitPayment"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:gravity="center"
+                android:text="AGUARDANDO PAGAMENTO"
+                android:textColor="#99A1AF"
+                android:textSize="@dimen/text_size_label"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:id="@+id/statusFooter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:elevation="12dp"
+        android:orientation="vertical"
+        android:padding="20dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <TextView
+            android:id="@+id/tvStatusMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:letterSpacing="0.05"
+            android:text="SALDO DE R$ 0,00 QUITADO"
+            android:textColor="@color/green"
+            android:textSize="@dimen/text_size_label"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/registrationPaymentMethodNextBtn"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="@drawable/default_button_background"
-            android:text="FINALIZAR"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="16dp"
+            android:text="CONFIRMAR"
+            android:textAllCaps="true"
             android:textColor="@color/white"
+            android:textSize="16sp"
             android:textStyle="bold"
-            app:layout_constraintBottom_toBottomOf="@+id/cvTotal"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/cvTotal"
-            app:layout_constraintTop_toTopOf="@+id/cvTotal" />
+            app:cornerRadius="12dp"
+            app:elevation="4dp" />
+
+        <ProgressBar
+            android:id="@+id/registrationLoading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="8dp"
+            android:indeterminateTint="@color/primary_500"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/registrationErrorTextView"
@@ -373,30 +378,18 @@
             android:layout_marginTop="8dp"
             android:textAlignment="center"
             android:textColor="@color/red"
-            android:visibility="gone"
-            app:layout_constraintBottom_toTopOf="@id/registrationLoading"
-            app:layout_constraintTop_toBottomOf="@id/cvTotal"
-            tools:text="Algo deu errado no pedido" />
+            android:textSize="@dimen/text_size_label"
+            android:visibility="gone" />
 
-        <ProgressBar
-            android:id="@+id/registrationLoading"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:indeterminateTint="@color/primary_500"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/registrationErrorTextView" />
+    </LinearLayout>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <!-- Overlay for Shimmer and Error -->
     <com.facebook.shimmer.ShimmerFrameLayout
         android:id="@+id/loadingView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/white"
-        android:visibility="gone">
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent">
         <include layout="@layout/shimmer_registration_payment" />
     </com.facebook.shimmer.ShimmerFrameLayout>
 
@@ -417,7 +410,7 @@
             android:text="@string/registration_default_error_message"
             android:textAlignment="center"
             android:textColor="@color/primary_500"
-            android:textSize="20sp" />
+            android:textSize="@dimen/text_size_heading" />
 
         <Button
             android:id="@+id/reloadPaymentMethodBtn"

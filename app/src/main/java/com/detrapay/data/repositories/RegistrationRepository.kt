@@ -14,6 +14,7 @@ import com.detrapay.data.model.SimulationCustomer
 import com.detrapay.data.model.SimulationItem
 import com.detrapay.data.model.SimulationPayment
 import com.detrapay.data.model.SimulationSimulation
+import com.detrapay.data.model.remote.CalculateFeesResponse
 import com.detrapay.data.model.remote.OrderCustomerRequest
 import com.detrapay.data.model.remote.OrderReceivableRequest
 import com.detrapay.data.model.remote.OrderResponse
@@ -30,6 +31,14 @@ class RegistrationRepository @Inject constructor(
 ) {
 
     private val locale = Locale("pt", "BR")
+
+    suspend fun calculateFees(
+        value: Double,
+        paymentType: String,
+        brand: String
+    ): Result<CalculateFeesResponse> {
+        return detrapayRemoteDataSource.calculateFees(value, paymentType, brand)
+    }
 
     suspend fun loadVehicleTypes(): Result<List<VehicleType>> {
         return when (val result = detrapayRemoteDataSource.getVehicleTypes()) {

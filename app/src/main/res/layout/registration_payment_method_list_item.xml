@@ -31,7 +31,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Forma de pgto."
-                android:textSize="14sp"/>
+                android:textSize="@dimen/text_size_body"/>
 
             <Spinner
                 android:id="@+id/paymentMethodSpinner"
@@ -91,7 +91,8 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Parcelamento" />
+                android:text="Parcelamento"
+                android:textSize="@dimen/text_size_body" />
 
             <Spinner
                 android:id="@+id/installmentsSelectorSpinner"
@@ -104,7 +105,8 @@
                 android:id="@+id/installmentsValue"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="R$ 1080,00 em 5x R$210,00"/>
+                android:text="R$ 1080,00 em 5x R$210,00"
+                android:textSize="@dimen/text_size_body"/>
         </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

@@ -322,6 +322,73 @@
 
     </ScrollView>
 
+    <!-- Success View -->
+    <LinearLayout
+        android:id="@+id/successView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@color/white"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/toolbar">
+
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/ic_payment_success" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="PAGAMENTO REALIZADO!"
+            android:textColor="#1E2939"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvSuccessMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:textColor="#6A7282"
+            android:textSize="14sp"
+            tools:text="O pedido #205 foi finalizado com sucesso e o recibo foi enviado ao cliente." />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNewOrder"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="48dp"
+            android:text="NOVO ATENDIMENTO"
+            android:textAllCaps="true"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:cornerRadius="12dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPrintReceipt"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="12dp"
+            android:text="IMPRIMIR COMPROVANTE"
+            android:textAllCaps="true"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:cornerRadius="12dp"
+            app:icon="@drawable/ic_print_blue"
+            app:iconGravity="textStart"
+            app:strokeColor="#E5E7EB"
+            app:strokeWidth="1dp" />
+
+    </LinearLayout>
+
+
     <com.facebook.shimmer.ShimmerFrameLayout
         android:id="@+id/loadingView"
         android:layout_width="0dp"
@@ -360,8 +427,6 @@
                 android:layout_marginTop="26dp"
                 android:layout_marginRight="16dp"
                 android:background="@color/shimmerColor" />
-
-
 
             <View
                 android:layout_width="match_parent"
@@ -443,6 +508,5 @@
             android:textAllCaps="true"
             android:textColor="@color/white" />
     </LinearLayout>
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

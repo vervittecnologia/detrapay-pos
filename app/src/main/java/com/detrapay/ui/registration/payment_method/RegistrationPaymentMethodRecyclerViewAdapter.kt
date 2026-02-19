@@ -22,6 +22,7 @@ interface OnItemClickListener {
     fun onAdd(item: SimulationPayment)
     fun onDelete(item: SimulationPayment)
     fun onItemUpdated(newItem: SimulationPayment)
+    fun onItemClicked(item: SimulationPayment)
 }
 
 class RegistrationPaymentMethodRecyclerViewAdapter(
@@ -50,106 +51,38 @@ class RegistrationPaymentMethodRecyclerViewAdapter(
         fun bind(item: SimulationPayment) {
             val context = binding.root.context
             
-            // Icon and Name based on Type
             val type = item.paymentMethod.paymentType ?: ""
             setupTypeUI(type, binding)
 
-            binding.tvId.text = "LANÇAMENTO #${item.id.toString().takeLast(4)}"
+            binding.tvMethodName.text = item.paymentMethod.paymentType?.uppercase() ?: "PAGAMENTO"
+            binding.tvInstallmentsInfo.text = item.paymentMethod.name
+            binding.tvInstallmentDetail.text = "${item.installment}X de R$ ${item.amountFinal}" // Simplified for now
             
-            val tax = item.paymentMethod.interestTax ?: 0.0
-            binding.tvTax.text = "Taxa: ${"%.2f".format(tax * 100)}%"
-            binding.tvTax.visibility = if (tax > 0) android.view.View.VISIBLE else android.view.View.GONE
-
-            binding.tvAmountFinal.text = "Total c/ juros: R$ ${item.amountFinal}"
-            binding.tvAmountFinal.visibility = if (tax > 0) android.view.View.VISIBLE else android.view.View.GONE
-
-            // Amount Mask
-            isInternalUpdate = true
-            binding.etAmount.setText(item.amountOriginal)
-            isInternalUpdate = false
-
-            currentTextWatcher?.let { binding.etAmount.removeTextChangedListener(it) }
-            
-            currentTextWatcher = Mask.moneyMask(binding.etAmount) { stringValue ->
-                if (isInternalUpdate) return@moneyMask
-                val newItem = item.copy(
-                    amountOriginal = stringValue,
-                    amountFinal = calculateAmountFinal(item.paymentMethod.interestTax, stringValue)
-                )
-                listener.onItemUpdated(newItem)
-            }
-            binding.etAmount.addTextChangedListener(currentTextWatcher)
-
-            binding.etAmount.setOnClickListener {
-                binding.etAmount.setSelection(binding.etAmount.text?.length ?: 0)
-            }
-
-            binding.etAmount.setOnFocusChangeListener { _, hasFocus ->
-                if (hasFocus) {
-                    binding.etAmount.setSelection(binding.etAmount.text?.length ?: 0)
-                }
-            }
-
-            // Installments Dropdown
-            val methods = viewModel.getPaymentMethodsByType(type)
-            val adapter = ArrayAdapter(
-                context,
-                android.R.layout.simple_dropdown_item_1line,
-                methods.map { it.name }
-            )
-            binding.atvInstallments.setAdapter(adapter)
-            binding.atvInstallments.setText(item.paymentMethod.name, false)
-
-            binding.atvInstallments.setOnItemClickListener { _, _, pos, _ ->
-                val newMethod = methods[pos]
-                val newItem = item.copy(
-                    paymentMethod = newMethod,
-                    installment = newMethod.maxInstallments,
-                    amountFinal = calculateAmountFinal(newMethod.interestTax, binding.etAmount.text.toString())
-                )
-                listener.onItemUpdated(newItem)
-            }
+            binding.tvAmount.text = "R$ ${item.amountOriginal}"
 
             binding.btnDelete.setOnClickListener {
                 listener.onDelete(item)
+            }
+
+            binding.root.setOnClickListener {
+                listener.onItemClicked(item)
             }
         }
 
         private fun setupTypeUI(type: String, binding: RegistrationPaymentLaunchedItemBinding) {
             val context = binding.root.context
             when (type.lowercase()) {
-                "credito" -> {
-                    binding.ivIcon.setImageResource(R.drawable.ic_credit_card_outline)
-                    binding.ivIcon.backgroundTintList = ContextCompat.getColorStateList(context, R.color.primary_500)
-                    binding.tvMethodName.text = "CARTÃO DE CRÉDITO"
-                    binding.tilInstallments.visibility = android.view.View.VISIBLE
-                    binding.lblParcelas.visibility = android.view.View.VISIBLE
-                }
-                "debito" -> {
-                    binding.ivIcon.setImageResource(R.drawable.ic_credit_card_outline)
-                    binding.ivIcon.backgroundTintList = ContextCompat.getColorStateList(context, R.color.primary_400)
-                    binding.tvMethodName.text = "CARTÃO DE DÉBITO"
-                    binding.tilInstallments.visibility = android.view.View.GONE
-                    binding.lblParcelas.visibility = android.view.View.GONE
+                "credito", "debito" -> {
+                    binding.ivIcon.setImageResource(R.drawable.ic_card_launched)
                 }
                 "pix" -> {
-                    binding.ivIcon.setImageResource(R.drawable.ic_pix)
-                    binding.ivIcon.backgroundTintList = ContextCompat.getColorStateList(context, R.color.green)
-                    binding.tvMethodName.text = "PIX"
-                    binding.tilInstallments.visibility = android.view.View.GONE
-                    binding.lblParcelas.visibility = android.view.View.GONE
+                    binding.ivIcon.setImageResource(R.drawable.ic_pix_green)
                 }
                 "dinheiro" -> {
-                    binding.ivIcon.setImageResource(R.drawable.ic_money)
-                    binding.ivIcon.backgroundTintList = ContextCompat.getColorStateList(context, R.color.green)
-                    binding.tvMethodName.text = "DINHEIRO"
-                    binding.tilInstallments.visibility = android.view.View.GONE
-                    binding.lblParcelas.visibility = android.view.View.GONE
+                    binding.ivIcon.setImageResource(R.drawable.ic_money_green)
                 }
                 else -> {
-                    binding.tvMethodName.text = type.uppercase()
                     binding.ivIcon.setImageResource(R.drawable.ic_article)
-                    binding.ivIcon.backgroundTintList = ContextCompat.getColorStateList(context, R.color.neutral_500)
                 }
             }
         }

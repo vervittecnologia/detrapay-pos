@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@color/white"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toTopOf="@id/footerContainer"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Card Value Input - Reduced height/padding -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp"
+                app:strokeColor="#F3F4F6"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="VALOR DESTE CARTÃO"
+                        android:textColor="@color/neutral_500"
+                        android:textSize="@dimen/text_size_label"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="bottom"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="6dp"
+                            android:text="R$"
+                            android:textColor="@color/neutral_400"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+
+                        <EditText
+                            android:id="@+id/etCardValue"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@null"
+                            android:hint="0,00"
+                            android:inputType="numberDecimal"
+                            android:paddingStart="8dp"
+                            android:textColor="@color/primary_800"
+                            android:textSize="40sp"
+                            android:textStyle="bold"
+                            tools:text="3.516,94" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Card Brand Selector -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="BANDEIRA DO CARTÃO"
+                android:textColor="@color/neutral_500"
+                android:textSize="@dimen/text_size_label"
+                android:textStyle="bold" />
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/toggleGroupBrand"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:singleSelection="true">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnVisa"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="72dp"
+                    android:layout_weight="1"
+                    android:text="VISA"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    app:icon="@drawable/ic_visa"
+                    app:iconGravity="top"
+                    app:iconPadding="4dp"
+                    app:iconSize="32dp"
+                    app:iconTint="@null" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMaster"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="72dp"
+                    android:layout_weight="1"
+                    android:text="MASTER"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    app:icon="@drawable/ic_mastercard"
+                    app:iconGravity="top"
+                    app:iconPadding="4dp"
+                    app:iconSize="32dp"
+                    app:iconTint="@null" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnElo"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="72dp"
+                    android:layout_weight="1"
+                    android:text="ELO"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    app:icon="@drawable/ic_elo"
+                    app:iconGravity="top"
+                    app:iconPadding="4dp"
+                    app:iconSize="32dp"
+                    app:iconTint="@null" />
+
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <!-- Installment Section -->
+            <LinearLayout
+                android:id="@+id/llInstallmentContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:orientation="vertical">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/tvInstallmentTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="OPÇÕES DE PARCELAMENTO"
+                        android:textColor="@color/neutral_500"
+                        android:textSize="@dimen/text_size_label"
+                        android:textStyle="bold"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <TextView
+                        android:id="@+id/btnAlterarDados"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:padding="4dp"
+                        android:text="ALTERAR DADOS"
+                        android:textColor="@color/primary_500"
+                        android:textSize="@dimen/text_size_label"
+                        android:textStyle="bold"
+                        android:visibility="gone"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <!-- Initial Consult Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnConsultInstallments"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="16dp"
+                    android:text="VER PARCELAS"
+                    android:textAllCaps="true"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp" />
+
+                <TextView
+                    android:id="@+id/tvConsultHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:lineSpacingExtra="4dp"
+                    android:text="CONSULTE AS TAXAS ANTES DE PROCESSAR O CARTÃO"
+                    android:textColor="@color/neutral_400"
+                    android:textSize="@dimen/text_size_label"
+                    android:textStyle="bold" />
+
+                <!-- Selected installment view -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvInstallments"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:visibility="gone"
+                    tools:itemCount="1"
+                    tools:listitem="@layout/registration_payment_installment_item" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Footer fixed at bottom -->
+    <LinearLayout
+        android:id="@+id/footerContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:elevation="16dp"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnConfirm"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="CONFIRMAR ESTE PAGAMENTO"
+            android:textAllCaps="true"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:visibility="invisible"
+            app:cornerRadius="12dp" />
+    </LinearLayout>
+
+    <!-- Shimmer for loading installments -->
+    <com.facebook.shimmer.ShimmerFrameLayout
+        android:id="@+id/loadingView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#80FFFFFF"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+        <include layout="@layout/shimmer_registration_payment" />
+    </com.facebook.shimmer.ShimmerFrameLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -10,6 +10,11 @@ import com.detrapay.data.model.Salesman
 import com.detrapay.data.model.local.User
 import com.detrapay.ui.util.Logger
 import com.google.gson.Gson
+import android.content.Context
+import com.detrapay.ui.util.ImageUtils
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,11 +22,29 @@ import javax.inject.Singleton
 class LoginRepository @Inject constructor(
     private var userLocalDataSource: UsersDao,
     private var detrapayRemoteDataSource: DetrapayRemoteDataSource,
+    @ApplicationContext private val context: Context
 ) {
+    private suspend fun fetchAndSaveCardIcons() {
+        withContext(Dispatchers.IO) {
+            val iconsResult = detrapayRemoteDataSource.getCardBrandIcons("MASTERCARD,VISA,ELO")
+            if (iconsResult is Result.Success) {
+                iconsResult.data.forEach { brandIcon ->
+                    val downloadResult = detrapayRemoteDataSource.downloadFile(brandIcon.iconUrl)
+                    if (downloadResult is Result.Success) {
+                        ImageUtils.saveImage(context, brandIcon.brand.uppercase(), downloadResult.data.bytes())
+                    }
+                }
+            }
+        }
+    }
+
     suspend fun login(username: String, password: String): Result<LoggedInUser> {
         return when (val result = detrapayRemoteDataSource.login(username, password)) {
             is Result.Success -> {
                 try {
+                    // Fetch and save icons
+                    fetchAndSaveCardIcons()
+
                     val companies = result.data.companies.map { Company(it.id, it.name) }
                     val dispatchers = result.data.dispatchers.map { Dispatcher(it.id, it.name) }
                     val salesmen = result.data.salesmen.map { Salesman(it.id, it.name) }

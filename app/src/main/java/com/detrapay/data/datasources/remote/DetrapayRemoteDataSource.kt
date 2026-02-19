@@ -2,8 +2,10 @@ package com.detrapay.data.datasources.remote
 
 import com.detrapay.data.Result
 import com.detrapay.data.api.DetrapayService
+import com.detrapay.data.api.SupabaseService
 import com.detrapay.data.model.remote.AuthRequest
 import com.detrapay.data.model.remote.AuthResponse
+import com.detrapay.data.model.remote.CalculateFeesResponse
 import com.detrapay.data.model.remote.CreateOrderResponse
 import com.detrapay.data.model.remote.CustomerSearchDataResponse
 import com.detrapay.data.model.remote.OrderCustomerRequest
@@ -21,6 +23,7 @@ import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.OrderReceivableItemStatus
 import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.remote.ApiError
+import com.detrapay.data.model.remote.CardBrandIconResponse
 import com.detrapay.data.model.remote.ConfirmPaymentRequest
 import com.detrapay.data.model.remote.CreateOrderRequest
 import com.detrapay.data.model.remote.RefundOrderReceivableRequest
@@ -30,12 +33,32 @@ import com.detrapay.data.model.remote.VehicleTypeItemResponse
 import com.detrapay.ui.util.Logger
 import com.google.gson.Gson
 import com.google.gson.JsonElement
+import okhttp3.ResponseBody
+import retrofit2.Response
 import java.io.IOException
 import javax.inject.Inject
 
 class DetrapayRemoteDataSource @Inject constructor(
-    private var detrapayService: DetrapayService
+    private var detrapayService: DetrapayService,
+    private var supabaseService: SupabaseService
 ) {
+
+    suspend fun calculateFees(
+        value: Double,
+        paymentType: String,
+        brand: String
+    ): Result<CalculateFeesResponse> {
+        try {
+            val result = supabaseService.calculateFees(value, paymentType, brand)
+            if (result.isSuccessful) {
+                return Result.Success(result.body()!!)
+            } else {
+                return Result.Error(Exception("Error calculating fees"))
+            }
+        } catch (e: Throwable) {
+            return Result.Error(IOException("Error calculating fees", e))
+        }
+    }
 
     suspend fun login(username: String, password: String): Result<AuthResponse> {
         try {
@@ -333,6 +356,33 @@ class DetrapayRemoteDataSource @Inject constructor(
         } catch (e: Throwable) {
             Logger.d(e.toString())
             return Result.Error(IOException("Error in update-split-config", e))
+        }
+    }
+
+    suspend fun getCardBrandIcons(brands: String): Result<List<CardBrandIconResponse>> {
+        try {
+            val result = supabaseService.getCardBrandIcons(brands)
+            if (result.isSuccessful) {
+                return Result.Success(result.body()!!)
+            } else {
+                if (result.code() == 401) return Result.Error(UnauthorizedException())
+                return Result.Error(Exception(ApiError(result.errorBody()).message))
+            }
+        } catch (e: Throwable) {
+            return Result.Error(IOException("Error getting card brand icons", e))
+        }
+    }
+
+    suspend fun downloadFile(url: String): Result<ResponseBody> {
+        try {
+            val result = detrapayService.downloadFile(url)
+            if (result.isSuccessful) {
+                return Result.Success(result.body()!!)
+            } else {
+                return Result.Error(Exception("Error downloading file"))
+            }
+        } catch (e: Throwable) {
+            return Result.Error(IOException("Error downloading file", e))
         }
     }
 }

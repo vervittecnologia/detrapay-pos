@@ -17,6 +17,7 @@ import com.detrapay.data.model.Salesman
 import com.detrapay.data.model.Simulation
 import com.detrapay.data.model.SimulationItem
 import com.detrapay.data.model.SimulationPayment
+import com.detrapay.data.model.remote.CalculateFeesResponse
 import com.detrapay.data.repositories.AuthRepository
 import com.detrapay.data.repositories.OrderRepository
 import com.detrapay.data.repositories.RegistrationRepository
@@ -60,6 +61,9 @@ class RegistrationViewModel @Inject constructor(
 
     private val _remainingBalanceLiveData = MutableLiveData<Double>()
     val remainingBalanceLiveData: LiveData<Double> = _remainingBalanceLiveData
+
+    private val _calculateFeesState = MutableLiveData<UIState<CalculateFeesResponse>>()
+    val calculateFeesState: LiveData<UIState<CalculateFeesResponse>> = _calculateFeesState
 
     private val _registrationState = MutableLiveData<RegistrationState>().apply { 
         value = RegistrationState(currentScreen = 1) 
@@ -317,8 +321,34 @@ class RegistrationViewModel @Inject constructor(
         }
     }
 
+    fun clearFeesState() {
+        _calculateFeesState.value = null
+    }
+
+    fun getPaymentById(id: Long): SimulationPayment? {
+        return payments.find { it.id == id }
+    }
+
     fun onResumeNext() {
         _registrationState.postValue(RegistrationState(currentScreen = 3))
+    }
+
+    fun calculateFees(value: Double, paymentType: String, brand: String) {
+        _calculateFeesState.postValue(UIState.Loading())
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = registrationRepository.calculateFees(value, paymentType, brand)
+            if (result is Result.Success) {
+                _calculateFeesState.postValue(UIState.Success(result.data))
+            } else {
+                val error = result as Result.Error
+                _calculateFeesState.postValue(
+                    UIState.Error(
+                        message = error.exception.message ?: "Erro ao calcular parcelas.",
+                        exception = error.exception
+                    )
+                )
+            }
+        }
     }
 
     fun searchClient(cpfCnpj: String) {

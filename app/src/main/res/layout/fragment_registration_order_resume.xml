@@ -74,20 +74,41 @@
                     app:layout_constraintTop_toTopOf="parent"
                     tools:listitem="@layout/registration_resume_list_item" />
 
-                <TextView
-                    android:id="@+id/resumeTotalAmount"
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@color/neutral_200"
-                    android:paddingTop="16dp"
-                    android:paddingEnd="16dp"
-                    android:paddingBottom="16dp"
-                    android:textAlignment="textEnd"
-                    android:textColor="@color/primary_500"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    tools:ignore="RtlSymmetry"
-                    tools:text="R$ 7.000,00" />
+                    android:layout_margin="16dp"
+                    app:cardBackgroundColor="#EBF5FF"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="#BFDBFE"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="24dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="TOTAL"
+                            android:textColor="#1E3A8A"
+                            android:textSize="@dimen/text_size_body"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/resumeTotalAmount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="#1D4ED8"
+                            android:textSize="32sp"
+                            android:textStyle="bold"
+                            tools:text="R$ 3.516,94" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
@@ -98,27 +119,36 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/white"
-        android:elevation="8dp"
+        android:elevation="12dp"
         android:orientation="vertical"
-        android:padding="16dp"
+        android:padding="20dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/registrationOrderResumeNextBtn"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:background="@drawable/default_button_background"
-            android:text="@string/registration_next_button"
-            android:textColor="@color/white" />
+            android:text="AVANÇAR"
+            android:textAllCaps="true"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:cornerRadius="12dp"
+            app:elevation="4dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/registrationOrderResumePrintBtn"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/secondary_button_background"
-            android:text="@string/registration_print_button"
-            android:visibility="visible" />
+            android:layout_marginTop="12dp"
+            android:text="IMPRIMIR"
+            android:textAllCaps="true"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:cornerRadius="12dp"
+            app:strokeColor="@color/primary_500"
+            app:strokeWidth="2dp" />
 
         <LinearLayout
             android:id="@+id/printProgressView"

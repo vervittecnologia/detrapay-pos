@@ -1,6 +1,7 @@
 package com.detrapay.di
 
 import com.detrapay.data.api.DetrapayService
+import com.detrapay.data.api.SupabaseService
 import com.detrapay.data.datasources.remote.DetrapayRemoteDataSource
 import dagger.Module
 import dagger.Provides
@@ -13,8 +14,11 @@ import javax.inject.Singleton
 object RemoteDatasourceModule {
     @Singleton
     @Provides
-    fun provideDetrapayRemoteDataSource(detrapayService: DetrapayService): DetrapayRemoteDataSource {
-        return DetrapayRemoteDataSource(detrapayService)
+    fun provideDetrapayRemoteDataSource(
+        detrapayService: DetrapayService,
+        supabaseService: SupabaseService
+    ): DetrapayRemoteDataSource {
+        return DetrapayRemoteDataSource(detrapayService, supabaseService)
     }
 
 }
