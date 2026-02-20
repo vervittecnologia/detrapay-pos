@@ -80,6 +80,7 @@ class HomeActivity : AppCompatActivity() {
                 }
 
                 is UIState.Error -> {}
+                is UIState.Idle -> {}
             }
         })
     }
@@ -97,11 +98,11 @@ class HomeActivity : AppCompatActivity() {
     private fun showLogoutDialog() {
         Logger.d("Loggout button pressed on HomeActivity")
         AlertDialog.Builder(this)
-            .setTitle("Deseja sair?")
-            .setMessage("Você deseja sair do aplicativo? \nvocê terá que efetuar login novamente.")
+            .setTitle(R.string.logout_dialog_title)
+            .setMessage(R.string.logout_dialog_message)
             .setPositiveButton(
                 android.R.string.ok
-            ) { dialog, which ->
+            ) { _, _ ->
                 viewModel.logout()
                 val intent = Intent(this, LoginActivity::class.java)
                 startActivity(intent)

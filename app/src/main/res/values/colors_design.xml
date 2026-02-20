@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ds_primary">#0D47A1</color>
+    <color name="ds_primary_variant">#0B3C91</color>
+    <color name="ds_secondary">#FF6F00</color>
+    <color name="ds_background">#FFFFFF</color>
+    <color name="ds_surface">#FFFFFF</color>
+    <color name="ds_error">#B00020</color>
+    <color name="ds_on_primary">#FFFFFF</color>
+    <color name="ds_on_secondary">#000000</color>
+    <color name="ds_on_background">#000000</color>
+    <color name="ds_on_surface">#000000</color>
+</resources>

@@ -55,8 +55,14 @@ object ImageUtils {
     }
 
     fun getImagePath(context: Context, name: String): String? {
-        val file = File(context.filesDir, "icons")
-        val imageFile = File(file, "$name.png")
-        return if (imageFile.exists()) imageFile.absolutePath else null
+        // First check internal icons folder (downloaded)
+        val internalFile = File(context.filesDir, "icons")
+        val internalImage = File(internalFile, "$name.png")
+        if (internalImage.exists()) return internalImage.absolutePath
+        
+        // Then check if it's in the special local drawable folder if it exists as a fallback
+        // Note: res/drawable/card-brand-icons is not a standard Android path but might be used as file path
+        // However, usually we should use R.drawable. 
+        return null
     }
 }

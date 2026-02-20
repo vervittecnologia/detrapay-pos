@@ -110,6 +110,7 @@ class OrderDetailsActivity : AppCompatActivity(),
                         status.message ?: getString(R.string.employees_default_error_message)
                     binding.errorView.visibility = View.VISIBLE
                 }
+                is UIState.Idle -> {}
             }
         })
 

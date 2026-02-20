@@ -119,12 +119,29 @@ class RegistrationViewModel @Inject constructor(
         }
     }
 
+    private var vehicleTypes: List<com.detrapay.data.model.VehicleType> = emptyList()
+
+    fun getVehicleTypeName(id: Int): String {
+        return vehicleTypes.find { it.id == id }?.name ?: "ID: $id"
+    }
+
+    fun getSalesmanName(): String {
+        return loggedInUser?.salesmen?.find { it.id == salesmanId }?.name ?: "N/A"
+    }
+
+    fun getDealershipName(): String {
+        return loggedInUser?.companies?.firstOrNull()?.name ?: "N/A"
+    }
+
+    fun simulationSimulation() = simulation?.simulation
+
     fun loadOrderScreenContent() {
         Logger.d("RegistrationViewModel - loadScreenContent")
         _orderInitialState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
             val result = registrationRepository.loadVehicleTypes()
             if (result is Result.Success) {
+                vehicleTypes = result.data
                 if (loggedInUser == null) {
                     loggedInUser = authRepository.getLoggedUser(true)
                 }
@@ -202,7 +219,7 @@ class RegistrationViewModel @Inject constructor(
     private fun calculateRemainingBalance() {
         val total = totalAmount()
         val paid = paymentsAmountFinal()
-        val balance = total - paid
+        val balance = (total - paid).roundTo2DecimalPlacesMath()
         Logger.d("Remaining Balance: $balance (Total: $total, Paid: $paid)")
         _remainingBalanceLiveData.postValue(balance)
     }
@@ -322,7 +339,7 @@ class RegistrationViewModel @Inject constructor(
     }
 
     fun clearFeesState() {
-        _calculateFeesState.value = null
+        _calculateFeesState.value = UIState.Idle()
     }
 
     fun getPaymentById(id: Long): SimulationPayment? {

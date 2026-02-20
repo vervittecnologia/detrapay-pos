@@ -243,13 +243,6 @@ class RegistrationOrderDataFragment : Fragment() {
                             binding.vehicleValueInput.setText(data.vehiclePrice)
                             selectedSalesmanId = data.salesmanId
                         } ?: run {
-                            if (BuildConfig.DEBUG) {
-                                binding.cpfCnpj.setText("05257121352")
-                                binding.clientNameInput.setText("Antonio")
-                                binding.whatsappInput.setText("88982168007")
-                                binding.invoiceDateInput.setText("01/01/2026")
-                                binding.vehicleValueInput.setText("5000000")
-                            }
                         }
                     }
                 }
@@ -269,6 +262,7 @@ class RegistrationOrderDataFragment : Fragment() {
                     binding.loadingView.visibility = View.VISIBLE
                     binding.loadingView.startShimmer()
                 }
+                is UIState.Idle -> {}
             }
         })
 
@@ -294,6 +288,7 @@ class RegistrationOrderDataFragment : Fragment() {
                     binding.registrationOrderDataNextBtn.isEnabled = true
                     navigateNextScreen()
                 }
+                is UIState.Idle -> {}
             }
         })
 
@@ -315,6 +310,7 @@ class RegistrationOrderDataFragment : Fragment() {
                         binding.clientNameInput.setText(status.data?.name)
                         binding.whatsappInput.setText(status.data?.whatsapp)
                     }
+                    is UIState.Idle -> {}
                 }
             })
     }

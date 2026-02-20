@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.DS.Base" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/ds_primary</item>
+        <item name="colorPrimaryVariant">@color/ds_primary_variant</item>
+        <item name="colorOnPrimary">@color/ds_on_primary</item>
+        <item name="colorSecondary">@color/ds_secondary</item>
+        <item name="android:statusBarColor">@color/ds_primary_variant</item>
+    </style>
+
+    <style name="Widget.DS.Toolbar" parent="Widget.MaterialComponents.Toolbar">
+        <item name="android:layout_height">@dimen/ds_toolbar_height</item>
+        <item name="titleTextAppearance">@style/TextAppearance.DS.Toolbar.Title</item>
+    </style>
+
+    <style name="TextAppearance.DS.Toolbar.Title" parent="TextAppearance.MaterialComponents.Headline6">
+        <item name="android:textColor">@color/ds_on_primary</item>
+    </style>
+</resources>

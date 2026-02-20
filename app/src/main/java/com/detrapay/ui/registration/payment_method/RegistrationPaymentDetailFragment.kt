@@ -57,16 +57,11 @@ class RegistrationPaymentDetailFragment : Fragment() {
         }
     }
 
-    private fun loadBrandIcons() {
-        ImageUtils.loadImage(requireContext(), "VISA", binding.btnVisa)
-        ImageUtils.loadImage(requireContext(), "MASTERCARD", binding.btnMaster)
-        ImageUtils.loadImage(requireContext(), "ELO", binding.btnElo)
-    }
-
     private fun loadEditingPayment() {
         registrationViewModel.getPaymentById(editingPaymentId)?.let { payment ->
-            binding.etCardValue.setText(payment.amountOriginal.replace(".", "").replace(",", ""))
-            // Assuming the brand is stored in the name or we can infer it
+            val cleanValue = payment.amountOriginal.replace("[R$.\\s]".toRegex(), "").replace(",", "")
+            binding.etCardValue.setText(cleanValue)
+            
             val brand = payment.paymentMethod.name.uppercase()
             when {
                 brand.contains("VISA") -> binding.toggleGroupBrand.check(R.id.btnVisa)
@@ -75,28 +70,64 @@ class RegistrationPaymentDetailFragment : Fragment() {
                 else -> { /* No default brand to check */ }
             }
             
-            // Auto-trigger consult if values are present
-            val amount = Mask.doubleValue(binding.etCardValue.text.toString())
+            // For editing, we trigger the fee calculation automatically to show the list
+            val amount = Mask.toSafeDouble(payment.amountOriginal)
             if (amount > 0 && selectedBrand.isNotEmpty()) {
                 registrationViewModel.calculateFees(amount, paymentType, selectedBrand)
             }
         }
     }
 
+    private fun loadBrandIcons() {
+        binding.btnVisa.setIconResource(R.drawable.ic_visa)
+        binding.btnMaster.setIconResource(R.drawable.ic_mastercard)
+        binding.btnElo.setIconResource(R.drawable.ic_elo)
+        
+        binding.btnVisa.iconTint = null
+        binding.btnMaster.iconTint = null
+        binding.btnElo.iconTint = null
+    }
+
     private fun setupUI() {
+        binding.btnBack.setOnClickListener { findNavController().popBackStack() }
+        binding.btnClose.setOnClickListener { findNavController().popBackStack() }
+
+        // Root view click to clear focus and hide keyboard
+        val hideKeyboardAction = View.OnClickListener {
+            binding.etCardValue.clearFocus()
+            val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+            imm.hideSoftInputFromWindow(it.windowToken, 0)
+        }
+        binding.root.setOnClickListener(hideKeyboardAction)
+        binding.contentContainer.setOnClickListener(hideKeyboardAction)
+
         // Large Value Input with Mask
-        binding.etCardValue.addTextChangedListener(Mask.moneyMask(binding.etCardValue) { _ ->
+        binding.etCardValue.addTextChangedListener(Mask.moneyMask(binding.etCardValue) { value ->
             // Reset installments if value changes?
             hideInstallments()
+            binding.btnClearValue.visibility = if (value.isNotEmpty() && value != "0,00") View.VISIBLE else View.GONE
         })
 
-        // Set default value (always start empty/zeroed as requested)
-        binding.etCardValue.setText("")
+        binding.btnClearValue.setOnClickListener {
+            binding.etCardValue.setText("0")
+        }
+
+        // Set pending balance as initial value if not editing
+        val remaining = registrationViewModel.remainingBalanceLiveData.value ?: 0.0
+        if (editingPaymentId == -1L && remaining > 0) {
+            val initialValue = Math.round(remaining * 100).toString()
+            binding.etCardValue.setText(initialValue)
+        } else if (editingPaymentId == -1L) {
+            binding.etCardValue.setText("")
+        }
+
         binding.etCardValue.post {
             binding.etCardValue.requestFocus()
             val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
             imm.showSoftInput(binding.etCardValue, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
         }
+
+        binding.btnConsultInstallments.isEnabled = selectedBrand.isNotEmpty()
 
         binding.toggleGroupBrand.addOnButtonCheckedListener { group, checkedId, isChecked ->
             if (isChecked) {
@@ -106,7 +137,13 @@ class RegistrationPaymentDetailFragment : Fragment() {
                     R.id.btnElo -> "ELO"
                     else -> ""
                 }
+                binding.btnConsultInstallments.isEnabled = selectedBrand.isNotEmpty()
                 hideInstallments()
+                
+                // Hide keyboard when a brand is selected
+                val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                imm.hideSoftInputFromWindow(group.windowToken, 0)
+                binding.etCardValue.clearFocus()
             }
         }
 
@@ -140,37 +177,35 @@ class RegistrationPaymentDetailFragment : Fragment() {
                     binding.loadingView.visibility = View.GONE
                     binding.btnConsultInstallments.isEnabled = true
                     val installments = state.data?.data?.firstOrNull()?.installments ?: emptyList()
-                    showInstallmentsBottomSheet(installments)
+                    showInstallmentsList(installments)
                 }
                 is UIState.Error -> {
                     binding.loadingView.visibility = View.GONE
                     binding.btnConsultInstallments.isEnabled = true
                     // Show error toast or similar
                 }
+                is UIState.Idle -> {}
             }
         }
     }
 
-    private fun showInstallmentsBottomSheet(fees: List<InstallmentFee>) {
-        val bottomSheet = InstallmentsBottomSheet(fees) { fee ->
-            selectedFee = fee
-            showSelectedInstallment(fee)
-        }
-        bottomSheet.show(childFragmentManager, InstallmentsBottomSheet.TAG)
-    }
-
-    private fun showSelectedInstallment(fee: InstallmentFee) {
+    private fun showInstallmentsList(fees: List<InstallmentFee>) {
         binding.btnConsultInstallments.visibility = View.GONE
         binding.tvConsultHint.visibility = View.GONE
         binding.rvInstallments.visibility = View.VISIBLE
         binding.btnAlterarDados.visibility = View.VISIBLE
-        binding.btnConfirm.visibility = View.VISIBLE
-
-        adapter?.submitList(listOf(fee))
         
-        // Allow clicking the selected item to re-open the bottom sheet
-        binding.rvInstallments.setOnClickListener {
-            binding.btnConsultInstallments.performClick()
+        adapter?.submitList(fees)
+        
+        // If editing, try to select the current installment
+        if (editingPaymentId != -1L && selectedFee == null) {
+            registrationViewModel.getPaymentById(editingPaymentId)?.let { payment ->
+                fees.find { it.installmentNumber == payment.installment }?.let { fee ->
+                    selectedFee = fee
+                    adapter?.setSelected(fee)
+                    binding.btnConfirm.visibility = View.VISIBLE
+                }
+            }
         }
     }
 
@@ -184,17 +219,20 @@ class RegistrationPaymentDetailFragment : Fragment() {
     }
 
     private fun setupAdapter() {
-        adapter = InstallmentsAdapter { fee ->
+        adapter = InstallmentsAdapter(showRadioButton = true) { fee ->
             selectedFee = fee
+            binding.btnConfirm.visibility = View.VISIBLE
         }
         binding.rvInstallments.layoutManager = LinearLayoutManager(requireContext())
         binding.rvInstallments.adapter = adapter
+        // Ensure the RecyclerView can scroll inside the ScrollView if needed
+        binding.rvInstallments.isNestedScrollingEnabled = true
     }
 
     private fun confirmPayment() {
         val fee = selectedFee ?: return
         val amountOriginal = binding.etCardValue.text.toString()
-        val total = fee.totalValue.toDouble()
+        val total = Mask.toSafeDouble(fee.totalValue)
         val amountFinal = "%,.2f".format(Locale("pt", "BR"), total)
 
         // Find a matching payment method for metadata if possible, or create a virtual one

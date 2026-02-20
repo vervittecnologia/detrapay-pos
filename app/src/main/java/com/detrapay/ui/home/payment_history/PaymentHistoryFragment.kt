@@ -80,6 +80,7 @@ class PaymentHistoryFragment : Fragment() {
                         status.message ?: "Não foi possível carregar o histórico de pagamentos."
                     binding.errorView.visibility = View.VISIBLE
                 }
+                is UIState.Idle -> {}
             }
         })
     }

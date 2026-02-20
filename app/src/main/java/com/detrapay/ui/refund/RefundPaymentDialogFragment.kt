@@ -68,6 +68,7 @@ class RefundPaymentDialogFragment(
                     binding.loadingView.visibility = View.GONE
                     binding.refundMessage.text = status.message ?: getString(R.string.employees_default_error_message)
                 }
+                is UIState.Idle -> {}
             }
         })
     }

@@ -9,10 +9,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.detrapay" />
+                  <option name="mobileSdkAppId" value="1:615368887258:android:c864728d11e4ac55ffcee3" />
+                  <option name="projectId" value="detrapay-aa30783b" />
+                  <option name="projectNumber" value="615368887258" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

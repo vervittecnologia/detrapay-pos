@@ -87,6 +87,7 @@ class RegistrationPaymentMethodFragment : Fragment(), OnItemClickListener{
                     binding.loadingView.visibility = View.VISIBLE
                     binding.loadingView.startShimmer()
                 }
+                is UIState.Idle -> {}
             }
         }
 
@@ -107,6 +108,17 @@ class RegistrationPaymentMethodFragment : Fragment(), OnItemClickListener{
             
             binding.tvRemainingValue.setTextColor(color)
             binding.tvStatusMessage.setTextColor(color)
+
+            val canAddMore = balance > 0
+            binding.btnCredit.isEnabled = canAddMore
+            binding.btnDebit.isEnabled = canAddMore
+            binding.btnPix.isEnabled = canAddMore
+            binding.btnCash.isEnabled = canAddMore
+            
+            binding.btnCredit.alpha = if (canAddMore) 1.0f else 0.5f
+            binding.btnDebit.alpha = if (canAddMore) 1.0f else 0.5f
+            binding.btnPix.alpha = if (canAddMore) 1.0f else 0.5f
+            binding.btnCash.alpha = if (canAddMore) 1.0f else 0.5f
         }
 
         registrationViewModel.paymentSelectionCreateOrderState.observe(viewLifecycleOwner) { status ->
@@ -127,6 +139,7 @@ class RegistrationPaymentMethodFragment : Fragment(), OnItemClickListener{
                     binding.registrationErrorTextView.visibility = View.GONE
                     binding.registrationLoading.visibility = View.VISIBLE
                 }
+                is UIState.Idle -> {}
             }
         }
     }

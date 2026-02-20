@@ -21,17 +21,28 @@ class Mask {
         }
 
         fun doubleValue(str: String): Double {
-            val cleanString = str.replace("R$", "")
-                .replace(".", "")
-                .replace(",", ".")
-                .replace("\\s".toRegex(), "")
-                .trim()
+            return toSafeDouble(str)
+        }
+
+        /**
+         * Safely converts a monetary string to Double.
+         * Handles both standard decimal (10.44) and BRL format (10,44 or 1.010,44).
+         */
+        fun toSafeDouble(str: String): Double {
+            if (str.isEmpty()) return 0.0
             
-            if (cleanString.isEmpty()) {
-                return 0.0
-            }
+            val clean = str.replace("R$", "").replace("\\s".toRegex(), "").trim()
+            if (clean.isEmpty()) return 0.0
+
             return try {
-                cleanString.toDouble()
+                if (clean.contains(",")) {
+                    // Brazilian format: 1.250,50 -> 1250.50
+                    clean.replace(".", "").replace(",", ".").toDouble()
+                } else {
+                    // Standard decimal: 1250.50 -> 1250.50
+                    // We assume that if there's no comma, the dot is the decimal separator.
+                    clean.toDouble()
+                }
             } catch (e: Exception) {
                 0.0
             }

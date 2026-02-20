@@ -98,16 +98,14 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/reloadPaymentHistory"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="start"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/default_button_background"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="@dimen/spacing_large"
             android:text="@string/reload_btn"
-            android:textColor="@color/white" />
+            app:cornerRadius="@dimen/radius_medium" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

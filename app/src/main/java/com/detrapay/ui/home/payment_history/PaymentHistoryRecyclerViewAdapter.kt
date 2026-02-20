@@ -6,7 +6,6 @@ import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
 import android.widget.TextView
 import com.detrapay.R
 import com.detrapay.data.model.local.Payment
@@ -53,7 +52,6 @@ class PaymentHistoryRecyclerViewAdapter(
         private val paymentMethodView: TextView = binding.paymentMethod
         private val dateView: TextView = binding.paymentDate
         private val statusTextView: TextView = binding.status
-        private val statusView: LinearLayout = binding.statusView
         private val transactionId: TextView = binding.transactionId
         private val transactionCode: TextView = binding.transactionCode
         private val message: TextView = binding.message
@@ -73,7 +71,7 @@ class PaymentHistoryRecyclerViewAdapter(
             installmentView.text = "Parcelas: ${item.installments}"
             paymentMethodView.text = "Parcelas: ${item.paymentType}"
             statusTextView.text = if (item.result == 0 ) { "Sucesso" } else { "Erro" }
-            statusView.background = if (item.result == 0 ) {context.getDrawable(R.drawable.payment_success_status_background)} else {context.getDrawable(R.drawable.payment_error_status_background)}
+            statusTextView.background = if (item.result == 0 ) {context.getDrawable(R.drawable.payment_success_status_background)} else {context.getDrawable(R.drawable.payment_error_status_background)}
             dateView.text = item.date ?: ""
 
             item.transactionId?.let {

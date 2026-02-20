@@ -45,7 +45,7 @@ class InstallmentsBottomSheet(
     }
 
     private fun setupRecyclerView() {
-        val adapter = InstallmentsAdapter { fee ->
+        val adapter = InstallmentsAdapter(showRadioButton = true) { fee ->
             onSelected(fee)
             dismiss()
         }

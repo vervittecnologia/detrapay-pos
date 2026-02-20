@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="ds_spacing_xs">4dp</dimen>
+    <dimen name="ds_spacing_sm">8dp</dimen>
+    <dimen name="ds_spacing_md">16dp</dimen>
+    <dimen name="ds_spacing_lg">24dp</dimen>
+    <dimen name="ds_toolbar_height">56dp</dimen>
+    <dimen name="ds_corner_radius">8dp</dimen>
+</resources>

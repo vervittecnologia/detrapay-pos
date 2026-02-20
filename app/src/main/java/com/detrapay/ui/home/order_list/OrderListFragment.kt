@@ -113,6 +113,7 @@ class OrderListFragment : Fragment(), OrderRecyclerViewAdapter.OnItemClickListen
                         status.message ?: getString(R.string.orders_default_error_message)
                     binding.errorView.visibility = View.VISIBLE
                 }
+                is UIState.Idle -> {}
             }
         })
     }

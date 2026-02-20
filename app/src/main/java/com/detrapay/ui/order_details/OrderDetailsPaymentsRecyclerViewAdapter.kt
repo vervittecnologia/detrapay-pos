@@ -17,6 +17,7 @@ import com.detrapay.data.model.OrderReceivableItemStatus.PAID
 import com.detrapay.data.model.OrderReceivableItemStatus.PENDING
 import com.detrapay.data.model.OrderReceivableItemStatus.REFUNDED
 import com.detrapay.databinding.OrderPaymentListItemBinding
+import com.detrapay.ui.util.ImageUtils
 import java.util.Locale
 
 class OrderDetailsPaymentsRecyclerViewAdapter(
@@ -76,21 +77,13 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
             listener: OnItemClickListener
         ) {
             val paymentMethod = item.paymentMethod
+            val brand = paymentMethod.name
+            val type = paymentMethod.paymentType ?: ""
 
-            val isCreditCard =  paymentMethod.name.contains("Crédito", true) ||
-                    paymentMethod.name.contains("Débito", true) ||
-                    paymentMethod.name.contains("Cartão de crédito", true) ||
-                    paymentMethod.name.contains("VISA", true) ||
-                    paymentMethod.name.contains("Mastercard", true)
-            val imageDrawable = if (isCreditCard) {
-                R.drawable.ic_credit_card_outline
-            } else if (paymentMethod.name.contains("Pix", true)) {
-                R.drawable.ic_pix
-            } else {
-                R.drawable.ic_money
-            }
+            setupBrandUI(type, brand, paymentMethodImage)
 
-            paymentMethodImage.setImageDrawable(context.getDrawable(imageDrawable))
+            val isCreditCard = type.contains("credit", true) || type.contains("debit", true) ||
+                    brand.contains("VISA", true) || brand.contains("Mastercard", true) || brand.contains("ELO", true)
 
             paymentMethodName.text = paymentMethod.name
 
@@ -167,6 +160,30 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
 
         }
 
-    }
+        private fun setupBrandUI(type: String, brand: String, imageView: ImageView) {
+            val t = type.lowercase()
+            val b = brand.lowercase()
 
+            // Use only local bundled icons
+            val iconResId = when {
+                b.contains("visa") -> R.drawable.ic_visa
+                b.contains("mastercard") || b.contains("master") -> R.drawable.ic_mastercard
+                b.contains("elo") -> R.drawable.ic_elo
+                else -> 0
+            }
+
+            if (iconResId != 0) {
+                imageView.setImageResource(iconResId)
+                return
+            }
+
+            // General Fallback
+            val imageDrawable = when {
+                t.contains("pix") || b.contains("pix") -> R.drawable.ic_pix
+                t.contains("dinheiro") || t.contains("cash") || b.contains("dinheiro") -> R.drawable.ic_money
+                else -> R.drawable.ic_credit_card_outline
+            }
+            imageView.setImageResource(imageDrawable)
+        }
+    }
 }

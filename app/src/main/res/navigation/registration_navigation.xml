@@ -43,4 +43,9 @@
         android:name="com.detrapay.ui.registration.payment_method.RegistrationPaymentDetailFragment"
         tools:layout="@layout/fragment_registration_payment_detail" />
 
+    <fragment
+        android:id="@+id/composePilotFragment"
+        android:name="com.detrapay.ui.registration.ComposePilotFragment"
+        tools:layout="@layout/fragment_compose_pilot" />
+
 </navigation>

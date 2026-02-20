@@ -78,3 +78,20 @@ O processo de pagamento segue um fluxo unidirecional e desacoplado, garantindo q
 * 5.3 - Selecione RELEASE ![img.png](img.png)
 * 5.4 - O build será iniciado ![img_4.png](img_4.png)
 * 5.5 - Quando ele finalizar você podera obter o APK em -> `app/release/app-release.apk` ![img_5.png](img_5.png)
+
+## Design System (inicial)
+
+Criamos um esqueleto inicial do Design System para centralizar tokens e componentes reutilizáveis.
+
+- **Arquivos adicionados**:
+    - `app/src/main/res/values/colors_design.xml` — cores semânticas (ds_primary, ds_secondary, ...)
+    - `app/src/main/res/values/dimens_design.xml` — espaçamentos e dimens comuns
+    - `app/src/main/res/values/styles_design.xml` — estilos base e `Widget.DS.Toolbar`
+    - `app/src/main/res/layout/cmp_toolbar.xml` — componente toolbar reutilizável
+
+Uso recomendado:
+
+1. Preferir `@color/ds_*` e `@dimen/ds_*` em novos layouts em vez de valores hard-coded.
+2. Ao extrair componentes, seguir o prefixo `cmp_` para layouts reutilizáveis (ex.: `cmp_toolbar.xml`).
+3. Próximo passo sugerido: migrar `home_toolbar.xml` e toolbars existentes para usar `cmp_toolbar`.
+

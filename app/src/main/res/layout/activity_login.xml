@@ -106,6 +106,17 @@
                     android:selectAllOnFocus="true" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <TextView
+                android:id="@+id/errorTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_medium"
+                android:textAlignment="center"
+                android:textColor="?attr/colorError"
+                android:visibility="gone"
+                tools:text="CNPJ ou senha inválidos"
+                tools:visibility="visible" />
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/login"
                 style="@style/Widget.MaterialComponents.Button"

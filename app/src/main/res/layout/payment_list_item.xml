@@ -22,7 +22,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            app:layout_constraintEnd_toStartOf="@+id/statusView"
+            app:layout_constraintEnd_toStartOf="@+id/status"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
@@ -145,28 +145,20 @@
 
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/statusView"
+        <TextView
+            android:id="@+id/status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/pending_status_background"
-            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/spacing_small"
+            android:paddingVertical="@dimen/spacing_xs"
+            android:textAllCaps="true"
+            android:textColor="@color/white"
+            android:textSize="11sp"
+            android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <TextView
-                android:id="@+id/status"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingHorizontal="@dimen/spacing_small"
-                android:paddingVertical="@dimen/spacing_xs"
-                android:textAllCaps="true"
-                android:textColor="@color/white"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                tools:text="Pendente" />
-
-        </LinearLayout>
+            app:layout_constraintTop_toTopOf="parent"
+            tools:background="@drawable/pending_status_background"
+            tools:text="Pendente" />
 
         <TextView
             android:id="@+id/paymentDate"
