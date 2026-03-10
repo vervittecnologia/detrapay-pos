@@ -19,15 +19,6 @@
         app:title="@string/registration_title"
         app:titleTextColor="@color/white" />
 
-    <include
-        android:id="@+id/registrationStepper"
-        layout="@layout/layout_registration_stepper"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/registration_nav_host"
         android:name="androidx.navigation.fragment.NavHostFragment"
@@ -37,6 +28,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/registrationStepper"
+        app:layout_constraintTop_toTopOf="parent"
         app:navGraph="@navigation/registration_navigation" />
 </androidx.constraintlayout.widget.ConstraintLayout>

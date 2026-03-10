@@ -17,6 +17,7 @@ import com.detrapay.data.model.SimulationPayment
 import com.detrapay.data.model.remote.InstallmentFee
 import com.detrapay.databinding.FragmentRegistrationPaymentDetailBinding
 import com.detrapay.databinding.RegistrationPaymentInstallmentItemBinding
+import com.detrapay.ui.registration.RegistrationActivity
 import com.detrapay.ui.registration.RegistrationViewModel
 import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.ImageUtils
@@ -90,7 +91,8 @@ class RegistrationPaymentDetailFragment : Fragment() {
 
     private fun setupUI() {
         binding.btnBack.setOnClickListener { findNavController().popBackStack() }
-        binding.btnClose.setOnClickListener { findNavController().popBackStack() }
+        binding.btnClose.setOnClickListener { (activity as? RegistrationActivity)?.showExitConfirmation() }
+        binding.btnBackFooter.setOnClickListener { findNavController().popBackStack() }
 
         // Root view click to clear focus and hide keyboard
         val hideKeyboardAction = View.OnClickListener {
@@ -237,13 +239,13 @@ class RegistrationPaymentDetailFragment : Fragment() {
 
         // Find a matching payment method for metadata if possible, or create a virtual one
         val baseMethods = registrationViewModel.getPaymentMethodsByType(paymentType)
-        val method = baseMethods.firstOrNull { it.maxInstallments == fee.installmentNumber } 
+        val method = baseMethods.firstOrNull { it.installments == fee.installmentNumber } 
                      ?: baseMethods.firstOrNull() 
                      ?: PaymentMethod(0, "Pagamento", fee.installmentNumber, 0.0, paymentType)
 
         val payment = SimulationPayment(
             id = if (editingPaymentId != -1L) editingPaymentId else System.currentTimeMillis(),
-            paymentMethod = method.copy(interestTax = 0.0, maxInstallments = fee.installmentNumber, name = "$selectedBrand ${method.name}"),
+            paymentMethod = method.copy(interestTax = 0.0, installments = fee.installmentNumber, name = "$selectedBrand ${method.name}"),
             amountOriginal = amountOriginal,
             amountFinal = amountFinal,
             installment = fee.installmentNumber

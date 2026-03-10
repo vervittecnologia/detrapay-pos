@@ -7,11 +7,13 @@ import androidx.lifecycle.viewModelScope
 import com.detrapay.data.Result
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.OrderReceivableItem
+import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.RefundPaymentData
 import com.detrapay.data.model.Salesman
-import com.detrapay.data.repositories.AuthRepository
 import com.detrapay.data.repositories.OrderRepository
+import com.detrapay.data.repositories.RegistrationRepository
+import com.detrapay.data.repositories.SalesmanRepository
 import com.detrapay.ui.state.UIState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +23,8 @@ import javax.inject.Inject
 @HiltViewModel
 class OrderDetailsViewModel @Inject constructor(
     private val orderRepository: OrderRepository,
-    private val authRepository: AuthRepository
+    private val registrationRepository: RegistrationRepository,
+    private val salesmanRepository: SalesmanRepository
 ) : ViewModel() {
 
     private var orderId: Int = 0
@@ -30,6 +33,9 @@ class OrderDetailsViewModel @Inject constructor(
 
     private val _salesmenState = MutableLiveData<UIState<List<Salesman>>>()
     val salesmenState: LiveData<UIState<List<Salesman>>> = _salesmenState
+
+    private val _paymentMethodsState = MutableLiveData<UIState<List<PaymentMethod>>>()
+    val paymentMethodsState: LiveData<UIState<List<PaymentMethod>>> = _paymentMethodsState
 
     fun loadScreenContent(orderId: Int) {
         this.orderId = orderId
@@ -52,12 +58,11 @@ class OrderDetailsViewModel @Inject constructor(
 
     fun loadSalesmen() {
         viewModelScope.launch(Dispatchers.IO) {
-            val user = authRepository.getLoggedUser(true)
-            val salesmen = user?.salesmen
-            if (salesmen != null) {
-                _salesmenState.postValue(UIState.Success(salesmen))
-            } else {
-                _salesmenState.postValue(UIState.Error("Nenhum vendedor encontrado"))
+            when (val result = salesmanRepository.getSalesmen()) {
+                is Result.Success -> _salesmenState.postValue(UIState.Success(result.data))
+                is Result.Error -> _salesmenState.postValue(
+                    UIState.Error(result.exception.message ?: "Nenhum vendedor encontrado")
+                )
             }
         }
     }
@@ -82,6 +87,44 @@ class OrderDetailsViewModel @Inject constructor(
                     UIState.Error(
                         message = "Ops! Algo deu errado, tente novamente.",
                         exception = error.exception
+                    )
+                )
+            }
+        }
+    }
+
+    fun loadPaymentMethods() {
+        _paymentMethodsState.postValue(UIState.Loading())
+        viewModelScope.launch(Dispatchers.IO) {
+            when (val result = registrationRepository.loadPaymentMethods()) {
+                is Result.Success -> _paymentMethodsState.postValue(UIState.Success(result.data))
+                is Result.Error -> _paymentMethodsState.postValue(
+                    UIState.Error(
+                        message = result.exception.message ?: "Nao foi possivel carregar os meios de pagamento.",
+                        exception = result.exception
+                    )
+                )
+            }
+        }
+    }
+
+    fun addPendingReceivable(paymentMethod: PaymentMethod, amountOriginal: Double) {
+        _orderState.postValue(UIState.Loading())
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = orderRepository.addPendingReceivable(
+                orderId = orderId,
+                paymentMethod = paymentMethod,
+                amountOriginal = amountOriginal
+            )
+            if (result is Result.Success) {
+                _orderState.postValue(UIState.Success(result.data))
+            } else {
+                val error = result as Result.Error
+                _orderState.postValue(
+                    UIState.Error(
+                        message = error.exception.message
+                            ?: "Algo deu errado ao adicionar o pagamento pendente, tente novamente.",
+                        exception = error.exception,
                     )
                 )
             }
@@ -132,6 +175,25 @@ class OrderDetailsViewModel @Inject constructor(
                 _orderState.postValue(
                     UIState.Error(
                         message = "Algo deu errado no estorno do pedido, tente novamente.",
+                        exception = error.exception,
+                    )
+                )
+            }
+        }
+    }
+
+    fun cancelPendingItem(receivable: OrderReceivableItem) {
+        _orderState.postValue(UIState.Loading())
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = orderRepository.cancelPendingReceivable(orderId, receivable)
+            if (result is Result.Success) {
+                _orderState.postValue(UIState.Success(result.data))
+            } else {
+                val error = result as Result.Error
+                _orderState.postValue(
+                    UIState.Error(
+                        message = error.exception.message
+                            ?: "Algo deu errado ao excluir o pagamento pendente, tente novamente.",
                         exception = error.exception,
                     )
                 )

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/color_background">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/companyCard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/spacing_medium"
+        android:layout_marginTop="@dimen/spacing_medium"
+        android:layout_marginEnd="@dimen/spacing_medium"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="@dimen/radius_medium"
+        app:cardElevation="@dimen/elevation_low"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="@dimen/spacing_medium">
+
+            <FrameLayout
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:background="@drawable/home_company_logo_background"
+                android:padding="@dimen/spacing_small">
+
+                <ImageView
+                    android:id="@+id/companyLogo"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:adjustViewBounds="true"
+                    android:contentDescription="@string/profile_company_logo_content_description"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/icon" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/spacing_medium"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/companyLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/profile_dealership_label"
+                    android:textColor="@color/neutral_500"
+                    android:textSize="@dimen/text_size_label" />
+
+                <TextView
+                    android:id="@+id/companyName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:textColor="@color/neutral_800"
+                    android:textSize="@dimen/text_size_heading"
+                    android:textStyle="bold"
+                    tools:text="Concessionaria Crasa" />
+
+                <TextView
+                    android:id="@+id/companyDocument"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_small"
+                    android:textColor="@color/neutral_600"
+                    android:textSize="@dimen/text_size_body"
+                    tools:text="CNPJ: 00.000.000/0000-00" />
+            </LinearLayout>
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <TextView
+        android:id="@+id/salesmenTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/spacing_medium"
+        android:layout_marginTop="@dimen/spacing_large"
+        android:layout_marginEnd="@dimen/spacing_medium"
+        android:text="@string/sales_list_title"
+        android:textColor="@color/neutral_800"
+        android:textSize="@dimen/text_size_heading"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/companyCard" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/salesmenList"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="@dimen/spacing_small"
+        android:clipToPadding="false"
+        android:contentDescription="@string/profile_salesmen_content_description"
+        android:paddingBottom="@dimen/spacing_medium"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/salesmenTitle"
+        tools:listitem="@layout/profile_salesman_card_item" />
+
+    <TextView
+        android:id="@+id/emptySalesmen"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/sales_list_empty"
+        android:textColor="@color/neutral_600"
+        android:textSize="@dimen/text_size_body"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/salesmenList"
+        app:layout_constraintEnd_toEndOf="@id/salesmenList"
+        app:layout_constraintStart_toStartOf="@id/salesmenList"
+        app:layout_constraintTop_toTopOf="@id/salesmenList" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

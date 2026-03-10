@@ -28,11 +28,11 @@ class SplashActivity : ComponentActivity() {
 
     private fun handleAuthResult(result: SplashAuthResult) {
         if (result.authenticated) {
-            val homeIntent = Intent(
+            val intent = Intent(
                 this,
                 HomeActivity::class.java
             )
-            this.startActivity(homeIntent)
+            this.startActivity(intent)
         } else {
             val loginActivityIntent = Intent(
                 this,

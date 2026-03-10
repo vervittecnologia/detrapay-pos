@@ -16,9 +16,15 @@ android {
         applicationId = "com.detrapay"
         minSdk = 23
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.3"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        versionCode = 5
+        versionName = "1.4"
+        testInstrumentationRunner = "com.detrapay.testing.DetrapayTestRunner"
+        testInstrumentationRunnerArguments["clearPackageData"] = "true"
+
+        vectorDrawables {
+            useSupportLibrary = true
+            generatedDensities?.clear()
+        }
     }
 
     buildFeatures {
@@ -51,6 +57,15 @@ android {
     room {
         schemaDirectory("$projectDir/schemas")
     }
+
+    testOptions {
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
+        animationsDisabled = true
+
+        unitTests {
+            isReturnDefaultValues = true
+        }
+    }
 }
 
 hilt {
@@ -81,16 +96,30 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.annotation)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.zxing.core)
     implementation(libs.material.icons)
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.androidx.arch.core.testing)
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.espresso.intents)
+    androidTestImplementation(libs.androidx.uiautomator)
+    androidTestImplementation(libs.hilt.testing)
+    androidTestUtil(libs.androidx.test.orchestrator)
+    kspAndroidTest(libs.hilt.compiler)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }

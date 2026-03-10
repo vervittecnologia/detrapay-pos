@@ -1,6 +1,7 @@
 package com.detrapay.data.repositories
 
 import android.util.Log
+import com.detrapay.BuildConfig
 import com.detrapay.data.Result
 import com.detrapay.data.datasources.remote.DetrapayRemoteDataSource
 import com.detrapay.data.model.Order
@@ -11,6 +12,7 @@ import com.detrapay.data.model.OrderReceivableItemStatus
 import com.detrapay.data.model.OrderStatus
 import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.PaymentMethod
+import com.detrapay.data.model.PixCharge
 import com.detrapay.data.model.RefundPaymentData
 import com.detrapay.data.model.Salesman
 import com.detrapay.data.model.Simulation
@@ -27,6 +29,7 @@ import com.detrapay.data.model.remote.OrderSimulationRequest
 import com.detrapay.data.model.remote.SplitConfigRequest
 import com.detrapay.ui.util.Logger
 import com.detrapay.ui.util.Mask
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -36,8 +39,36 @@ class OrderRepository @Inject constructor(
     private val authRepository: AuthRepository
 ) {
 
+    private data class CacheEntry<T>(
+        val value: T,
+        val timestampMs: Long,
+    )
+
+    private val ordersCacheTtlMs = 30 * 1000L
+    private var ordersCache: CacheEntry<List<Order>>? = null
+    private val orderDetailsCache = mutableMapOf<Int, Order>()
+
+    private fun <T> CacheEntry<T>.isValid(ttlMs: Long): Boolean {
+        return System.currentTimeMillis() - timestampMs <= ttlMs
+    }
+
+    private fun updateOrdersCache(orders: List<Order>) {
+        ordersCache = CacheEntry(
+            value = orders,
+            timestampMs = System.currentTimeMillis()
+        )
+    }
+
+    private fun invalidateOrdersCache() {
+        ordersCache = null
+    }
+
     suspend fun getOrders(forceRefresh: Boolean = false): Result<List<Order>> {
-        val user = authRepository.getLoggedUser(true)
+        ordersCache
+            ?.takeIf { !forceRefresh && it.isValid(ordersCacheTtlMs) }
+            ?.let { return Result.Success(it.value) }
+
+        val user = authRepository.getLoggedUser(false)
         val companyId = user?.companies?.firstOrNull()?.id
         val dispatcherId = user?.dispatchers?.firstOrNull()?.id
 
@@ -55,7 +86,9 @@ class OrderRepository @Inject constructor(
                             null
                         }
                     }
-                    return Result.Success(orders.filterNotNull())
+                    val parsedOrders = orders.filterNotNull()
+                    updateOrdersCache(parsedOrders)
+                    return Result.Success(parsedOrders)
                 } catch (e: Exception) {
                     Log.e("OrderRepository", "UNABLE TO GET ORDERS: ${e.message}")
                     return Result.Error(e)
@@ -72,11 +105,16 @@ class OrderRepository @Inject constructor(
         }
     }
 
-    suspend fun getOrder(orderId: Int): Result<Order> {
+    suspend fun getOrder(orderId: Int, forceRefresh: Boolean = false): Result<Order> {
+        orderDetailsCache[orderId]
+            ?.takeIf { !forceRefresh }
+            ?.let { return Result.Success(it) }
+
         when (val result = detrapayRemoteDataSource.getOrder(orderId)) {
             is Result.Success -> {
                 try {
                     val order = parseOrder(result.data)
+                    orderDetailsCache[orderId] = order
                     return Result.Success(order)
                 } catch (e: Exception) {
                     Log.e("OrderRepository", "UNABLE TO GET ORDER: ${e.message}")
@@ -94,77 +132,153 @@ class OrderRepository @Inject constructor(
     }
 
     private fun parseOrder(orderResponse: OrderResponse): Order {
+        val attributes = orderResponse.attributes
+        val customer = orderResponse.customer ?: attributes?.customers?.data?.let {
+            com.detrapay.data.model.remote.FlatCustomerResponse(
+                id = it.id,
+                name = it.attributes.name,
+                cpfCnpj = it.attributes.cpfCnpj,
+                phoneNumber = it.attributes.phoneNumber,
+                email = it.attributes.email
+            )
+        }
+        val companyTradeName = orderResponse.company?.tradeName
+            ?: attributes?.companies?.data?.attributes?.tradeName
+            ?: ""
+        val vehicleTypeId = orderResponse.vehicleType?.id
+            ?: attributes?.vehicle_types?.data?.id
+            ?: 0
+        val vehicleTypeName = orderResponse.vehicleType?.name
+            ?: attributes?.vehicle_types?.data?.attributes?.name
+            ?: orderResponse.vehicleTypeName
+            ?: ""
+        val salesman = orderResponse.salesman?.let {
+            Salesman(id = it.id, name = it.name)
+        } ?: attributes?.salesman?.data?.let {
+            Salesman(id = it.id, name = it.attributes.name)
+        } ?: orderResponse.salesmanName?.takeIf { it.isNotBlank() }?.let {
+            Salesman(id = 0, name = it)
+        }
+        val items = orderResponse.items?.map { item ->
+            OrderItem(
+                id = item.id,
+                totalPrice = item.totalPrice ?: 0.0,
+                discount = item.discount ?: 0.0,
+                salesItemId = item.salesItemId,
+                name = item.name,
+                price = item.unitPrice
+            )
+        } ?: attributes?.sales_order_items?.data?.map { item ->
+            OrderItem(
+                id = item.id,
+                totalPrice = item.attributes.total_price,
+                discount = item.attributes.discount,
+                salesItemId = item.attributes.sales_item_id,
+                name = item.attributes.sales_items.data.attributes.name,
+                price = item.attributes.unit_price
+            )
+        } ?: emptyList()
+        val receivables = orderResponse.receivables?.map { receivable ->
+            val paymentMethod = receivable.paymentMethod?.let {
+                PaymentMethod(
+                    id = it.id,
+                    name = it.name,
+                    installments = it.installments ?: 0,
+                    interestTax = it.interestTax,
+                    paymentType = it.paymentType
+                )
+            } ?: PaymentMethod(id = 0, name = "", installments = 0, interestTax = 0.0, paymentType = null)
+            OrderReceivableItem(
+                id = receivable.id,
+                documentId = receivable.documentId,
+                amountOriginal = receivable.amountOriginal,
+                amountFinal = receivable.amountFinal,
+                installments = receivable.installments,
+                status = parseReceivableStatus(receivable.status),
+                paymentMethod = paymentMethod,
+                paymentDate = receivable.paymentDate,
+                refundDate = null,
+                cardLast4 = receivable.cardLast4,
+                cardHolder = receivable.cardHolder,
+                tax = receivable.tax,
+                cardBrand = receivable.cardBrand,
+                authorizationId = null,
+                authorizationCode = receivable.authorizationCode,
+                pixTxIdCode = receivable.pixTxIdCode
+            )
+        } ?: attributes?.receivables?.data?.map { receivable ->
+            val originalAmount = receivable.attributes.amountOriginal
+            val paymentMethod = PaymentMethod(
+                id = receivable.attributes.payment_methods.data.id,
+                name = receivable.attributes.payment_methods.data.attributes.name,
+                installments = receivable.attributes.payment_methods.data.attributes.installments,
+                interestTax = receivable.attributes.payment_methods.data.attributes.interestTax,
+                paymentType = receivable.attributes.payment_methods.data.attributes.paymentType
+            )
+            val finalAmount = if ((paymentMethod.interestTax ?: 0.0) > 0.0) {
+                originalAmount + (originalAmount * (paymentMethod.interestTax ?: 0.0))
+            } else {
+                receivable.attributes.amountFinal
+            }
+
+            OrderReceivableItem(
+                id = receivable.id,
+                documentId = receivable.documentId,
+                amountOriginal = originalAmount,
+                amountFinal = finalAmount,
+                installments = receivable.attributes.installments,
+                status = parseReceivableStatus(receivable.attributes.status),
+                paymentMethod = paymentMethod,
+                paymentDate = receivable.attributes.paymentDate,
+                refundDate = null,
+                cardLast4 = receivable.attributes.card_last4,
+                cardHolder = receivable.attributes.cardHolder,
+                tax = receivable.attributes.tax,
+                cardBrand = receivable.attributes.cardBrand,
+                authorizationId = null,
+                authorizationCode = receivable.attributes.authorizationCode,
+                pixTxIdCode = receivable.attributes.pixTxIdCode
+            )
+        } ?: emptyList()
+
         return Order(
             id = orderResponse.id,
             customer = OrderCustomer(
-                id = orderResponse.attributes.customers.data.id,
-                name = orderResponse.attributes.customers.data.attributes.name,
-                cpfCnpj = orderResponse.attributes.customers.data.attributes.cpfCnpj,
-                phoneNumber = orderResponse.attributes.customers.data.attributes.phoneNumber,
-                email = orderResponse.attributes.customers.data.attributes.email
+                id = customer?.id ?: 0,
+                name = customer?.name ?: orderResponse.customerName.orEmpty(),
+                cpfCnpj = customer?.cpfCnpj ?: orderResponse.customerCpfCnpj.orEmpty(),
+                phoneNumber = customer?.phoneNumber.orEmpty(),
+                email = customer?.email
             ),
-            serviceName = orderResponse.attributes.companies?.data?.attributes?.tradeName ?: "",
-            creationDate = orderResponse.attributes.createdAt,
-            status = OrderStatus.valueOf(orderResponse.attributes.status.uppercase()),
-            vehiclePrice = orderResponse.attributes.vehiclePrice,
-            billingDate = orderResponse.attributes.billingDate,
-            originalAmount = orderResponse.attributes.originalAmount,
-            currentAmount = orderResponse.attributes.currentAmount,
-            isVehicleFinanced = orderResponse.attributes.isVehicleFinanced,
-            isVehicleSpecialPlate = orderResponse.attributes.isSpecialPlate,
-            vehicleType = VehicleType(orderResponse.attributes.vehicle_types.data.id, orderResponse.attributes.vehicle_types.data.attributes.name),
-            items = orderResponse.attributes.sales_order_items.data.map { item ->
-                OrderItem(
-                    id = item.id,
-                    totalPrice = item.attributes.total_price,
-                    discount = item.attributes.discount,
-                    salesItemId = item.attributes.sales_item_id,
-                    name = item.attributes.sales_items.data.attributes.name,
-                    price = item.attributes.unit_price
-                )
-            },
-            receivables = orderResponse.attributes.receivables?.data?.map { receivable ->
-                val originalAmount = receivable.attributes.amountOriginal
-                val paymentMethod = PaymentMethod(
-                    id = receivable.attributes.payment_methods.data.id,
-                    name = receivable.attributes.payment_methods.data.attributes.name,
-                    maxInstallments = receivable.attributes.payment_methods.data.attributes.max_installments,
-                    interestTax = receivable.attributes.payment_methods.data.attributes.interest_tax
-                )
-                val finalAmount = if (paymentMethod.interestTax != null && paymentMethod.interestTax > 0) {
-                    originalAmount + (originalAmount * paymentMethod.interestTax)
-                } else {
-                    receivable.attributes.amountFinal
-                }
-                Log.e("OrderRepository", "originalAmount: $originalAmount, interestTax: ${paymentMethod.interestTax}, finalAmount: $finalAmount")
-
-
-                OrderReceivableItem(
-                    id = receivable.id,
-                    documentId = receivable.documentId,
-                    amountOriginal = originalAmount,
-                    amountFinal = finalAmount,
-                    max_installments = receivable.attributes.installments,
-                    status = OrderReceivableItemStatus.valueOf(receivable.attributes.status.uppercase()),
-                    paymentMethod = paymentMethod,
-                    paymentDate = receivable.attributes.paymentDate,
-                    refundDate = null, // TODO: Add refundDate to response
-                    cardLast4 = receivable.attributes.card_last4,
-                    cardHolder = receivable.attributes.cardHolder,
-                    tax = receivable.attributes.tax,
-                    cardBrand = receivable.attributes.cardBrand,
-                    authorizationId = null,
-                    authorizationCode = receivable.attributes.authorizationCode,
-                    pixTxIdCode = null
-                )
-            } ?: emptyList(),
-            salesman = orderResponse.attributes.salesman?.data?.let {
-                Salesman(
-                    id = it.id,
-                    name = it.attributes.name
-                )
-            }
+            serviceName = companyTradeName,
+            creationDate = orderResponse.createdAt ?: attributes?.createdAt.orEmpty(),
+            status = parseOrderStatus(orderResponse.status ?: attributes?.status),
+            vehiclePrice = orderResponse.vehiclePrice ?: attributes?.vehiclePrice ?: 0.0,
+            billingDate = orderResponse.billingDate ?: attributes?.billingDate.orEmpty(),
+            originalAmount = orderResponse.originalAmount ?: attributes?.originalAmount ?: 0.0,
+            currentAmount = orderResponse.currentAmount ?: attributes?.currentAmount ?: 0.0,
+            isVehicleFinanced = orderResponse.isVehicleFinanced ?: attributes?.isVehicleFinanced ?: false,
+            isVehicleSpecialPlate = orderResponse.isSpecialPlate ?: attributes?.isSpecialPlate ?: false,
+            vehicleType = VehicleType(vehicleTypeId, vehicleTypeName),
+            items = items,
+            receivables = receivables,
+            salesman = salesman
         )
+    }
+
+    private fun parseOrderStatus(rawStatus: String?): OrderStatus {
+        return runCatching {
+            OrderStatus.valueOf(rawStatus.orEmpty().uppercase())
+        }.getOrDefault(OrderStatus.PENDING)
+    }
+
+    private fun parseReceivableStatus(rawStatus: String?): OrderReceivableItemStatus {
+        if (rawStatus.equals("reversed", ignoreCase = true)) {
+            return OrderReceivableItemStatus.CANCELLED
+        }
+        return runCatching {
+            OrderReceivableItemStatus.valueOf(rawStatus.orEmpty().uppercase())
+        }.getOrDefault(OrderReceivableItemStatus.PENDING)
     }
 
     private fun formatDate(date: String): String {
@@ -186,10 +300,10 @@ class OrderRepository @Inject constructor(
 
     suspend fun createOrder(
         simulation: Simulation,
-        simulationPayments: List<SimulationPayment>,
-        salesmanId: String?
+        simulationPayments: List<SimulationPayment> = emptyList(),
+        salesmanId: Int?
     ): Result<Order> {
-        val user = authRepository.getLoggedUser(true)
+        val user = authRepository.getLoggedUser(false)
         val salesCompanyId = user?.companies?.firstOrNull()?.id
         val dispatcherId = user?.dispatchers?.firstOrNull()?.id
 
@@ -215,7 +329,13 @@ class OrderRepository @Inject constructor(
             isVehicleFinanced = simulation.simulation.vehicleDisposal,
             isVehicleSpecialPlate = simulation.simulation.vehicleSpecialPlate,
             vehicleTypeId = simulation.simulation.vehicleTypeId,
-            totalPrice = simulation.simulation.totalPrice.toString()
+            totalPrice = String.format(
+                Locale.US,
+                "%.2f",
+                simulation.simulationItems.sumOf { item ->
+                    item.price - (item.discount ?: 0.0)
+                }
+            )
         )
 
         val receivablesRequest = simulationPayments.map { simulationPayment ->
@@ -236,7 +356,8 @@ class OrderRepository @Inject constructor(
         val itemsRequest = simulation.simulationItems.map { simulationItem ->
             OrderSimulationItemRequest(
                 id = simulationItem.id,
-                price = calculateItemPrice(simulationItem.price, simulationItem.discount)
+                price = formatDecimal(simulationItem.price),
+                discount = simulationItem.discount?.let(::formatDecimal)
             )
         }
 
@@ -256,6 +377,8 @@ class OrderRepository @Inject constructor(
             is Result.Success -> {
                 try {
                     val order = parseOrder(result.data.data)
+                    invalidateOrdersCache()
+                    orderDetailsCache[order.id] = order
                     Result.Success(order)
                 } catch (e: Exception) {
                     Logger.d("Error parsing order after creation: ${e.message}")
@@ -274,11 +397,14 @@ class OrderRepository @Inject constructor(
         receivable: OrderReceivableItem,
         paymentData: PaymentData
     ): Result<Order> {
-        val isoDate = formatDate(paymentData.date) + "T" + paymentData.time
+        val isoDate = formatDate(paymentData.date.orEmpty()) + "T" + paymentData.time.orEmpty()
         when (val result = detrapayRemoteDataSource.payOrderReceivable(receivable, paymentData.copy(date = isoDate))) {
             is Result.Success -> {
                 try {
-                    return getOrder(orderId)
+                    invalidateOrdersCache()
+                    val order = parseOrder(result.data)
+                    orderDetailsCache[order.id] = order
+                    return Result.Success(order)
                 } catch (e: Exception) {
                     Log.e("OrderRepository", "UNABLE TO GET ORDER: ${e.message}")
                     return Result.Error(e)
@@ -293,12 +419,50 @@ class OrderRepository @Inject constructor(
         }
     }
 
+    suspend fun addPendingReceivable(
+        orderId: Int,
+        paymentMethod: PaymentMethod,
+        amountOriginal: Double,
+        paymentDate: String? = null
+    ): Result<Order> {
+        if (amountOriginal <= 0.0) {
+            return Result.Error(Exception("Informe um valor maior que zero para adicionar o pagamento."))
+        }
+
+        return when (
+            val result = detrapayRemoteDataSource.addOrderReceivable(
+                orderId = orderId,
+                paymentMethodId = paymentMethod.id,
+                amountOriginal = amountOriginal,
+                installments = paymentMethod.installments.coerceAtLeast(1),
+                paymentDate = paymentDate
+            )
+        ) {
+            is Result.Success -> {
+                try {
+                    invalidateOrdersCache()
+                    val order = parseOrder(result.data)
+                    orderDetailsCache[order.id] = order
+                    Result.Success(order)
+                } catch (e: Exception) {
+                    Log.e("OrderRepository", "UNABLE TO ADD ORDER RECEIVABLE: ${e.message}")
+                    Result.Error(e)
+                }
+            }
+            is Result.Error -> Result.Error(result.exception)
+            else -> Result.Error(Exception("Tivemos um erro ao adicionar o pagamento pendente, por favor tente novamente."))
+        }
+    }
+
     suspend fun refundOrderPayment(orderId:Int, receivable: OrderReceivableItem, refundDate: RefundPaymentData): Result<Order> {
         val isoDate = formatDate(refundDate.date) + "T" + refundDate.time
         when (val result = detrapayRemoteDataSource.refundOrderReceivableItem(receivable.documentId, isoDate)) {
             is Result.Success -> {
                 try {
-                    return getOrder(orderId)
+                    invalidateOrdersCache()
+                    val order = parseOrder(result.data)
+                    orderDetailsCache[order.id] = order
+                    return Result.Success(order)
                 } catch (e: Exception) {
                     Log.e("OrderRepository", "UNABLE TO GET ORDER: ${e.message}")
                     return Result.Error(e)
@@ -313,24 +477,71 @@ class OrderRepository @Inject constructor(
         }
     }
 
-    suspend fun updateOrderSalesman(orderId: Int, salesmanId: String): Result<Order> {
+    suspend fun cancelPendingReceivable(orderId: Int, receivable: OrderReceivableItem): Result<Order> {
+        when (
+            val result = detrapayRemoteDataSource.updateOrderReceivableItem(
+                receivableId = receivable.documentId,
+                status = OrderReceivableItemStatus.CANCELLED
+            )
+        ) {
+            is Result.Success -> {
+                return try {
+                    invalidateOrdersCache()
+                    val order = parseOrder(result.data)
+                    orderDetailsCache[order.id] = order
+                    Result.Success(order)
+                } catch (e: Exception) {
+                    Log.e("OrderRepository", "UNABLE TO CANCEL ORDER RECEIVABLE: ${e.message}")
+                    Result.Error(e)
+                }
+            }
+            is Result.Error -> return Result.Error(result.exception)
+            else -> {
+                return Result.Error(Exception("Tivemos um erro ao excluir o pagamento pendente, por favor tente novamente."))
+            }
+        }
+    }
+
+    suspend fun updateOrderSalesman(orderId: Int, salesmanId: Int): Result<Order> {
         return when (val result = detrapayRemoteDataSource.updateOrderSalesman(orderId, salesmanId)) {
-            is Result.Success -> getOrder(orderId)
+            is Result.Success -> {
+                invalidateOrdersCache()
+                runCatching {
+                    val order = parseOrder(result.data)
+                    orderDetailsCache[order.id] = order
+                    Result.Success(order)
+                }.getOrElse { Result.Error(it as Exception) }
+            }
             is Result.Error -> result
         }
     }
 
-    private fun calculateItemPrice(itemPrice: Double, discount: Double?): String {
-        val price = if (discount != null) {
-            itemPrice - discount
-        } else {
-            itemPrice
-        }
+    suspend fun generatePixCharge(receivable: OrderReceivableItem): Result<PixCharge> {
+        return detrapayRemoteDataSource.generatePixCharge(
+            receivableId = receivable.id,
+            amount = receivable.amountFinal,
+            paymentDate = receivable.paymentDate
+        )
+    }
 
-        return price.toString()
+    private fun formatDecimal(value: Double): String {
+        return String.format(Locale.US, "%.2f", value)
     }
 
     suspend fun updateSplitConfig(receivableId: Int, serial: String): Result<Unit> {
-        return detrapayRemoteDataSource.updateSplitConfig(SplitConfigRequest(receivableId, serial))
+        val splitSerial = if (BuildConfig.DEBUG) {
+            "6001062507098048"
+        } else {
+            serial
+        }
+        val splitDescription = if (BuildConfig.DEBUG) "debug" else null
+
+        return detrapayRemoteDataSource.updateSplitConfig(
+            SplitConfigRequest(
+                receivableId = receivableId,
+                serial = splitSerial,
+                description = splitDescription
+            )
+        )
     }
 }

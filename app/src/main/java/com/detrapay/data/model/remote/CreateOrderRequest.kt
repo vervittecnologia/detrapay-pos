@@ -8,7 +8,7 @@ data class CreateOrderRequest(
     @SerializedName("customer")
     val customer: OrderCustomerRequest,
     @SerializedName("salesman_id")
-    val salesmanId: String?,
+    val salesmanId: Int?,
     @SerializedName("company_id")
     val companyId: Int,
     @SerializedName("dispatcher_id")

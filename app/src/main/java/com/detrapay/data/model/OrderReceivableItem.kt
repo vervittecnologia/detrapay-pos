@@ -7,7 +7,7 @@ data class OrderReceivableItem(
     val documentId: String,
     val amountOriginal: Double,
     val amountFinal: Double,
-    val max_installments: Int,
+    val installments: Int,
     val status: OrderReceivableItemStatus,
     val paymentMethod: PaymentMethod,
     val paymentDate: String?,

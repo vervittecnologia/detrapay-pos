@@ -55,6 +55,10 @@ class OrderDetailsItemsRecyclerViewAdapter(
                 itemDiscount.visibility = View.VISIBLE
                 val discount = "%,.2f".format(locale, item.discount)
                 itemDiscount.text = "- R$ $discount"
+            } else {
+                // RecyclerView reuses views; reset discount state when item has no discount.
+                itemDiscount.visibility = View.GONE
+                itemDiscount.text = ""
             }
         }
     }

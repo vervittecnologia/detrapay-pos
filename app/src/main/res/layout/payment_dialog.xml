@@ -212,6 +212,68 @@
                 android:textSize="20sp"
                 android:layout_marginTop="12dp"/>
 
+            <ImageView
+                android:id="@+id/pixQrCodeImage"
+                android:layout_width="220dp"
+                android:layout_height="220dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="20dp"
+                android:contentDescription="QR Code Pix"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/pixCopyPasteLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="Codigo copia e cola"
+                android:textAlignment="center"
+                android:textColor="@color/neutral_700"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/pixCopyPasteValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textAlignment="center"
+                android:textColor="@color/neutral_500"
+                android:textIsSelectable="true"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:text="00020101021226880014br.gov.bcb.pix2566pix.example.com/qr/v2/12345652040000530398654041.005802BR5913DETRAPAY6009SAO PAULO62070503***6304ABCD"
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/pixMetaInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:textAlignment="center"
+                android:textColor="@color/primary_500"
+                android:textSize="14sp"
+                android:visibility="gone"
+                tools:text="TxId: abc123\nExpira em: 2026-03-06T18:30:00"
+                tools:visibility="visible" />
+
+            <Button
+                android:id="@+id/copyPixCodeBtn"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/default_button_background"
+                android:text="Copiar codigo PIX"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
             <Button
                 android:id="@+id/backSuccessBtn"
                 android:layout_width="match_parent"

@@ -1,10 +1,11 @@
 package com.detrapay.ui.registration.discount_dialog
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
+import android.view.inputmethod.InputMethodManager
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.fragment.app.DialogFragment
@@ -23,7 +24,6 @@ class DiscountDialogFragment(
     private lateinit var binding: FragmentDiscountDialogBinding
     private val registrationViewModel: RegistrationViewModel by activityViewModels()
     private var selectedSimulationItem: SimulationItem? = null
-    private var selectedSimulationItemPosition: Int? = null
 
     interface OnUpdateListener {
         fun onUpdate(itemPosition: Int?)
@@ -34,6 +34,10 @@ class DiscountDialogFragment(
         savedInstanceState: Bundle?
     ): View {
         binding = FragmentDiscountDialogBinding.inflate(inflater, container, false)
+        dialog?.window?.setSoftInputMode(
+            WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or
+                WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
+        )
         return binding.root
     }
 
@@ -87,28 +91,44 @@ class DiscountDialogFragment(
             this.dismiss()
         }
 
+        val discountableItems = registrationViewModel.simulationItemsWhoSupportDiscount()
+        selectedSimulationItem = discountableItems.firstOrNull()
+
         val adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
-            registrationViewModel.simulationItemsWhoSupportDiscount().map { it.name })
+            discountableItems.map { it.name })
 
         binding.itemSpinner.setAdapter(adapter)
 
         binding.discountInput.addTextChangedListener(Mask.moneyMask(binding.discountInput, {}))
+        focusDiscountInput()
 
         binding.itemSpinner.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(
                     parent: AdapterView<*>, view: View?, position: Int, id: Long
                 ) {
-                    selectedSimulationItem =
-                        registrationViewModel.simulationItemsWhoSupportDiscount()[position]
-                    selectedSimulationItemPosition = position
+                    selectedSimulationItem = discountableItems[position]
                 }
 
                 override fun onNothingSelected(parent: AdapterView<*>?) {}
             }
 
 
+    }
+
+    private fun focusDiscountInput() {
+        binding.discountInput.post {
+            binding.discountInput.requestFocus()
+            binding.discountInput.setSelectAllOnFocus(true)
+            binding.discountInput.text?.let { text ->
+                if (text.isNotEmpty()) {
+                    binding.discountInput.setSelection(0, text.length)
+                }
+            }
+            val imm = requireContext().getSystemService(InputMethodManager::class.java)
+            imm?.showSoftInput(binding.discountInput, InputMethodManager.SHOW_IMPLICIT)
+        }
     }
 }

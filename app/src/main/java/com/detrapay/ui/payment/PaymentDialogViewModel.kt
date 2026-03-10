@@ -74,6 +74,47 @@ class PaymentDialogViewModel @Inject constructor(
     )
 
     fun payOrder(orderId: Int, receivable: OrderReceivableItem, serial: String) {
+        if (isPixPayment(receivable)) {
+            _paymentState.postValue(UIState.Loading("Gerando QR Code PIX..."))
+            viewModelScope.launch(Dispatchers.IO) {
+                when (val result = orderRepository.generatePixCharge(receivable)) {
+                    is Result.Success -> {
+                        val charge = result.data
+                        val paymentData = PaymentData(
+                            transactionId = charge.txId,
+                            pixTxIdCode = charge.txId,
+                            pendingConfirmation = true,
+                            pixQrCodeContent = charge.qrCodeContent,
+                            pixCopyPasteCode = charge.copyPasteCode,
+                            pixQrCodeBase64 = charge.qrCodeBase64,
+                            pixExpiresAt = charge.expiresAt
+                        )
+
+                        paymentRepository.saveTransaction(
+                            orderId = orderId,
+                            amount = receivable.amountFinal,
+                            installments = receivable.installments,
+                            paymentType = receivable.paymentMethod.name,
+                            pixTxIdCode = charge.txId,
+                            message = "QR Code PIX gerado"
+                        )
+
+                        _paymentState.postValue(UIState.Success(paymentData))
+                    }
+
+                    is Result.Error -> {
+                        _paymentState.postValue(
+                            UIState.Error(
+                                result.exception.message
+                                    ?: "Nao foi possivel gerar o QR Code PIX."
+                            )
+                        )
+                    }
+                }
+            }
+            return
+        }
+
         _paymentState.postValue(UIState.Loading(loadingMessages[0]))
         viewModelScope.launch(Dispatchers.Default) {
             // Inicia um job para rotacionar as mensagens de loading
@@ -105,12 +146,12 @@ class PaymentDialogViewModel @Inject constructor(
                     val roundedAmountInCents = amountInCents.roundToInt()
 
                     val paymentType = getPaymentType(receivable.paymentMethod.name)
-                    val installmentType = getInstallmentType(receivable.max_installments)
+                    val installmentType = getInstallmentType(receivable.installments)
                     val paymentData = PlugPagPaymentData(
                         paymentType,
                         roundedAmountInCents,
                         installmentType,
-                        receivable.max_installments,
+                        receivable.installments,
                         null,
                         printReceipt = true,
                         partialPay = false,
@@ -135,7 +176,7 @@ class PaymentDialogViewModel @Inject constructor(
                         paymentRepository.saveTransaction(
                             orderId = orderId,
                             amount = receivable.amountFinal,
-                            installments = receivable.max_installments,
+                            installments = receivable.installments,
                             paymentType = receivable.paymentMethod.name,
                             transactionId = plugPagResult.transactionId,
                             transactionCode = plugPagResult.transactionCode,
@@ -166,7 +207,7 @@ class PaymentDialogViewModel @Inject constructor(
                         paymentRepository.saveTransaction(
                             orderId = orderId,
                             amount = receivable.amountFinal,
-                            installments = receivable.max_installments,
+                            installments = receivable.installments,
                             paymentType = receivable.paymentMethod.name,
                             transactionId = plugPagResult.transactionId,
                             transactionCode = plugPagResult.transactionCode,
@@ -202,6 +243,13 @@ class PaymentDialogViewModel @Inject constructor(
         } else {
             PlugPag.INSTALLMENT_TYPE_A_VISTA
         }
+    }
+
+    private fun isPixPayment(receivable: OrderReceivableItem): Boolean {
+        val paymentType = receivable.paymentMethod.paymentType.orEmpty()
+        val paymentName = receivable.paymentMethod.name
+        return paymentType.contains("pix", ignoreCase = true) ||
+            paymentName.contains("pix", ignoreCase = true)
     }
 
     private fun getPaymentType(name: String): Int {

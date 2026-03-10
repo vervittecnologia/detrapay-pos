@@ -5,14 +5,13 @@ import android.content.Context
 import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import com.detrapay.R
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.OrderStatus
-import com.detrapay.databinding.OrderListItemBinding
+import com.detrapay.databinding.HomeRecentSaleCardBinding
 import java.util.Locale
 
 class OrderRecyclerViewAdapter(
@@ -25,7 +24,7 @@ class OrderRecyclerViewAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OrderViewHolder {
         val itemBinding =
-            OrderListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            HomeRecentSaleCardBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return OrderViewHolder(parent.context, itemBinding)
     }
 
@@ -64,13 +63,14 @@ class OrderRecyclerViewAdapter(
         notifyDataSetChanged()
     }
 
-    inner class OrderViewHolder(val context: Context, val binding: OrderListItemBinding) :
+    inner class OrderViewHolder(val context: Context, val binding: HomeRecentSaleCardBinding) :
         RecyclerView.ViewHolder(binding.root) {
         private val clientNameView: TextView = binding.clientName
         private val serviceNameView: TextView = binding.serviceName
+        private val customerDocumentView: TextView = binding.customerDocument
+        private val valueView: TextView = binding.saleValue
         private val serviceDateView: TextView = binding.serviceDate
-        private val statusTextView: TextView = binding.status
-        private val statusView: LinearLayout = binding.statusView
+        private val statusTextView: TextView = binding.saleStatus
         private val orderCard: CardView = binding.orderCard
 
         @SuppressLint("UseCompatLoadingForDrawables", "SetTextI18n")
@@ -78,41 +78,60 @@ class OrderRecyclerViewAdapter(
             item: Order,
             listener: OnItemClickListener
         ) {
-            val receivablesDetails = item.receivables.map { receivable ->
-                val paymentMethodName = receivable.paymentMethod.name
-                val installments = receivable.max_installments
-
-                if (installments > 1) {
-                    val amountOriginalFormatted = "%,.2f".format(locale, receivable.amountOriginal)
-                    val amountFinalFormatted = "%,.2f".format(locale, receivable.amountFinal)
-                    val installmentAmount = receivable.amountFinal / installments
-                    val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
-                    "$paymentMethodName\nR$ $amountOriginalFormatted em ${installments}x de R$ $installmentFormattedValue (R$ $amountFinalFormatted)"
-                } else {
-                    val amountOriginalFormatted = "%,.2f".format(locale, receivable.amountOriginal)
-                    "$paymentMethodName\nR$ $amountOriginalFormatted"
-                }
-            }.joinToString("\n\n")
-
-            clientNameView.text = "#${item.id} - ${item.customer.name}"
-            serviceNameView.text = receivablesDetails
-            serviceDateView.text = stringToFormattedDate(item.creationDate)
-            statusTextView.text = item.status.toString()
-
-            val (cardBackground, textColor) = when (item.status) {
-                OrderStatus.PENDING -> R.drawable.pending_status_background to "#0E5FB2"
-                OrderStatus.PAID -> R.drawable.payment_success_status_background to "#FFFFFF"
-                OrderStatus.AUTHORIZED -> R.drawable.authorized_status_background to "#B7791F"
-                OrderStatus.COMPLETED -> R.drawable.completed_status_background to "#2F855A"
-                OrderStatus.CANCELLED -> R.drawable.cancelled_status_background to "#FFFFFF"
+            val valueFormatted = "%,.2f".format(locale, item.currentAmount)
+            val salesmanName = item.salesman?.name.orEmpty()
+            val salesmanLabel = if (salesmanName.isNotBlank()) {
+                "Vendedor: $salesmanName"
+            } else {
+                "Vendedor: -"
+            }
+            val customerDocument = formatCpfCnpj(item.customer.cpfCnpj)
+            val customerDocumentLabel = if (customerDocument.isNotBlank()) {
+                "CPF/CNPJ: $customerDocument"
+            } else {
+                "CPF/CNPJ: -"
             }
 
-            statusView.background = ContextCompat.getDrawable(context, cardBackground)
-            statusTextView.setTextColor(android.graphics.Color.parseColor(textColor))
+            clientNameView.text = "#${item.id} - ${item.customer.name}"
+            serviceNameView.text = salesmanLabel
+            customerDocumentView.text = customerDocumentLabel
+            valueView.text = "R$ $valueFormatted"
+            serviceDateView.text = stringToFormattedDate(item.creationDate)
+            statusTextView.text = item.status.toString().uppercase(locale)
+
+            val (cardBackground, textColorRes) = when (item.status) {
+                OrderStatus.PENDING -> R.drawable.home_status_pending_background to R.color.home_status_pending_text
+                OrderStatus.PAID -> R.drawable.home_status_finished_background to R.color.home_status_finished_text
+                OrderStatus.AUTHORIZED -> R.drawable.sales_list_status_authorized_background to R.color.orange
+                OrderStatus.COMPLETED -> R.drawable.home_status_finished_background to R.color.home_status_finished_text
+                OrderStatus.CANCELLED -> R.drawable.sales_list_status_cancelled_background to R.color.red
+            }
+
+            statusTextView.background = ContextCompat.getDrawable(context, cardBackground)
+            statusTextView.setTextColor(ContextCompat.getColor(context, textColorRes))
 
             orderCard.setOnClickListener {
                 listener.onItemClick(item)
             }
+        }
+
+        private fun formatCpfCnpj(cpfCnpj: String): String {
+            if (cpfCnpj.length == 11) {
+                val first = cpfCnpj.substring(0, 3)
+                val second = cpfCnpj.substring(3, 6)
+                val third = cpfCnpj.substring(6, 9)
+                val fourth = cpfCnpj.substring(9, 11)
+                return "$first.$second.$third-$fourth"
+            }
+            if (cpfCnpj.length == 14) {
+                val first = cpfCnpj.substring(0, 2)
+                val second = cpfCnpj.substring(2, 5)
+                val third = cpfCnpj.substring(5, 8)
+                val fourth = cpfCnpj.substring(8, 12)
+                val fifth = cpfCnpj.substring(12, 14)
+                return "$first.$second.$third/$fourth-$fifth"
+            }
+            return cpfCnpj
         }
     }
 }

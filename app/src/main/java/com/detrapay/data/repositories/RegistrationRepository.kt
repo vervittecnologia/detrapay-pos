@@ -30,7 +30,19 @@ class RegistrationRepository @Inject constructor(
     private val detrapayRemoteDataSource: DetrapayRemoteDataSource,
 ) {
 
+    private data class CacheEntry<T>(
+        val value: T,
+        val timestampMs: Long,
+    )
+
     private val locale = Locale("pt", "BR")
+    private val catalogTtlMs = 10 * 60 * 1000L
+    private var vehicleTypesCache: CacheEntry<List<VehicleType>>? = null
+    private var paymentMethodsCache: CacheEntry<List<PaymentMethod>>? = null
+
+    private fun <T> CacheEntry<T>.isValid(ttlMs: Long): Boolean {
+        return System.currentTimeMillis() - timestampMs <= ttlMs
+    }
 
     suspend fun calculateFees(
         value: Double,
@@ -40,13 +52,21 @@ class RegistrationRepository @Inject constructor(
         return detrapayRemoteDataSource.calculateFees(value, paymentType, brand)
     }
 
-    suspend fun loadVehicleTypes(): Result<List<VehicleType>> {
+    suspend fun loadVehicleTypes(forceRefresh: Boolean = false): Result<List<VehicleType>> {
+        vehicleTypesCache
+            ?.takeIf { !forceRefresh && it.isValid(catalogTtlMs) }
+            ?.let { return Result.Success(it.value) }
+
         return when (val result = detrapayRemoteDataSource.getVehicleTypes()) {
             is Result.Success -> {
                 try {
                     val vehicleTypes = result.data.map {
-                        VehicleType(it.id, it.attributes.name)
+                        VehicleType(it.id, it.name ?: it.attributes?.name.orEmpty())
                     }
+                    vehicleTypesCache = CacheEntry(
+                        value = vehicleTypes,
+                        timestampMs = System.currentTimeMillis()
+                    )
                     Logger.d(vehicleTypes.toString())
                     Result.Success(vehicleTypes)
                 } catch (e: Exception) {
@@ -59,7 +79,11 @@ class RegistrationRepository @Inject constructor(
         }
     }
 
-    suspend fun loadPaymentMethods(): Result<List<PaymentMethod>> {
+    suspend fun loadPaymentMethods(forceRefresh: Boolean = false): Result<List<PaymentMethod>> {
+        paymentMethodsCache
+            ?.takeIf { !forceRefresh && it.isValid(catalogTtlMs) }
+            ?.let { return Result.Success(it.value) }
+
         return when (val result = detrapayRemoteDataSource.getPaymentMethods()) {
             is Result.Success -> {
                 try {
@@ -67,10 +91,14 @@ class RegistrationRepository @Inject constructor(
                         PaymentMethod(
                             id = it.id,
                             name = it.name,
-                            maxInstallments = it.maxInstallments,
+                            installments = it.installments ?: 0,
                             interestTax = it.interestTax,
                             paymentType = it.paymentType)
                     }
+                    paymentMethodsCache = CacheEntry(
+                        value = paymentMethods,
+                        timestampMs = System.currentTimeMillis()
+                    )
                     Logger.d(paymentMethods.toString())
                     Result.Success(paymentMethods)
                 } catch (e: Exception) {
@@ -207,7 +235,8 @@ class RegistrationRepository @Inject constructor(
         val simulationItemsRequest = simulation.simulationItems.map { simulationItem ->
             OrderSimulationItemRequest(
                 id = simulationItem.id,
-                price = calculateItemPrice(simulationItem.price, simulationItem.discount)
+                price = formatDecimal(simulationItem.price),
+                discount = simulationItem.discount?.let(::formatDecimal)
             )
         }
 
@@ -255,44 +284,61 @@ class RegistrationRepository @Inject constructor(
     }
 
     private fun parseOrder(orderResponse: OrderResponse): Order {
+        val attributes = orderResponse.attributes
+        val customer = orderResponse.customer ?: attributes?.customers?.data?.let {
+            com.detrapay.data.model.remote.FlatCustomerResponse(
+                id = it.id,
+                name = it.attributes.name,
+                cpfCnpj = it.attributes.cpfCnpj,
+                phoneNumber = it.attributes.phoneNumber,
+                email = it.attributes.email
+            )
+        }
+        val salesman = orderResponse.salesman?.let {
+            Salesman(id = it.id, name = it.name)
+        } ?: attributes?.salesman?.data?.let {
+            Salesman(id = it.id, name = it.attributes.name)
+        } ?: orderResponse.salesmanName?.takeIf { it.isNotBlank() }?.let {
+            Salesman(id = 0, name = it)
+        }
+
         return Order(
             id = orderResponse.id,
             customer = OrderCustomer(
-                id = orderResponse.attributes.customers.data.id,
-                name = orderResponse.attributes.customers.data.attributes.name,
-                cpfCnpj = orderResponse.attributes.customers.data.attributes.cpfCnpj,
-                phoneNumber = "",
-                email = ""
+                id = customer?.id ?: 0,
+                name = customer?.name ?: orderResponse.customerName.orEmpty(),
+                cpfCnpj = customer?.cpfCnpj.orEmpty(),
+                phoneNumber = customer?.phoneNumber.orEmpty(),
+                email = customer?.email
             ),
-            serviceName = orderResponse.attributes.companies?.data?.attributes?.tradeName ?: "",
-            creationDate = orderResponse.attributes.createdAt,
-            status = OrderStatus.valueOf(orderResponse.attributes.status.uppercase()),
+            serviceName = orderResponse.company?.tradeName
+                ?: attributes?.companies?.data?.attributes?.tradeName
+                ?: "",
+            creationDate = orderResponse.createdAt ?: attributes?.createdAt.orEmpty(),
+            status = runCatching {
+                OrderStatus.valueOf((orderResponse.status ?: attributes?.status).orEmpty().uppercase())
+            }.getOrDefault(OrderStatus.PENDING),
             vehiclePrice = 0.0,
-            billingDate = orderResponse.attributes.billingDate,
-            originalAmount = orderResponse.attributes.originalAmount,
-            currentAmount = orderResponse.attributes.currentAmount,
+            billingDate = orderResponse.billingDate ?: attributes?.billingDate.orEmpty(),
+            originalAmount = orderResponse.originalAmount ?: attributes?.originalAmount ?: 0.0,
+            currentAmount = orderResponse.currentAmount ?: attributes?.currentAmount ?: 0.0,
             isVehicleFinanced = false,
             isVehicleSpecialPlate = false,
-            vehicleType = VehicleType(0, ""),
+            vehicleType = VehicleType(
+                orderResponse.vehicleType?.id ?: attributes?.vehicle_types?.data?.id ?: 0,
+                orderResponse.vehicleType?.name
+                    ?: attributes?.vehicle_types?.data?.attributes?.name
+                    ?: orderResponse.vehicleTypeName
+                    ?: ""
+            ),
             items = emptyList(),
             receivables = emptyList(),
-            salesman = orderResponse.attributes.salesman?.data?.let {
-                Salesman(
-                    id = it.id,
-                    name = it.attributes.name
-                )
-            }
+            salesman = salesman
         )
     }
 
-    private fun calculateItemPrice(itemPrice: Double, discount: Double?): String {
-        val price = if (discount != null) {
-            itemPrice - discount
-        } else {
-            itemPrice
-        }
-
-        return price.toString()
+    private fun formatDecimal(value: Double): String {
+        return String.format(Locale.US, "%.2f", value)
     }
 
     private fun formatDate(date: String): String {

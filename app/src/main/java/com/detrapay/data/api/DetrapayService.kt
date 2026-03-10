@@ -2,6 +2,7 @@ package com.detrapay.data.api
 
 import com.detrapay.data.model.remote.AuthRequest
 import com.detrapay.data.model.remote.AuthResponse
+import com.detrapay.data.model.remote.AddOrderReceivableRequest
 import com.detrapay.data.model.remote.CardBrandIconResponse
 import com.detrapay.data.model.remote.CompanyListResponse
 import com.detrapay.data.model.remote.ConfirmPaymentRequest
@@ -12,10 +13,15 @@ import com.detrapay.data.model.remote.OrderRequest
 import com.detrapay.data.model.remote.OrderResponse
 import com.detrapay.data.model.remote.PaginatedOrderResponse
 import com.detrapay.data.model.remote.PaymentMethodResponse
+import com.detrapay.data.model.remote.PixChargeRequest
+import com.detrapay.data.model.remote.PixChargeResponse
 import com.detrapay.data.model.remote.RefundOrderReceivableRequest
+import com.detrapay.data.model.remote.OrderReceivableMutationResponse
+import com.detrapay.data.model.remote.SalespeopleResponse
 import com.detrapay.data.model.remote.SimulationRequest
 import com.detrapay.data.model.remote.SimulationResponse
 import com.detrapay.data.model.remote.SplitConfigRequest
+import com.detrapay.data.model.remote.UpdateOrderReceivableRequest
 import com.detrapay.data.model.remote.UpdateOrderSalesmanRequest
 import com.detrapay.data.model.remote.VehicleTypeListResponse
 import retrofit2.http.Url
@@ -36,21 +42,29 @@ interface DetrapayService {
     @GET("companies")
     suspend fun getCompanies(): Response<CompanyListResponse>
 
-    @GET("orders")
+    @GET("orders/summary")
     suspend fun getOrders(
-        @Query("filters[company][id][\$eq]") companyId: Int,
-        @Query("filters[dispatcher][id][\$eq]") dispatcherId: Int,
-        @Query("populate") populate: String = "deep,3"
+        @Query("companyId") companyId: Int,
+        @Query("dispatcherId") dispatcherId: Int,
+        @Query("page") page: Int = 1,
+        @Query("pageSize") pageSize: Int = 20
     ): Response<PaginatedOrderResponse>
 
     @GET("sales-orders/{id}")
-    suspend fun getOrder(@Path("id") orderId: Int, @Query("populate") populate: String = "deep,3"): Response<CreateOrderResponse>
+    suspend fun getOrder(@Path("id") orderId: Int): Response<CreateOrderResponse>
 
     @PUT("sales-orders/{id}")
-    suspend fun updateOrderSalesman(@Path("id") orderId: Int, @Body payload: UpdateOrderSalesmanRequest): Response<OrderResponse>
+    suspend fun updateOrderSalesman(@Path("id") orderId: Int, @Body payload: UpdateOrderSalesmanRequest): Response<CreateOrderResponse>
 
     @GET("vehicle-types")
     suspend fun getVehicleTypes(): Response<VehicleTypeListResponse>
+
+    @GET("salespeople")
+    suspend fun getSalespeople(
+        @Query("company_id") companyId: Int,
+        @Query("page") page: Int = 1,
+        @Query("pageSize") pageSize: Int = 100
+    ): Response<SalespeopleResponse>
 
     @GET("payment-methods")
     suspend fun getPaymentMethods(): Response<List<PaymentMethodResponse>>
@@ -67,11 +81,26 @@ interface DetrapayService {
     @POST("orders/{id}")
     suspend fun updateOrder(@Path("id") id: Int, @Body payload: OrderRequest): Response<CreateOrderResponse>
 
+    @POST("orders/{id}/receivables")
+    suspend fun addOrderReceivable(
+        @Path("id") id: Int,
+        @Body payload: AddOrderReceivableRequest
+    ): Response<OrderReceivableMutationResponse>
+
     @POST("receivables/{id}/confirm-payment")
-    suspend fun confirmPayment(@Path("id") id: String, @Body payload: ConfirmPaymentRequest): Response<ResponseBody>
+    suspend fun confirmPayment(@Path("id") id: String, @Body payload: ConfirmPaymentRequest): Response<CreateOrderResponse>
+
+    @POST("receivables/{id}/generate-pix")
+    suspend fun generatePixCharge(
+        @Path("id") id: String,
+        @Body payload: PixChargeRequest
+    ): Response<PixChargeResponse>
 
     @PUT("order-receivables/{id}")
-    suspend fun refundOrderReceivableItem(@Path("id") id: String, @Body payload: RefundOrderReceivableRequest): Response<ResponseBody>
+    suspend fun refundOrderReceivableItem(@Path("id") id: String, @Body payload: RefundOrderReceivableRequest): Response<OrderReceivableMutationResponse>
+
+    @PUT("order-receivables/{id}")
+    suspend fun updateOrderReceivableItem(@Path("id") id: String, @Body payload: UpdateOrderReceivableRequest): Response<OrderReceivableMutationResponse>
 
     @POST("update-split-config")
     suspend fun updateSplitConfig(@Body payload: SplitConfigRequest): Response<Unit>

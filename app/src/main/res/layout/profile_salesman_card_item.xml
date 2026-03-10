@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/salesmanCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/spacing_medium"
+        android:layout_marginVertical="@dimen/spacing_small"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="@dimen/radius_large"
+        app:cardElevation="@dimen/elevation_low"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:strokeColor="@color/home_card_stroke"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="@dimen/spacing_medium">
+
+            <FrameLayout
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:background="@drawable/home_person_card_background"
+                android:padding="@dimen/spacing_xs">
+
+                <include
+                    android:id="@+id/salesmanAvatarContainer"
+                    layout="@layout/circular_avatar" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/spacing_medium"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/salesmanName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/neutral_800"
+                    android:textSize="@dimen/text_size_body"
+                    android:textStyle="bold"
+                    tools:text="Marco Aurelio" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_small"
+                    android:text="@string/profile_salesman_phone_label"
+                    android:textColor="@color/neutral_500"
+                    android:textSize="@dimen/text_size_caption" />
+
+                <TextView
+                    android:id="@+id/salesmanPhone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:textColor="@color/neutral_700"
+                    android:textSize="@dimen/text_size_label"
+                    tools:text="(11) 99999-0000" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_small"
+                    android:text="@string/profile_salesman_email_label"
+                    android:textColor="@color/neutral_500"
+                    android:textSize="@dimen/text_size_caption" />
+
+                <TextView
+                    android:id="@+id/salesmanEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:textColor="@color/neutral_700"
+                    android:textSize="@dimen/text_size_label"
+                    tools:text="marco@concessionaria.com.br" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

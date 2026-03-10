@@ -51,7 +51,17 @@ data class SimulationItemResponse(
 data class SimulationItemAttributes(
     @SerializedName("name")
     val name: String,
-    @SerializedName("is_discount_allowed")
+    @SerializedName(
+        value = "is_discount_allowed",
+        alternate = [
+            "allow_discount",
+            "allow-discount",
+            "allow_discout",
+            "allow-discout",
+            "allow_discounnt",
+            "allow-discounnt"
+        ]
+    )
     val discountAllowed: Boolean,
     @SerializedName("price")
     val price: Double

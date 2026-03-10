@@ -21,14 +21,51 @@
             android:layout_height="wrap_content"
             android:padding="@dimen/spacing_medium">
 
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/registrationProgress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:progress="33"
+                app:indicatorColor="#E6D24A"
+                app:layout_constraintTop_toTopOf="parent"
+                app:trackColor="@color/neutral_300"
+                app:trackThickness="4dp" />
+
+            <TextView
+                android:id="@+id/screenTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="@string/registration_title"
+                android:textColor="@color/neutral_900"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toStartOf="@+id/closeRegistrationFlowButton"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/registrationProgress" />
+
+            <ImageView
+                android:id="@+id/closeRegistrationFlowButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginTop="16dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="8dp"
+                android:src="@drawable/ic_close"
+                app:layout_constraintBottom_toBottomOf="@id/screenTitle"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/registrationProgress"
+                app:tint="@color/neutral_700" />
+
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/formCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_large"
                 app:cardBackgroundColor="@color/white"
                 app:cardCornerRadius="@dimen/radius_medium"
                 app:cardElevation="@dimen/elevation_low"
-                app:layout_constraintTop_toTopOf="parent">
+                app:layout_constraintTop_toBottomOf="@id/screenTitle">
 
                 <LinearLayout
                     android:layout_width="match_parent"

@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class PaginatedOrderResponse(
     val data: List<OrderResponse>,
-    val meta: MetaResponse
+    val meta: MetaResponse? = null
 )
 
 @Serializable
@@ -18,24 +18,46 @@ data class CreateOrderResponse(
 @Serializable
 data class OrderResponse(
     val id: Int,
-    val attributes: OrderAttributesResponse
+    val attributes: OrderAttributesResponse? = null,
+    val status: String? = null,
+    val originalAmount: Double? = null,
+    val currentAmount: Double? = null,
+    val billingDate: String? = null,
+    val createdAt: String? = null,
+    val vehiclePrice: Double? = null,
+    @SerializedName(value = "isVehicleFinanced", alternate = ["is_vehicle_financed"])
+    val isVehicleFinanced: Boolean? = null,
+    @SerializedName(value = "isSpecialPlate", alternate = ["is_vehicle_special_plate"])
+    val isSpecialPlate: Boolean? = null,
+    val customer: FlatCustomerResponse? = null,
+    val company: FlatCompanyResponse? = null,
+    val vehicleType: FlatVehicleTypeResponse? = null,
+    val items: List<FlatOrderItemResponse>? = null,
+    val receivables: List<FlatOrderReceivableResponse>? = null,
+    val salesman: FlatSalesmanResponse? = null,
+    val customerName: String? = null,
+    @SerializedName(value = "customerCpfCnpj", alternate = ["customer_cpf_cnpj", "cpfCnpj"])
+    val customerCpfCnpj: String? = null,
+    val vehicleTypeName: String? = null,
+    val salesmanName: String? = null,
+    val paymentStatusSummary: String? = null
 )
 
 @Serializable
 data class OrderAttributesResponse(
-    val status: String,
-    val originalAmount: Double,
-    val currentAmount: Double,
-    val billingDate: String,
-    val createdAt: String,
-    val customers: CustomerDataWrapper,
+    val status: String? = null,
+    val originalAmount: Double? = null,
+    val currentAmount: Double? = null,
+    val billingDate: String? = null,
+    val createdAt: String? = null,
+    val customers: CustomerDataWrapper? = null,
     val companies: CompanyDataWrapper? = null,
     val receivables: OrderReceivableDataWrapper? = null,
-    val vehiclePrice: Double,
-    val isVehicleFinanced: Boolean,
-    val isSpecialPlate: Boolean,
-    val vehicle_types: VehicleTypeDataWrapper,
-    val sales_order_items: SalesOrderItemsDataWrapper,
+    val vehiclePrice: Double? = null,
+    val isVehicleFinanced: Boolean? = null,
+    val isSpecialPlate: Boolean? = null,
+    val vehicle_types: VehicleTypeDataWrapper? = null,
+    val sales_order_items: SalesOrderItemsDataWrapper? = null,
     val salesman: SalesmanDataWrapper? = null
 )
 
@@ -55,8 +77,8 @@ data class CustomerAttributesResponse(
     val name: String,
     @SerializedName("cpfCnpj")
     val cpfCnpj: String,
-    val phoneNumber: String,
-    val email: String?
+    val phoneNumber: String? = null,
+    val email: String? = null
 )
 
 @Serializable
@@ -100,7 +122,9 @@ data class OrderReceivableAttributesResponse(
     val cardHolder: String?,
     val tax: Double?,
     val cardBrand: String?,
-    val authorizationCode: String?
+    val authorizationCode: String?,
+    @SerializedName(value = "pixTxIdCode", alternate = ["pix_tx_id_code", "txid"])
+    val pixTxIdCode: String? = null
 )
 
 @Serializable
@@ -117,10 +141,12 @@ data class PaymentMethodResponseData(
 @Serializable
 data class PaymentMethodAttributesResponse(
     val name: String,
-    @SerializedName("max_installments")
-    val max_installments: Int,
-    @SerializedName("interest_tax")
-    val interest_tax: Double
+    @SerializedName(value = "installments", alternate = ["max_installments"])
+    val installments: Int,
+    @SerializedName(value = "interestTax", alternate = ["interest_tax", "tax"])
+    val interestTax: Double? = null,
+    @SerializedName(value = "paymentType", alternate = ["payment_type"])
+    val paymentType: String? = null
 )
 
 @Serializable
@@ -182,11 +208,82 @@ data class SalesmanDataWrapper(
 
 @Serializable
 data class SalesmanResponse(
-    val id: String,
+    val id: Int,
     val attributes: SalesmanAttributesResponse
 )
 
 @Serializable
 data class SalesmanAttributesResponse(
     val name: String
+)
+
+@Serializable
+data class FlatCustomerResponse(
+    val id: Int,
+    val name: String,
+    @SerializedName("cpfCnpj")
+    val cpfCnpj: String,
+    val phoneNumber: String? = null,
+    val email: String? = null
+)
+
+@Serializable
+data class FlatCompanyResponse(
+    val id: Int,
+    @SerializedName(value = "tradeName", alternate = ["trade_name"])
+    val tradeName: String
+)
+
+@Serializable
+data class FlatVehicleTypeResponse(
+    val id: Int,
+    val name: String
+)
+
+@Serializable
+data class FlatSalesmanResponse(
+    val id: Int,
+    val name: String
+)
+
+@Serializable
+data class FlatOrderItemResponse(
+    val id: Int,
+    val salesItemId: Int? = null,
+    val name: String? = null,
+    val unitPrice: Double? = null,
+    val discount: Double? = null,
+    val totalPrice: Double? = null
+)
+
+@Serializable
+data class FlatOrderReceivableResponse(
+    val id: Int,
+    val documentId: String,
+    val status: String,
+    val installments: Int,
+    val paymentDate: String? = null,
+    val amountOriginal: Double,
+    val amountFinal: Double,
+    val tax: Double? = null,
+    @SerializedName(value = "cardLast4", alternate = ["card_last4"])
+    val cardLast4: String? = null,
+    val cardHolder: String? = null,
+    val cardBrand: String? = null,
+    val authorizationCode: String? = null,
+    @SerializedName(value = "pixTxIdCode", alternate = ["pix_tx_id_code", "txid"])
+    val pixTxIdCode: String? = null,
+    val paymentMethod: FlatPaymentMethodResponse? = null
+)
+
+@Serializable
+data class FlatPaymentMethodResponse(
+    val id: Int,
+    val name: String,
+    @SerializedName(value = "installments", alternate = ["maxInstallments", "max_installments"])
+    val installments: Int? = null,
+    @SerializedName(value = "interestTax", alternate = ["interest_tax"])
+    val interestTax: Double? = null,
+    @SerializedName(value = "paymentType", alternate = ["payment_type"])
+    val paymentType: String? = null
 )

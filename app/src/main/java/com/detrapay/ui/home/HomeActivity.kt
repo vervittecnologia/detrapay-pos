@@ -3,6 +3,7 @@ package com.detrapay.ui.home
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.window.OnBackInvokedDispatcher
 import androidx.activity.addCallback
 import androidx.activity.viewModels
@@ -93,6 +94,11 @@ class HomeActivity : AppCompatActivity() {
         val bottomNavView: BottomNavigationView = binding.bottomAppBar
 
         bottomNavView.setupWithNavController(navController)
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            val hideLegacyToolbar =
+                destination.id == R.id.registrationFragment || destination.id == R.id.orderListFragment
+            binding.homeToolbar.root.visibility = if (hideLegacyToolbar) View.GONE else View.VISIBLE
+        }
     }
 
     private fun showLogoutDialog() {

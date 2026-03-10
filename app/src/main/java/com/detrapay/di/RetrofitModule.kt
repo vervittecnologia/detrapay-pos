@@ -21,20 +21,36 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object RetrofitModule {
 
+    private fun buildClient(
+        authInterceptor: AuthInterceptor,
+        timeoutMs: Long
+    ): OkHttpClient {
+        val loggingInterceptor = HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
+        }
+
+        return OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor)
+            .addInterceptor(authInterceptor)
+            .connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+            .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+            .writeTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+            .retryOnConnectionFailure(true)
+            .build()
+    }
+
     @Provides
     @Singleton
     @Named("DetrapayRetrofit")
     fun provideRetrofit(authInterceptor: AuthInterceptor): Retrofit = Retrofit.Builder()
         .baseUrl(BuildConfig.BASE_URL)
         .addConverterFactory(GsonConverterFactory.create())
-        .client(
-            OkHttpClient().newBuilder()
-                .addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
-                .addInterceptor(authInterceptor)
-                .connectTimeout(10000L, TimeUnit.MILLISECONDS)
-                .readTimeout(10000L, TimeUnit.MILLISECONDS)
-                .writeTimeout(10000L, TimeUnit.MILLISECONDS).build()
-        ).build()
+        .client(buildClient(authInterceptor, timeoutMs = 10000L))
+        .build()
 
     @Provides
     @Singleton
@@ -42,14 +58,8 @@ object RetrofitModule {
     fun provideSupabaseRetrofit(authInterceptor: AuthInterceptor): Retrofit = Retrofit.Builder()
         .baseUrl("https://ibulgxjbtpxratoodgtj.supabase.co/functions/v1/")
         .addConverterFactory(GsonConverterFactory.create())
-        .client(
-            OkHttpClient().newBuilder()
-                .addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
-                .addInterceptor(authInterceptor)
-                .connectTimeout(15000L, TimeUnit.MILLISECONDS)
-                .readTimeout(15000L, TimeUnit.MILLISECONDS)
-                .writeTimeout(15000L, TimeUnit.MILLISECONDS).build()
-        ).build()
+        .client(buildClient(authInterceptor, timeoutMs = 15000L))
+        .build()
 
     @Provides
     @Singleton

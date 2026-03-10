@@ -14,6 +14,7 @@ import com.detrapay.R
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.SimulationPayment
 import com.detrapay.databinding.FragmentRegistrationOrderPaymentMethodBinding
+import com.detrapay.ui.registration.RegistrationActivity
 import com.detrapay.ui.order_details.OrderDetailsActivity
 import com.detrapay.ui.registration.RegistrationViewModel
 import com.detrapay.ui.state.UIState
@@ -41,13 +42,26 @@ class RegistrationPaymentMethodFragment : Fragment(), OnItemClickListener{
     }
 
     private fun setupUI() {
-        binding.btnCredit.setOnClickListener { navigateToDetail("credito") }
-        binding.btnDebit.setOnClickListener { navigateToDetail("debito") }
-        binding.btnPix.setOnClickListener { registrationViewModel.addPaymentByType("pix") }
-        binding.btnCash.setOnClickListener { registrationViewModel.addPaymentByType("dinheiro") }
+        binding.btnCredit.setOnClickListener { openPaymentConfig("credito") }
+        binding.btnDebit.setOnClickListener { openPaymentConfig("debito") }
+        binding.btnStoreCredit.setOnClickListener { openPaymentConfig("store_credit") }
+        binding.btnCash.setOnClickListener { openPaymentConfig("dinheiro") }
+
+        binding.btnPix.isEnabled = false
+        binding.btnPix.isClickable = false
+        binding.btnPix.alpha = 0.5f
 
         binding.reloadPaymentMethodBtn.setOnClickListener {
             registrationViewModel.loadPaymentSelectionScreenContent()
+        }
+
+        binding.btnBack.setOnClickListener {
+            registrationViewModel.navigateBack()
+            findNavController().popBackStack()
+        }
+
+        binding.btnClose.setOnClickListener {
+            (activity as? RegistrationActivity)?.showExitConfirmation()
         }
 
         binding.registrationPaymentMethodNextBtn.setOnClickListener {
@@ -57,12 +71,9 @@ class RegistrationPaymentMethodFragment : Fragment(), OnItemClickListener{
         setupPaymentAdapter()
     }
 
-    private fun navigateToDetail(type: String, paymentId: Long = -1L) {
-        val bundle = Bundle().apply {
-            putString("paymentType", type)
-            putLong("paymentId", paymentId)
-        }
-        findNavController().navigate(R.id.action_paymentMethodFragment_to_paymentDetailFragment, bundle)
+    private fun openPaymentConfig(type: String, paymentId: Long = -1L) {
+        RegistrationPaymentConfigBottomSheet.newInstance(type, paymentId)
+            .show(childFragmentManager, "RegistrationPaymentConfigBottomSheet")
     }
 
     private fun setupObservers() {
@@ -101,24 +112,28 @@ class RegistrationPaymentMethodFragment : Fragment(), OnItemClickListener{
         registrationViewModel.remainingBalanceLiveData.observe(viewLifecycleOwner) { balance ->
             val formatted = "R$ %,.2f".format(java.util.Locale("pt", "BR"), balance)
             binding.tvRemainingValue.text = formatted
-            binding.tvStatusMessage.text = "SALDO DE $formatted ${if (balance > 0) "PENDENTE" else "QUITADO"}"
-            
-            val color = if (balance > 0) ContextCompat.getColor(requireContext(), R.color.orange)
-                        else ContextCompat.getColor(requireContext(), R.color.green)
-            
-            binding.tvRemainingValue.setTextColor(color)
-            binding.tvStatusMessage.setTextColor(color)
 
-            val canAddMore = balance > 0
-            binding.btnCredit.isEnabled = canAddMore
-            binding.btnDebit.isEnabled = canAddMore
-            binding.btnPix.isEnabled = canAddMore
-            binding.btnCash.isEnabled = canAddMore
-            
-            binding.btnCredit.alpha = if (canAddMore) 1.0f else 0.5f
-            binding.btnDebit.alpha = if (canAddMore) 1.0f else 0.5f
-            binding.btnPix.alpha = if (canAddMore) 1.0f else 0.5f
-            binding.btnCash.alpha = if (canAddMore) 1.0f else 0.5f
+            val (label, colorRes) = when {
+                balance > 0 -> "A pagar" to R.color.orange
+                balance < 0 -> "Excedente" to R.color.red
+                else -> "Quitado" to R.color.green
+            }
+
+            binding.tvRemainingLabel.text = label
+            val color = ContextCompat.getColor(requireContext(), colorRes)
+            binding.tvRemainingValue.setTextColor(color)
+            binding.btnCredit.isEnabled = true
+            binding.btnDebit.isEnabled = true
+            binding.btnStoreCredit.isEnabled = true
+            binding.btnCash.isEnabled = true
+
+            binding.btnCredit.alpha = 1.0f
+            binding.btnDebit.alpha = 1.0f
+            binding.btnPix.isEnabled = false
+            binding.btnPix.isClickable = false
+            binding.btnPix.alpha = 0.5f
+            binding.btnStoreCredit.alpha = 1.0f
+            binding.btnCash.alpha = 1.0f
         }
 
         registrationViewModel.paymentSelectionCreateOrderState.observe(viewLifecycleOwner) { status ->
@@ -176,6 +191,6 @@ class RegistrationPaymentMethodFragment : Fragment(), OnItemClickListener{
     }
 
     override fun onItemClicked(item: SimulationPayment) {
-        navigateToDetail(item.paymentMethod.paymentType ?: "credito", item.id)
+        openPaymentConfig(item.paymentMethod.paymentType ?: "credito", item.id)
     }
 }

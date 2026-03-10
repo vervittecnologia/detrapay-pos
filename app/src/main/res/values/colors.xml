@@ -17,14 +17,29 @@
     <color name="neutral_300">#CBD5E0</color>
     <color name="neutral_200">#EDF2F7</color>
     <color name="neutral_100">#F7FAFC</color>
+    <color name="neutral_050">#F4F3F6</color>
 
     <color name="green">#34A847</color>
     <color name="red">#CA170B</color>
     <color name="orange">#DB9101</color>
     <color name="yellow">#F7E96C</color>
+    <color name="home_screen_background">#F4F3F6</color>
+    <color name="home_logo_background">#F2E2AF</color>
+    <color name="home_logo_border">#D7C488</color>
+    <color name="home_icon_background">#E7EEF8</color>
+    <color name="home_service_background">#E9EDF3</color>
+    <color name="home_card_stroke">#E2E8F0</color>
+    <color name="home_placeholder_stroke">#D4DBE6</color>
+    <color name="home_status_finished_bg">#DFF3E2</color>
+    <color name="home_status_finished_text">#208436</color>
+    <color name="home_status_pending_bg">#F8E8C8</color>
+    <color name="home_status_pending_text">#F18400</color>
+    <color name="sales_list_status_cancelled_bg">#FEE2E2</color>
+    <color name="bottom_nav_inactive">#97A4B8</color>
 
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="transparent">#00000000</color>
     <color name="shimmerColor">#C2C2C2</color>
 
     <!-- Semantic Colors -->

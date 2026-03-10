@@ -52,7 +52,7 @@ data class RoleResponse(
 @Serializable
 data class LoginSalesmanResponse(
     @SerializedName("id")
-    val id: String,
+    val id: Int?,
     @SerializedName("name")
     val name: String
 )

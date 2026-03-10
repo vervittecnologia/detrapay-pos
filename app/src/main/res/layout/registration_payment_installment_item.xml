@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginVertical="4dp"
+    android:layout_marginVertical="3dp"
     app:cardBackgroundColor="@color/white"
     app:cardCornerRadius="16dp"
     app:cardElevation="0dp"
@@ -14,7 +14,8 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="12dp">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -30,7 +31,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="#111827"
-                android:textSize="22sp"
+                android:textSize="18sp"
                 android:textStyle="bold"
                 tools:text="2X de R$ 1.326,18" />
 
@@ -38,9 +39,9 @@
                 android:id="@+id/tvInstallmentDescription"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:textColor="#6B7280"
-                android:textSize="14sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 tools:text="TOTAL: R$ 2.652,35 • SEM JUROS" />
 

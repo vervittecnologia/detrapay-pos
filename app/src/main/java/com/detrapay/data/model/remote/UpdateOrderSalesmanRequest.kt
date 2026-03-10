@@ -4,5 +4,5 @@ import com.google.gson.annotations.SerializedName
 
 data class UpdateOrderSalesmanRequest(
     @SerializedName("salesman")
-    val salesmanId: String
+    val salesmanId: Int
 )

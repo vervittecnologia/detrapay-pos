@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/color_background"
+    android:background="@color/home_screen_background"
     tools:context=".ui.home.order_list.OrderListFragment">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -12,6 +12,55 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="visible">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/salesHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/primary_500"
+            android:paddingStart="20dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="10dp"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/salesLogoContainer"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:contentDescription="@string/app_name"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_detrapay_logo_white"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/salesHeaderBrand"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:text="@string/home_brand_name"
+                android:textColor="@color/white"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="@id/salesLogoContainer"
+                app:layout_constraintEnd_toStartOf="@+id/salesNotificationButton"
+                app:layout_constraintStart_toEndOf="@id/salesLogoContainer"
+                app:layout_constraintTop_toTopOf="@id/salesLogoContainer" />
+
+            <ImageView
+                android:id="@+id/salesNotificationButton"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:contentDescription="@string/toolbar_notifications_content_description"
+                android:src="@drawable/ic_notifications"
+                app:layout_constraintBottom_toBottomOf="@id/salesLogoContainer"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/salesLogoContainer"
+                app:tint="@color/white" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/searchOrderTextInputLayout"
@@ -29,7 +78,7 @@
             app:endIconDrawable="@drawable/ic_search"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintTop_toBottomOf="@id/salesHeader">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/searchOrderTextInput"
@@ -65,10 +114,12 @@
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
                 android:contentDescription="@string/order_list_content_description"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
                 android:paddingBottom="@dimen/spacing_medium"
                 app:layoutManager="LinearLayoutManager"
                 tools:itemCount="5"
-                tools:listitem="@layout/order_list_item" />
+                tools:listitem="@layout/home_recent_sale_card" />
 
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 

@@ -18,7 +18,7 @@ data class OrderData(
     val specialPlate: Boolean,
     val disposalVehicle: Boolean,
     val vehicleType: VehicleType,
-    val salesmanId: String?
+    val salesmanId: Int?
 )
 
 class RegistrationOrderState()

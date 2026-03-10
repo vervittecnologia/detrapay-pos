@@ -22,6 +22,8 @@ class LoginViewModel @Inject constructor(private val loginRepository: LoginRepos
     private val _loginResult = MutableLiveData<LoginResult>()
     val loginResult: LiveData<LoginResult> = _loginResult
 
+    fun getLastLoggedCnpj(): String? = loginRepository.getLastLoggedCnpj()
+
     fun login(cnpj: String, password: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val cnpjNumbers = cnpj.replace(".","").replace("-", "").replace("/","")

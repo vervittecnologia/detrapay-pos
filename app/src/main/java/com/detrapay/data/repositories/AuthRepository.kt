@@ -1,5 +1,6 @@
 package com.detrapay.data.repositories
 
+import android.content.Context
 import com.detrapay.data.datasources.local.UsersDao
 import com.detrapay.data.model.Company
 import com.detrapay.data.model.Dispatcher
@@ -7,16 +8,22 @@ import com.detrapay.data.model.LoggedInUser
 import com.detrapay.data.model.Salesman
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class AuthRepository @Inject constructor(
     private var userLocalDataSource: UsersDao,
+    @ApplicationContext private val context: Context,
 ) {
     private var user: LoggedInUser? = null
+    private val preferences by lazy {
+        context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+    }
 
     suspend fun logout() {
+        user?.cpfCnpj?.takeIf { it.isNotBlank() }?.let { saveLastLoggedCnpj(it) }
         this.user = null
         userLocalDataSource.deleteAll()
     }
@@ -48,7 +55,10 @@ class AuthRepository @Inject constructor(
             }
 
             val salesmen: List<Salesman> = if (user.salesmen != null) {
-                gson.fromJson(user.salesmen, salesmenType)
+                runCatching {
+                    @Suppress("UNCHECKED_CAST")
+                    gson.fromJson(user.salesmen, salesmenType) as List<Salesman>
+                }.getOrDefault(emptyList())
             } else {
                 emptyList()
             }
@@ -57,8 +67,9 @@ class AuthRepository @Inject constructor(
                 user.id,
                 user.token,
                 user.name,
-                user.email,
                 user.username,
+                user.cpfCnpj,
+                user.email,
                 companies,
                 dispatchers,
                 salesmen
@@ -67,5 +78,14 @@ class AuthRepository @Inject constructor(
             return loggedInUser
         }
         return null
+    }
+
+    private fun saveLastLoggedCnpj(cnpj: String) {
+        preferences.edit().putString(KEY_LAST_LOGGED_CNPJ, cnpj).apply()
+    }
+
+    companion object {
+        private const val PREFERENCES_NAME = "login_preferences"
+        private const val KEY_LAST_LOGGED_CNPJ = "last_logged_cnpj"
     }
 }

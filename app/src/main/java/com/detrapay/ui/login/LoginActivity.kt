@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import com.detrapay.BuildConfig
 import com.detrapay.databinding.ActivityLoginBinding
+import com.detrapay.debug.DebugOrderDefaults
 import com.detrapay.ui.home.HomeActivity
 import com.detrapay.ui.util.Mask
 import com.detrapay.ui.util.afterTextChanged
@@ -73,11 +74,17 @@ class LoginActivity : AppCompatActivity() {
         })
 
         cnpj.addTextChangedListener(Mask.mask("##.###.###/####-##", cnpj))
+        restoreLastLoggedCnpj()
 
         if (BuildConfig.DEBUG) {
-            cnpj.setText("47351133000176")
-            password.setText("12345678")
+            cnpj.setText(DebugOrderDefaults.loginCnpjMasked())
+            password.setText(DebugOrderDefaults.loginPassword())
             loginViewModel.loginDataChanged(
+                cnpj.text.toString(),
+                password.text.toString()
+            )
+            loading.visibility = View.VISIBLE
+            loginViewModel.login(
                 cnpj.text.toString(),
                 password.text.toString()
             )
@@ -118,5 +125,24 @@ class LoginActivity : AppCompatActivity() {
 
     private fun showLoginFailed(@StringRes errorString: Int) {
         Toast.makeText(applicationContext, errorString, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun restoreLastLoggedCnpj() {
+        val lastLoggedCnpj = loginViewModel.getLastLoggedCnpj().orEmpty()
+        if (lastLoggedCnpj.isBlank()) {
+            return
+        }
+
+        binding.cnpj.setText(formatCnpj(lastLoggedCnpj))
+        binding.cnpj.setSelection(binding.cnpj.text?.length ?: 0)
+    }
+
+    private fun formatCnpj(cnpj: String): String {
+        val digits = cnpj.filter(Char::isDigit)
+        return if (digits.length == 14) {
+            "${digits.substring(0, 2)}.${digits.substring(2, 5)}.${digits.substring(5, 8)}/${digits.substring(8, 12)}-${digits.substring(12, 14)}"
+        } else {
+            cnpj
+        }
     }
 }

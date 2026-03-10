@@ -4,28 +4,57 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
+    android:background="@color/neutral_100"
     tools:context=".ui.registration.resume.RegistrationResumeFragment">
 
-    <!-- Header for Overflow Menu -->
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/resumeHeader"
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/registrationProgress"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="8dp"
-        app:layout_constraintTop_toTopOf="parent">
+        android:progress="50"
+        app:indicatorColor="#E6D24A"
+        app:layout_constraintTop_toTopOf="parent"
+        app:trackColor="@color/neutral_300"
+        app:trackThickness="4dp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="CONFIRA OS ITENS"
-            android:textColor="@color/neutral_500"
-            android:textSize="12sp"
-            android:textStyle="bold"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/resumeHeader"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="20dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/registrationProgress">
+
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/registration_back_button"
+            android:padding="8dp"
+            android:src="@drawable/ic_arrow_left"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/neutral_700" />
+
+        <TextView
+            android:id="@+id/resumeTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="12dp"
+            android:text="@string/registration_resume_title"
+            android:textColor="@color/neutral_900"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="@id/btnMore"
+            app:layout_constraintEnd_toStartOf="@id/btnMore"
+            app:layout_constraintStart_toEndOf="@id/btnBack"
+            app:layout_constraintTop_toTopOf="@id/btnMore" />
 
         <ImageView
             android:id="@+id/btnMore"
@@ -35,165 +64,159 @@
             android:padding="8dp"
             android:src="@drawable/ic_more_vert"
             app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/btnClose"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/neutral_700" />
+
+        <ImageView
+            android:id="@+id/btnClose"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="8dp"
+            android:src="@drawable/ic_close"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:tint="@color/neutral_700" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <androidx.cardview.widget.CardView
-        android:id="@+id/cvVehicleInfo"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="0dp"
-        app:cardBackgroundColor="@color/neutral_200"
-        app:layout_constraintTop_toBottomOf="@id/resumeHeader">
-
-        <LinearLayout
-            android:id="@+id/vehicleInfoContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="12dp">
-
-            <TextView
-                android:id="@+id/dealershipName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/neutral_700"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                tools:text="Concessionária: Detrapay Veículos" />
-
-            <TextView
-                android:id="@+id/sellerName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textColor="@color/neutral_600"
-                android:textSize="13sp"
-                tools:text="Vendedor: João Silva" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginVertical="8dp"
-                android:background="@color/neutral_300" />
-
-            <TextView
-                android:id="@+id/vehicleType"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/neutral_600"
-                android:textSize="13sp"
-                tools:text="Tipo: Motocicleta" />
-
-            <TextView
-                android:id="@+id/vehicleValue"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:textColor="@color/neutral_600"
-                android:textSize="13sp"
-                tools:text="Valor do Veículo: R$ 50.000,00" />
-
-            <TextView
-                android:id="@+id/acquisitionDate"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:textColor="@color/neutral_600"
-                android:textSize="13sp"
-                tools:text="Data de Aquisição: 19/02/2026" />
-
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvOrderDetailed"
-        android:layout_width="match_parent"
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/contentScroll"
+        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:paddingHorizontal="16dp"
         android:clipToPadding="false"
-        app:layout_constraintBottom_toTopOf="@+id/stickyTotalCard"
-        app:layout_constraintTop_toBottomOf="@id/cvVehicleInfo"
-        tools:listitem="@layout/registration_resume_list_item" />
-
-    <TextView
-        android:id="@+id/storeName"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <ScrollView
-        android:id="@+id/scrollView"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@+id/stickyTotalCard"
-        app:layout_constraintTop_toBottomOf="@id/resumeHeader">
-        <View android:layout_width="match_parent" android:layout_height="wrap_content" />
-    </ScrollView>
-
-    <!-- Sticky Total Card -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/stickyTotalCard"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        app:cardBackgroundColor="#EBF5FF"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="4dp"
+        android:fillViewport="true"
+        android:paddingStart="16dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="12dp"
         app:layout_constraintBottom_toTopOf="@id/footerView"
-        app:strokeColor="#BFDBFE"
-        app:strokeWidth="1dp">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/resumeHeader">
 
-        <LinearLayout
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="20dp">
+            app:cardBackgroundColor="#EEF2F6"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#EEF2F6"
+            app:strokeWidth="0dp">
 
-            <TextView
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="VALOR TOTAL"
-                android:textColor="#1E3A8A"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                android:orientation="vertical"
+                android:paddingTop="10dp"
+                android:paddingBottom="8dp">
 
-            <TextView
-                android:id="@+id/resumeTotalAmount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="#1D4ED8"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                tools:text="R$ 3.516,94" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvOrderDetailed"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clipToPadding="false"
+                    android:nestedScrollingEnabled="false"
+                    tools:itemCount="7"
+                    tools:listitem="@layout/registration_resume_list_item" />
+
+                <TextView
+                    android:id="@+id/resumeTotalAmount"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginEnd="18dp"
+                    android:gravity="end"
+                    android:textColor="@color/primary_500"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    tools:text="R$ 7.003,63" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/whatsappShareCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginEnd="14dp"
+                    android:layout_marginBottom="8dp"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/neutral_300"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_horizontal"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/registration_resume_whatsapp_qr_title"
+                            android:textColor="@color/neutral_900"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:gravity="center"
+                            android:text="@string/registration_resume_whatsapp_qr_subtitle"
+                            android:textColor="@color/neutral_700"
+                            android:textSize="14sp" />
+
+                        <ImageView
+                            android:id="@+id/whatsappQrImage"
+                            android:layout_width="220dp"
+                            android:layout_height="220dp"
+                            android:layout_marginTop="16dp"
+                            android:contentDescription="@string/registration_resume_whatsapp_qr_content_description"
+                            tools:src="@drawable/logotipo" />
+
+                        <TextView
+                            android:id="@+id/whatsappTargetText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:gravity="center"
+                            android:textColor="@color/neutral_700"
+                            android:textSize="14sp"
+                            tools:text="Destino: 5511999998888" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </androidx.core.widget.NestedScrollView>
 
     <LinearLayout
         android:id="@+id/footerView"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@color/white"
-        android:elevation="12dp"
-        android:padding="16dp"
-        app:layout_constraintBottom_toBottomOf="parent">
+        android:background="@color/neutral_100"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/registrationOrderResumeNextBtn"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:text="AVANÇAR PARA O PAGAMENTO"
-            android:textAllCaps="true"
+            android:text="@string/registration_create_order_button"
+            android:textAllCaps="false"
             android:textColor="@color/white"
             android:textSize="16sp"
             android:textStyle="bold"
@@ -201,7 +224,6 @@
 
     </LinearLayout>
 
-    <!-- Print Progress View Overlay -->
     <LinearLayout
         android:id="@+id/printProgressView"
         android:layout_width="match_parent"

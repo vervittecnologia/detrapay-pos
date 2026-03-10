@@ -20,7 +20,7 @@ data class OrderRequest(
     @SerializedName("created_by_id")
     val createdById: String? = null,
     @SerializedName("salesman_id")
-    val salesmanId: String? = null
+    val salesmanId: Int? = null
 )
 
 @Serializable
@@ -54,7 +54,9 @@ data class OrderSimulationItemRequest(
     @SerializedName("id")
     val id: Int,
     @SerializedName("price")
-    val price: String
+    val price: String,
+    @SerializedName("discount")
+    val discount: String? = null
 )
 
 @Serializable

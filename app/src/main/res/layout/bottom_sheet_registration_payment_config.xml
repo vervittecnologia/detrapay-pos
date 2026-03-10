@@ -1,0 +1,420 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/dialog_background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="16dp">
+
+        <View
+            android:layout_width="48dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:background="#E5E7EB" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvSheetTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/neutral_900"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    tools:text="Adicionar CREDITO" />
+
+                <TextView
+                    android:id="@+id/tvSheetSubtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="@color/neutral_500"
+                    android:textSize="12sp"
+                    tools:text="Saldo pendente: R$ 1.445,71" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/btnClose"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="6dp"
+                android:src="@drawable/ic_close"
+                app:tint="@color/neutral_500" />
+        </LinearLayout>
+
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/scrollContent"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true"
+            android:overScrollMode="never">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="12dp">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="#E5E7EB"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:id="@+id/tvAmountLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/neutral_500"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            tools:text="VALOR DESTE PAGAMENTO" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="R$"
+                                android:textColor="@color/neutral_400"
+                                android:textSize="18sp"
+                                android:textStyle="bold" />
+
+                            <EditText
+                                android:id="@+id/etPaymentValue"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:background="@null"
+                                android:hint="0,00"
+                                android:inputType="numberDecimal"
+                                android:paddingStart="8dp"
+                                android:textColor="@color/primary_800"
+                                android:textSize="26sp"
+                                android:textStyle="bold"
+                                tools:text="1.445,71" />
+
+                            <ImageView
+                                android:id="@+id/btnClearValue"
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
+                                android:background="?attr/selectableItemBackgroundBorderless"
+                                android:padding="4dp"
+                                android:src="@drawable/ic_close"
+                                android:visibility="gone"
+                                app:tint="@color/neutral_400" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:id="@+id/tvBrandLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="BANDEIRA DO CARTÃO"
+                    android:textColor="@color/neutral_500"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/toggleGroupBrand"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:visibility="gone"
+                    app:singleSelection="true">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnVisa"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_weight="1"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:text="VISA"
+                        android:textSize="9sp"
+                        android:textStyle="bold"
+                        app:iconGravity="top"
+                        app:iconPadding="1dp"
+                        app:iconSize="20dp"
+                        app:iconTint="@null" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnMaster"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_weight="1"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:text="MASTER"
+                        android:textSize="9sp"
+                        android:textStyle="bold"
+                        app:iconGravity="top"
+                        app:iconPadding="1dp"
+                        app:iconSize="20dp"
+                        app:iconTint="@null" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnElo"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="56dp"
+                        android:layout_weight="1"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:text="ELO"
+                        android:textSize="9sp"
+                        android:textStyle="bold"
+                        app:iconGravity="top"
+                        app:iconPadding="1dp"
+                        app:iconSize="20dp"
+                        app:iconTint="@null" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                <LinearLayout
+                    android:id="@+id/groupCreditSection"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="PARCELAMENTO"
+                        android:textColor="@color/neutral_500"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvInstallments"
+                        android:layout_width="match_parent"
+                        android:layout_height="280dp"
+                        android:layout_marginTop="8dp"
+                        android:clipToPadding="false"
+                        android:nestedScrollingEnabled="true"
+                        android:overScrollMode="ifContentScrolls"
+                        android:paddingBottom="8dp"
+                        android:scrollbars="vertical"
+                        android:visibility="gone"
+                        tools:itemCount="3"
+                        tools:listitem="@layout/registration_payment_installment_item" />
+                </LinearLayout>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardSimpleSummary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="@color/primary_100"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/primary_200"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:id="@+id/tvSummaryTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/primary_800"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            tools:text="Resumo do pagamento" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/tvSummaryLine1Label"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:textColor="@color/neutral_500"
+                                android:textSize="13sp"
+                                tools:text="Valor informado" />
+
+                            <TextView
+                                android:id="@+id/tvSummaryLine1Value"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/neutral_900"
+                                android:textSize="13sp"
+                                android:textStyle="bold"
+                                tools:text="R$ 500,00" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/tvSummaryLine2Label"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:textColor="@color/neutral_500"
+                                android:textSize="13sp"
+                                tools:text="Taxa" />
+
+                            <TextView
+                                android:id="@+id/tvSummaryLine2Value"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/neutral_900"
+                                android:textSize="13sp"
+                                android:textStyle="bold"
+                                tools:text="R$ 0,00" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/tvSummaryLine3Label"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:textColor="@color/neutral_500"
+                                android:textSize="13sp"
+                                tools:text="Valor final" />
+
+                            <TextView
+                                android:id="@+id/tvSummaryLine3Value"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/primary_800"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                tools:text="R$ 500,00" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPrimaryAction"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="12dp"
+                    android:enabled="false"
+                    android:text="CALCULAR"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/primary_500"
+                    app:cornerRadius="12dp" />
+
+                <TextView
+                    android:id="@+id/tvActionHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:text="Calcule a taxa e o valor final antes de confirmar."
+                    android:textColor="@color/neutral_400"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btnReset"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:layout_marginTop="10dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:padding="4dp"
+                    android:text="ALTERAR DADOS"
+                    android:textColor="@color/primary_500"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnConfirm"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="10dp"
+            android:enabled="false"
+            android:text="ADICIONAR PAGAMENTO"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:backgroundTint="@color/primary_500"
+            app:cornerRadius="12dp" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/loadingOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#66FFFFFF"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:indeterminateTint="@color/primary_500" />
+    </FrameLayout>
+
+</FrameLayout>

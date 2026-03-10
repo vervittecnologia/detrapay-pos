@@ -11,7 +11,6 @@ import com.detrapay.R
 import com.detrapay.data.model.SimulationPayment
 import com.detrapay.databinding.RegistrationPaymentLaunchedItemBinding
 import com.detrapay.ui.registration.RegistrationViewModel
-import com.detrapay.ui.util.ImageUtils
 import java.util.Locale
 
 interface OnItemClickListener {
@@ -42,36 +41,42 @@ class RegistrationPaymentMethodRecyclerViewAdapter(
 
         @SuppressLint("SetTextI18n")
         fun bind(item: SimulationPayment) {
-            val context = binding.root.context
-            
             val type = item.paymentMethod.paymentType ?: ""
             val brand = item.paymentMethod.name
-            
+
             setupBrandUI(type, brand, binding)
 
-            binding.tvMethodName.text = when(type.lowercase()) {
+            binding.tvMethodName.text = when (type.lowercase()) {
                 "credito", "credit" -> "Crédito"
                 "debito", "debit" -> "Débito"
+                "pix" -> "Pix"
                 "dinheiro", "cash" -> "Dinheiro"
-                "pix" -> "PIX"
-                "store_credit" -> "Crédito Loja"
-                else -> type.lowercase().replace("store_credit", "Crédito Loja")
+                "store_credit" -> "Crédito loja"
+                else -> type.lowercase()
+                    .replace("pix", "Pix")
+                    .replace("store_credit", "Crédito loja")
                     .replace("credit", "Crédito")
                     .replace("debit", "Débito")
                     .replace("cash", "Dinheiro")
                     .replaceFirstChar { it.uppercase() }
             }
 
-            if (type.lowercase() == "pix" || type.lowercase() == "dinheiro") {
+            if (
+                type.lowercase() == "pix" ||
+                type.lowercase() == "dinheiro" ||
+                type.lowercase() == "cash" ||
+                type.lowercase() == "store_credit"
+            ) {
                 binding.tvInstallmentDetail.text = "À vista"
                 binding.tvInstallmentsInfo.visibility = View.GONE
             } else {
                 val installmentValue = item.amountFinal.replace(".", "").replace(",", ".").toDouble() / item.installment
-                binding.tvInstallmentDetail.text = "${item.installment}x de R$ ${"%.2f".format(Locale.getDefault(), installmentValue)}"
+                binding.tvInstallmentDetail.text =
+                    "${item.installment}x de R$ ${"%.2f".format(Locale.getDefault(), installmentValue)}"
                 binding.tvInstallmentsInfo.text = brand
                 binding.tvInstallmentsInfo.visibility = if (isBrandIconSet(brand)) View.GONE else View.VISIBLE
             }
-            
+
             binding.tvAmount.text = "R$ ${item.amountFinal}"
 
             binding.btnDelete.setOnClickListener {
@@ -89,11 +94,9 @@ class RegistrationPaymentMethodRecyclerViewAdapter(
         }
 
         private fun setupBrandUI(type: String, brand: String, binding: RegistrationPaymentLaunchedItemBinding) {
-            val context = binding.root.context
             val t = type.lowercase()
             val b = brand.lowercase()
 
-            // Use only local bundled icons
             val iconResId = when {
                 b.contains("visa") -> R.drawable.ic_visa
                 b.contains("mastercard") || b.contains("master") -> R.drawable.ic_mastercard
@@ -106,7 +109,6 @@ class RegistrationPaymentMethodRecyclerViewAdapter(
                 return
             }
 
-            // General Fallback
             when {
                 t == "pix" -> binding.ivIcon.setImageResource(R.drawable.ic_pix_green)
                 t == "dinheiro" || t == "cash" -> binding.ivIcon.setImageResource(R.drawable.ic_money_green)

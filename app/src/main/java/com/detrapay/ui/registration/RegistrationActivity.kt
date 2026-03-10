@@ -38,38 +38,11 @@ class RegistrationActivity : AppCompatActivity() {
         initializeViewModelMode()
         setupObservers()
         setupNavigation()
-        setupStepperActions()
         setContentView(binding.root)
     }
 
-    private fun setupStepperActions() {
-        val stepperBinding = com.detrapay.databinding.LayoutRegistrationStepperBinding.bind(binding.registrationStepper.root)
-        
-        stepperBinding.btnBack.setOnClickListener {
-            onBackPressed()
-        }
-        
-        stepperBinding.btnExit.setOnClickListener {
-            ExitConfirmationDialog().show(supportFragmentManager, "ExitConfirmationDialog")
-        }
-    }
-
     override fun onBackPressed() {
-        if (currentScreen == 1) {
-            ExitConfirmationDialog().show(supportFragmentManager, "ExitConfirmationDialog")
-        } else {
-            val previousDestinationId = navController.currentDestination?.id
-            val handled = navController.navigateUp()
-            val currentDestinationId = navController.currentDestination?.id
-
-            // Avoid navigating back in ViewModel if we just moved from payment detail to payment method
-            // (both are part of Step 3)
-            if (handled && previousDestinationId == R.id.paymentDetailFragment && currentDestinationId == R.id.paymentMethodFragment) {
-                // Stayed in Step 3
-            } else {
-                viewModel.navigateBack()
-            }
-        }
+        showExitConfirmation()
     }
 
     private fun initializeViewModelMode(){
@@ -85,10 +58,16 @@ class RegistrationActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_exit -> {
-                ExitConfirmationDialog().show(supportFragmentManager, "ExitConfirmationDialog")
+                showExitConfirmation()
                 true
             }
             else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    fun showExitConfirmation() {
+        if (supportFragmentManager.findFragmentByTag("ExitConfirmationDialog") == null) {
+            ExitConfirmationDialog().show(supportFragmentManager, "ExitConfirmationDialog")
         }
     }
 
@@ -100,24 +79,7 @@ class RegistrationActivity : AppCompatActivity() {
     }
 
     private fun updateStepper(currentScreen: Int) {
-        val stepperBinding = com.detrapay.databinding.LayoutRegistrationStepperBinding.bind(binding.registrationStepper.root)
-        
-        val progress = when (currentScreen) {
-            1 -> 33
-            2 -> 66
-            3 -> 100
-            else -> 0
-        }
-        
-        stepperBinding.registrationProgress.setProgress(progress, true)
-        stepperBinding.tvProgressLabel.text = when(currentScreen) {
-            1 -> "DADOS DO CLIENTE"
-            2 -> "RESUMO DO PEDIDO"
-            3 -> "FORMA DE PAGAMENTO"
-            else -> "Passo $currentScreen de 3"
-        }
-        
-        stepperBinding.btnBack.visibility = if (currentScreen == 1) android.view.View.GONE else android.view.View.VISIBLE
+        // No-op: the global stepper has been removed from the registration shell.
     }
 
     private fun setupNavigation() {
