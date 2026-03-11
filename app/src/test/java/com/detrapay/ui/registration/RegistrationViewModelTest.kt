@@ -178,6 +178,29 @@ class RegistrationViewModelTest {
     }
 
     @Test
+    fun `addPayment publishes saved payment id for detail list focus`() {
+        val payment = payment(amountOriginal = "100,00", amountFinal = "100,00")
+
+        viewModel.addPayment(payment)
+
+        val savedId = viewModel.lastSavedPaymentId.getOrAwaitValueMatching { it == payment.id }
+        assertEquals(payment.id, savedId)
+    }
+
+    @Test
+    fun `updateSimulationPayment publishes updated payment id for detail list focus`() {
+        val initialPayment = payment(amountOriginal = "100,00", amountFinal = "100,00")
+        val updatedPayment = initialPayment.copy(amountFinal = "120,00")
+        viewModel.addPayment(initialPayment)
+        viewModel.consumeLastSavedPaymentId()
+
+        viewModel.updateSimulationPayment(updatedPayment)
+
+        val savedId = viewModel.lastSavedPaymentId.getOrAwaitValueMatching { it == updatedPayment.id }
+        assertEquals(updatedPayment.id, savedId)
+    }
+
+    @Test
     fun `calculateFees caches result using normalized key`() {
         val response = mockk<com.detrapay.data.model.remote.CalculateFeesResponse>()
         coEvery {

@@ -5,16 +5,16 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
-    <androidx.cardview.widget.CardView
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/paymentMethodCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="4dp"
-        app:cardBackgroundColor="@color/neutral_200"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginTop="12dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="18dp"
+        app:cardElevation="2dp"
+        app:strokeColor="@color/neutral_200"
+        app:strokeWidth="1dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -22,56 +22,178 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="108dp"
             android:padding="16dp">
 
-            <ImageView
-                android:id="@+id/paymentMethodImage"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:src="@drawable/ic_credit_card_outline"
+            <FrameLayout
+                android:id="@+id/paymentIconContainer"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/payment_icon_neutral_background"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:tint="@color/primary_500" />
+                app:layout_constraintTop_toTopOf="parent">
 
-            <TextView
-                android:id="@+id/paymentMethodName"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:textColor="@color/primary_500"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:layout_constraintBottom_toBottomOf="@+id/paymentMethodImage"
-                app:layout_constraintStart_toEndOf="@id/paymentMethodImage"
-                app:layout_constraintTop_toTopOf="@+id/paymentMethodImage"
-                tools:text="Cartão de crédito 1" />
+                <ImageView
+                    android:id="@+id/paymentMethodImage"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_credit_card_outline"
+                    app:tint="@color/primary_500" />
+            </FrameLayout>
 
             <LinearLayout
-                android:id="@+id/paymentMethodStatusView"
-                android:layout_width="wrap_content"
+                android:id="@+id/paymentHeaderContent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:background="@drawable/pending_status_background"
-                android:gravity="center"
-                android:minHeight="28dp"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="5dp"
-                app:layout_constraintBottom_toBottomOf="@id/paymentMethodName"
-                app:layout_constraintEnd_toStartOf="@id/paymentDeletePending"
-                app:layout_constraintStart_toEndOf="@id/paymentMethodName"
-                app:layout_constraintTop_toTopOf="@id/paymentMethodName">
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                app:layout_constraintBottom_toBottomOf="@id/paymentIconContainer"
+                app:layout_constraintEnd_toStartOf="@id/paymentPayButton"
+                app:layout_constraintStart_toEndOf="@id/paymentIconContainer"
+                app:layout_constraintTop_toTopOf="@id/paymentIconContainer">
 
-                <TextView
-                    android:id="@+id/status"
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/paymentMethodName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:textColor="@color/neutral_900"
+                            android:textSize="17sp"
+                            android:textStyle="bold"
+                            tools:text="Credito 5x" />
+
+                        <LinearLayout
+                            android:id="@+id/paymentMethodStatusView"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:background="@drawable/home_status_pending_background"
+                            android:gravity="center"
+                            android:minWidth="92dp"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="5dp">
+
+                            <TextView
+                                android:id="@+id/status"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:maxLines="1"
+                                android:textColor="@color/home_status_pending_text"
+                                android:textSize="11sp"
+                                android:textStyle="bold"
+                                tools:text="PENDENTE" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/paymentActionRow"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textAllCaps="false"
-                    android:textColor="@color/primary_500"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    tools:text="Pendente" />
+                    android:layout_marginStart="6dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/paymentActionLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/primary_500"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:visibility="gone"
+                        tools:text="Detalhes" />
+
+                    <ImageView
+                        android:id="@+id/cardArrow"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_marginStart="4dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_chevron_right"
+                        android:visibility="gone"
+                        app:tint="@color/neutral_500" />
+                </LinearLayout>
             </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/paymentPayButton"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:backgroundTint="@color/primary_100"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minHeight="44dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="20dp"
+                android:text="@string/registration_payment_pay_button"
+                android:textAllCaps="true"
+                android:textColor="@color/primary_500"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                app:cornerRadius="22dp"
+                app:layout_constraintBottom_toBottomOf="@id/paymentHeaderContent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/paymentHeaderContent"
+                app:strokeColor="@color/primary_200"
+                app:strokeWidth="1dp" />
+
+            <LinearLayout
+                android:id="@+id/paymentAmountRow"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="bottom|start|center_vertical"
+                android:orientation="horizontal"
+                app:layout_constraintEnd_toStartOf="@id/paymentDeletePending"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/paymentIconContainer">
+
+                <TextView
+                    android:id="@+id/paymentMethodAmount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/neutral_900"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    tools:text="R$ 1.093,01" />
+
+                <TextView
+                    android:id="@+id/paymentMethodInstallmentAmount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginBottom="2dp"
+                    android:textColor="@color/neutral_600"
+                    android:textSize="14sp"
+                    android:visibility="gone"
+                    tools:text="5x de R$ 218,60" />
+            </LinearLayout>
+
+            <androidx.constraintlayout.widget.Barrier
+                android:id="@+id/paymentContentBottomBarrier"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:barrierDirection="bottom"
+                app:constraint_referenced_ids="paymentAmountRow" />
 
             <ImageView
                 android:id="@+id/paymentDeletePending"
@@ -80,73 +202,22 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/order_details_delete_pending_payment"
                 android:padding="2dp"
-                android:src="@drawable/ic_delete_red"
+                android:src="@drawable/ic_delete"
                 android:visibility="gone"
-                app:layout_constraintBottom_toBottomOf="@id/paymentMethodName"
+                app:layout_constraintBottom_toBottomOf="@id/paymentContentBottomBarrier"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@id/paymentMethodName" />
-
-            <TextView
-                android:id="@+id/paymentMethodInstallmentAmount"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginEnd="16dp"
-                android:textColor="@color/neutral_700"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toStartOf="@+id/paymentActionLabel"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/paymentMethodImage"
-                tools:text="R$ 5.000,00" />
-
-            <TextView
-                android:id="@+id/paymentMethodAmount"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:layout_marginEnd="16dp"
-                android:textColor="@color/neutral_500"
-                android:textSize="13sp"
-                app:layout_constraintEnd_toStartOf="@+id/cardArrow"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/paymentMethodInstallmentAmount"
-                tools:text="10x de R$50,00" />
-
-            <TextView
-                android:id="@+id/paymentActionLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:text="PAGAR"
-                android:textColor="@color/primary_500"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                app:layout_constraintBottom_toBottomOf="@+id/cardArrow"
-                app:layout_constraintEnd_toStartOf="@+id/cardArrow"
-                app:layout_constraintTop_toTopOf="@+id/cardArrow" />
-
-            <ImageView
-                android:id="@+id/cardArrow"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:contentDescription="Pagar"
-                android:src="@drawable/ic_chevron_right"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:tint="@color/primary_500" />
+                app:layout_constraintTop_toTopOf="@id/paymentAmountRow" />
 
             <LinearLayout
                 android:id="@+id/paymentDetails"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
                 android:orientation="vertical"
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/paymentMethodAmount">
+                app:layout_constraintTop_toBottomOf="@id/paymentContentBottomBarrier">
 
                 <com.google.android.material.divider.MaterialDivider
                     android:layout_width="match_parent"
@@ -157,50 +228,41 @@
                     android:id="@+id/paymentDate"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:textColor="@color/neutral_600"
-                    android:textSize="13sp"
-                    tools:text="Pagamento realizado em 04/10/2025 às 14:00" />
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/neutral_700"
+                    android:textSize="12sp"
+                    tools:text="Pago em 04/10/2025 as 14:00" />
 
                 <TextView
                     android:id="@+id/paymentInfo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:textColor="@color/neutral_600"
-                    android:textSize="13sp"
-                    tools:text="Cartão com final 5439 do titular Roberto Olaerde Lima da Silva" />
-
-                <com.google.android.material.divider.MaterialDivider
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    app:dividerColor="@color/neutral_300" />
+                    android:textColor="@color/neutral_700"
+                    android:textSize="12sp"
+                    tools:text="Cartao final 5439 - Roberto" />
 
                 <TextView
                     android:id="@+id/paymentRefundDate"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:textColor="@color/neutral_600"
-                    android:textSize="13sp"
+                    android:layout_marginTop="6dp"
+                    android:textColor="@color/neutral_700"
+                    android:textSize="12sp"
                     android:visibility="gone"
-                    tools:text="Pagamento estornado em 06/04/2024 às 12:00" />
+                    tools:text="Estornado em 06/04/2024 as 12:00" />
 
                 <TextView
                     android:id="@+id/paymentRefund"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:text="Estornar pagamento"
+                    android:text="@string/order_details_refund_payment"
                     android:textColor="@color/red"
-                    android:textSize="14sp"
+                    android:textSize="13sp"
                     android:textStyle="bold" />
-
             </LinearLayout>
-
         </androidx.constraintlayout.widget.ConstraintLayout>
-
-    </androidx.cardview.widget.CardView>
+    </com.google.android.material.card.MaterialCardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

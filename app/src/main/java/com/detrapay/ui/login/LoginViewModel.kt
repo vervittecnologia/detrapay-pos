@@ -31,7 +31,12 @@ class LoginViewModel @Inject constructor(private val loginRepository: LoginRepos
             if (result is Result.Success) {
                 _loginResult.postValue(LoginResult(success = result.data))
             } else {
-                _loginResult.postValue(LoginResult(error = R.string.login_failed))
+                val errorRes = if (isCnpjValid(cnpj) && isPasswordValid(password)) {
+                    R.string.login_error_credentials
+                } else {
+                    R.string.login_failed
+                }
+                _loginResult.postValue(LoginResult(error = errorRes))
             }
         }
     }

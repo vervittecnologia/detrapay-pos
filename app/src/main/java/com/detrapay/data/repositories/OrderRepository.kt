@@ -18,6 +18,7 @@ import com.detrapay.data.model.Salesman
 import com.detrapay.data.model.Simulation
 import com.detrapay.data.model.SimulationPayment
 import com.detrapay.data.model.VehicleType
+import com.detrapay.data.model.canBeDeleted
 import com.detrapay.data.model.remote.CreateOrderPaymentRequest
 import com.detrapay.data.model.remote.CreateOrderRequest
 import com.detrapay.data.model.remote.CreateOrderSimulationRequest
@@ -29,6 +30,9 @@ import com.detrapay.data.model.remote.OrderSimulationRequest
 import com.detrapay.data.model.remote.SplitConfigRequest
 import com.detrapay.ui.util.Logger
 import com.detrapay.ui.util.Mask
+import com.detrapay.ui.util.DebugConstants
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -402,7 +406,15 @@ class OrderRepository @Inject constructor(
             is Result.Success -> {
                 try {
                     invalidateOrdersCache()
-                    val order = parseOrder(result.data)
+                    val parsedOrder = parseOrder(result.data)
+                    val order = if (shouldRefetchOrderDetails(result.data, parsedOrder)) {
+                        when (val freshOrderResult = getOrder(orderId, forceRefresh = true)) {
+                            is Result.Success -> freshOrderResult.data
+                            is Result.Error -> parsedOrder
+                        }
+                    } else {
+                        parsedOrder
+                    }
                     orderDetailsCache[order.id] = order
                     return Result.Success(order)
                 } catch (e: Exception) {
@@ -440,10 +452,30 @@ class OrderRepository @Inject constructor(
         ) {
             is Result.Success -> {
                 try {
-                    invalidateOrdersCache()
                     val order = parseOrder(result.data)
-                    orderDetailsCache[order.id] = order
-                    Result.Success(order)
+                    val finalResult = if (shouldAutoConfirmPayment(paymentMethod)) {
+                        val createdReceivable = findCreatedReceivable(order, paymentMethod, amountOriginal)
+                            ?: return Result.Error(
+                                Exception("Nao foi possivel localizar o pagamento criado para confirmacao automatica.")
+                            )
+
+                        when (
+                            val paidResult = payOrder(
+                                orderId = order.id,
+                                receivable = createdReceivable,
+                                paymentData = buildManualPaymentData()
+                            )
+                        ) {
+                            is Result.Success -> paidResult
+                            is Result.Error -> paidResult
+                        }
+                    } else {
+                        invalidateOrdersCache()
+                        orderDetailsCache[order.id] = order
+                        Result.Success(order)
+                    }
+
+                    finalResult
                 } catch (e: Exception) {
                     Log.e("OrderRepository", "UNABLE TO ADD ORDER RECEIVABLE: ${e.message}")
                     Result.Error(e)
@@ -478,12 +510,11 @@ class OrderRepository @Inject constructor(
     }
 
     suspend fun cancelPendingReceivable(orderId: Int, receivable: OrderReceivableItem): Result<Order> {
-        when (
-            val result = detrapayRemoteDataSource.updateOrderReceivableItem(
-                receivableId = receivable.documentId,
-                status = OrderReceivableItemStatus.CANCELLED
-            )
-        ) {
+        if (!receivable.canBeDeleted()) {
+            return Result.Error(Exception("Este pagamento nao pode ser excluido no status atual."))
+        }
+
+        when (val result = detrapayRemoteDataSource.deleteOrderReceivableItem(receivable.documentId)) {
             is Result.Success -> {
                 return try {
                     invalidateOrdersCache()
@@ -491,13 +522,13 @@ class OrderRepository @Inject constructor(
                     orderDetailsCache[order.id] = order
                     Result.Success(order)
                 } catch (e: Exception) {
-                    Log.e("OrderRepository", "UNABLE TO CANCEL ORDER RECEIVABLE: ${e.message}")
+                    Log.e("OrderRepository", "UNABLE TO DELETE ORDER RECEIVABLE: ${e.message}")
                     Result.Error(e)
                 }
             }
             is Result.Error -> return Result.Error(result.exception)
             else -> {
-                return Result.Error(Exception("Tivemos um erro ao excluir o pagamento pendente, por favor tente novamente."))
+                return Result.Error(Exception("Tivemos um erro ao excluir o pagamento, por favor tente novamente."))
             }
         }
     }
@@ -530,11 +561,11 @@ class OrderRepository @Inject constructor(
 
     suspend fun updateSplitConfig(receivableId: Int, serial: String): Result<Unit> {
         val splitSerial = if (BuildConfig.DEBUG) {
-            "6001062507098048"
+            DebugConstants.DEBUG_SPLIT_DEVICE_ID
         } else {
             serial
         }
-        val splitDescription = if (BuildConfig.DEBUG) "debug" else null
+        val splitDescription = if (BuildConfig.DEBUG) DebugConstants.DEBUG_SPLIT_DESCRIPTION else null
 
         return detrapayRemoteDataSource.updateSplitConfig(
             SplitConfigRequest(
@@ -543,5 +574,51 @@ class OrderRepository @Inject constructor(
                 description = splitDescription
             )
         )
+    }
+
+    private fun shouldAutoConfirmPayment(paymentMethod: PaymentMethod): Boolean {
+        val normalizedType = paymentMethod.paymentType.orEmpty().trim().lowercase()
+        val normalizedName = paymentMethod.name.trim().lowercase()
+        return normalizedType in setOf("dinheiro", "cash", "store_credit", "credito loja", "credito_loja", "storecredit") ||
+            normalizedName.contains("dinheiro") ||
+            normalizedName.contains("credito loja") ||
+            normalizedName.contains("store credit")
+    }
+
+    private fun findCreatedReceivable(
+        order: Order,
+        paymentMethod: PaymentMethod,
+        amountOriginal: Double
+    ): OrderReceivableItem? {
+        return order.receivables
+            .asReversed()
+            .firstOrNull { receivable ->
+                receivable.paymentMethod.id == paymentMethod.id &&
+                    receivable.status == OrderReceivableItemStatus.PENDING &&
+                    kotlin.math.abs(receivable.amountOriginal - amountOriginal) < 0.01
+            }
+    }
+
+    private fun buildManualPaymentData(): PaymentData {
+        val now = Date()
+        return PaymentData(
+            date = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")).format(now),
+            time = SimpleDateFormat("HH:mm:ss", Locale("pt", "BR")).format(now)
+        )
+    }
+
+    private fun shouldRefetchOrderDetails(orderResponse: OrderResponse, parsedOrder: Order): Boolean {
+        val hasReceivablesInResponse = !orderResponse.receivables.isNullOrEmpty() ||
+            !orderResponse.attributes?.receivables?.data.isNullOrEmpty()
+        val hasAmountsInResponse = (orderResponse.originalAmount != null || orderResponse.attributes?.originalAmount != null) &&
+            (orderResponse.currentAmount != null || orderResponse.attributes?.currentAmount != null)
+
+        if (hasReceivablesInResponse && hasAmountsInResponse) {
+            return false
+        }
+
+        return parsedOrder.receivables.isEmpty() &&
+            parsedOrder.originalAmount == 0.0 &&
+            parsedOrder.currentAmount == 0.0
     }
 }

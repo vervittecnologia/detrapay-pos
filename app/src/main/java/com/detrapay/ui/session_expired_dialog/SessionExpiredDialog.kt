@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.viewModels
 import com.detrapay.ui.login.LoginActivity
 import dagger.hilt.android.AndroidEntryPoint
@@ -17,8 +18,9 @@ class SessionExpiredDialog : DialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return activity?.let {
             val builder = AlertDialog.Builder(it)
-            builder.setMessage("Sessão expirada")
-            builder.setMessage("Sua sessão expirou, por favor faça login novamente.")
+            builder
+                .setTitle("Sessao expirada")
+                .setMessage("Sua sessao expirou, por favor faca login novamente.")
                 .setPositiveButton("ok") { _, _ ->
                     viewModel.logout()
                     val intent = Intent(it, LoginActivity::class.java)
@@ -26,8 +28,18 @@ class SessionExpiredDialog : DialogFragment() {
                     startActivity(intent)
                     it.finish()
                 }
-            builder.setCancelable(false)
+                .setCancelable(false)
             builder.create()
         } ?: throw IllegalStateException("Activity cannot be null")
+    }
+
+    companion object {
+        private const val TAG = "SessionExpiredDialog"
+
+        fun showIfNeeded(fragmentManager: FragmentManager) {
+            if (fragmentManager.isStateSaved) return
+            if (fragmentManager.findFragmentByTag(TAG) != null) return
+            SessionExpiredDialog().show(fragmentManager, TAG)
+        }
     }
 }

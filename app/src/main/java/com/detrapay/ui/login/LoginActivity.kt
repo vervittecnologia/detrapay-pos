@@ -8,9 +8,9 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import android.view.View
 import android.view.inputmethod.EditorInfo
-import android.widget.Toast
 import androidx.activity.viewModels
 import com.detrapay.BuildConfig
+import com.detrapay.R
 import com.detrapay.databinding.ActivityLoginBinding
 import com.detrapay.debug.DebugOrderDefaults
 import com.detrapay.ui.home.HomeActivity
@@ -39,6 +39,7 @@ class LoginActivity : AppCompatActivity() {
 
         loginViewModel.loginFormState.observe(this@LoginActivity, Observer {
             val loginState = it ?: return@Observer
+            binding.errorTextView.visibility = View.GONE
             login.isEnabled = loginState.isDataValid
             if (loginState.cnpjError != null) {
                 cnpjTextInputLayout.error = getString(loginState.cnpjError)
@@ -62,7 +63,7 @@ class LoginActivity : AppCompatActivity() {
         loginViewModel.loginResult.observe(this@LoginActivity, Observer {
             val loginResult = it ?: return@Observer
 
-            loading.visibility = View.GONE
+            setLoadingState(false)
             if (loginResult.error != null) {
                 showLoginFailed(loginResult.error)
             }
@@ -83,7 +84,7 @@ class LoginActivity : AppCompatActivity() {
                 cnpj.text.toString(),
                 password.text.toString()
             )
-            loading.visibility = View.VISIBLE
+            setLoadingState(true)
             loginViewModel.login(
                 cnpj.text.toString(),
                 password.text.toString()
@@ -91,6 +92,7 @@ class LoginActivity : AppCompatActivity() {
         }
 
         cnpj.afterTextChanged {
+            binding.errorTextView.visibility = View.GONE
             loginViewModel.loginDataChanged(
                 cnpj.text.toString(),
                 password.text.toString()
@@ -99,6 +101,7 @@ class LoginActivity : AppCompatActivity() {
 
         password.apply {
             afterTextChanged {
+                binding.errorTextView.visibility = View.GONE
                 loginViewModel.loginDataChanged(
                     cnpj.text.toString(),
                     password.text.toString()
@@ -107,24 +110,41 @@ class LoginActivity : AppCompatActivity() {
 
             setOnEditorActionListener { _, actionId, _ ->
                 when (actionId) {
-                    EditorInfo.IME_ACTION_DONE ->
+                    EditorInfo.IME_ACTION_DONE -> {
+                        setLoadingState(true)
                         loginViewModel.login(
                             cnpj.text.toString(),
                             password.text.toString()
                         )
+                    }
                 }
                 false
             }
 
             login.setOnClickListener {
-                loading.visibility = View.VISIBLE
+                binding.errorTextView.visibility = View.GONE
+                setLoadingState(true)
                 loginViewModel.login(cnpj.text.toString(), password.text.toString())
             }
         }
     }
 
     private fun showLoginFailed(@StringRes errorString: Int) {
-        Toast.makeText(applicationContext, errorString, Toast.LENGTH_SHORT).show()
+        binding.errorTextView.text = getString(errorString)
+        binding.errorTextView.visibility = View.VISIBLE
+    }
+
+    private fun setLoadingState(isLoading: Boolean) {
+        binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.login.text = if (isLoading) getString(R.string.login_loading) else getString(R.string.action_login)
+        if (isLoading) {
+            binding.login.isEnabled = false
+        } else {
+            loginViewModel.loginDataChanged(
+                binding.cnpj.text.toString(),
+                binding.password.text.toString()
+            )
+        }
     }
 
     private fun restoreLastLoggedCnpj() {

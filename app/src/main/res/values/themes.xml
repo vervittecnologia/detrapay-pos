@@ -12,36 +12,32 @@
         <item name="textInputStyle">@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox</item>
         <item name="materialCardViewStyle">@style/Widget.MaterialComponents.CardView</item>
 
-        <item name="android:fontFamily">@font/font</item>
-        <item name="android:homeAsUpIndicator">@drawable/ic_arrow_left</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
-        <item name="android:windowActivityTransitions">true</item>
-        <item name="android:windowEnterTransition">@android:transition/explode</item>
-        <item name="android:windowExitTransition">@android:transition/explode</item>
+        <item name="android:windowActivityTransitions">false</item>
     </style>
 
     <style name="Theme.Detrapay.NoActionBar" parent="Theme.Detrapay">
         <item name="colorPrimary">@color/primary_800</item>
         <item name="colorPrimaryVariant">@color/primary_500</item>
         <item name="colorOnPrimary">@color/white</item>
-        <item name="android:fontFamily">@font/font</item>
     </style>
 
     <style name="Theme.Detrapay.Login" parent="Theme.Detrapay">
         <item name="colorPrimary">@color/primary_800</item>
         <item name="colorPrimaryVariant">@color/primary_500</item>
         <item name="colorOnPrimary">@color/white</item>
-        <item name="android:fontFamily">@font/font</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:statusBarColor">@color/primary_100</item>
     </style>
 
-    <style name="Theme.Detrapay.Splash" parent="Theme.Detrapay">
-        <item name="android:windowDisablePreview">true</item>
-        <item name="android:windowBackground">@drawable/splash_background</item>
+    <style name="Theme.Detrapay.Splash" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="colorPrimary">@color/primary_500</item>
         <item name="colorPrimaryDark">@color/primary_800</item>
+        <item name="colorSecondary">@color/primary_300</item>
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:windowBackground">@color/primary_500</item>
         <item name="colorAccent">@color/white</item>
         <item name="android:statusBarColor">@color/white</item>
+        <item name="android:windowActivityTransitions">false</item>
     </style>
 </resources>

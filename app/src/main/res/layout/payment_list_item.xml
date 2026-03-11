@@ -8,9 +8,10 @@
     android:layout_marginHorizontal="@dimen/spacing_medium"
     android:layout_marginVertical="@dimen/spacing_small"
     app:cardBackgroundColor="@color/white"
-    app:cardCornerRadius="@dimen/radius_medium"
-    app:cardElevation="@dimen/elevation_low"
-    app:rippleColor="@color/primary_100">
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/neutral_300"
+    app:strokeWidth="1dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -30,10 +31,10 @@
                 android:id="@+id/ordeId"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/neutral_800"
+                android:textColor="@color/neutral_900"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                tools:text="Pedido n: 12345" />
+                tools:text="Pedido #12345" />
 
             <TextView
                 android:id="@+id/amount"
@@ -61,35 +62,35 @@
                 android:layout_marginTop="@dimen/spacing_xs"
                 android:textColor="@color/neutral_600"
                 android:textSize="13sp"
-                tools:text="Metodo de pagamento: Crédito" />
+                tools:text="Metodo: Credito" />
 
             <TextView
                 android:id="@+id/transactionId"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_xs"
-                android:textColor="@color/neutral_600"
-                android:textSize="13sp"
+                android:textColor="@color/neutral_500"
+                android:textSize="12sp"
                 android:visibility="gone"
-                tools:text="Id de transação" />
+                tools:text="Transacao: 1234" />
 
             <TextView
                 android:id="@+id/transactionCode"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_xs"
-                android:textColor="@color/neutral_600"
-                android:textSize="13sp"
+                android:textColor="@color/neutral_500"
+                android:textSize="12sp"
                 android:visibility="gone"
-                tools:text="Código da transação" />
+                tools:text="Codigo: 1234" />
 
             <TextView
                 android:id="@+id/message"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_xs"
-                android:textColor="@color/neutral_600"
-                android:textSize="13sp"
+                android:textColor="@color/neutral_500"
+                android:textSize="12sp"
                 android:visibility="gone"
                 tools:text="Detalhes" />
 
@@ -98,51 +99,50 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_xs"
-                android:textColor="@color/neutral_600"
-                android:textSize="13sp"
+                android:textColor="@color/neutral_500"
+                android:textSize="12sp"
                 android:visibility="gone"
-                tools:text="Codigo de erro" />
+                tools:text="Codigo do erro" />
 
             <TextView
                 android:id="@+id/cardBrand"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_xs"
-                android:textColor="@color/neutral_600"
-                android:textSize="13sp"
+                android:textColor="@color/neutral_500"
+                android:textSize="12sp"
                 android:visibility="gone"
-                tools:text="Bandeira do cartão" />
+                tools:text="Bandeira" />
 
             <TextView
                 android:id="@+id/cardHolder"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_xs"
-                android:textColor="@color/neutral_600"
-                android:textSize="13sp"
+                android:textColor="@color/neutral_500"
+                android:textSize="12sp"
                 android:visibility="gone"
-                tools:text="Titular do cartão" />
+                tools:text="Titular" />
 
             <TextView
                 android:id="@+id/cardLast4"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_xs"
-                android:textColor="@color/neutral_600"
-                android:textSize="13sp"
+                android:textColor="@color/neutral_500"
+                android:textSize="12sp"
                 android:visibility="gone"
-                tools:text="Últimos digitos do cartão" />
+                tools:text="Final do cartao" />
 
             <TextView
                 android:id="@+id/pixIdentification"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_xs"
-                android:textColor="@color/neutral_600"
-                android:textSize="13sp"
+                android:textColor="@color/neutral_500"
+                android:textSize="12sp"
                 android:visibility="gone"
-                tools:text="Identificação do pix" />
-
+                tools:text="Identificacao PIX" />
         </LinearLayout>
 
         <TextView
@@ -151,14 +151,12 @@
             android:layout_height="wrap_content"
             android:paddingHorizontal="@dimen/spacing_small"
             android:paddingVertical="@dimen/spacing_xs"
-            android:textAllCaps="true"
-            android:textColor="@color/white"
             android:textSize="11sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            tools:background="@drawable/pending_status_background"
-            tools:text="Pendente" />
+            tools:background="@drawable/payment_success_status_background"
+            tools:text="Sucesso" />
 
         <TextView
             android:id="@+id/paymentDate"
@@ -167,10 +165,8 @@
             android:layout_marginTop="@dimen/spacing_small"
             android:textColor="@color/neutral_400"
             android:textSize="12sp"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/paymentDetails"
+            app:layout_constraintTop_toBottomOf="@+id/status"
             tools:text="02/02/2025" />
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

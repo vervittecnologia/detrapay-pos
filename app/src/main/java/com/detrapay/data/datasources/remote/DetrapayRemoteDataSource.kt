@@ -60,7 +60,7 @@ class DetrapayRemoteDataSource @Inject constructor(
     suspend fun calculateFees(
         value: Double,
         paymentType: String,
-        brand: String
+        brand: String? = null
     ): Result<CalculateFeesResponse> {
         try {
             val result = supabaseService.calculateFees(value, paymentType, brand)
@@ -450,6 +450,23 @@ class DetrapayRemoteDataSource @Inject constructor(
         } catch (e: Throwable) {
             Logger.d(e.toString())
             return Result.Error(IOException("Erro ao atualizar recebivel do pedido", e))
+        }
+    }
+
+    suspend fun deleteOrderReceivableItem(receivableId: String): Result<OrderResponse> {
+        try {
+            val result = detrapayService.deleteOrderReceivableItem(receivableId)
+            return if (result.isSuccessful) {
+                val updatedOrder = result.body()?.let(::extractUpdatedOrder)
+                    ?: return Result.Error(Exception("Resposta sem updatedOrder na exclusao do recebivel."))
+                Result.Success(updatedOrder)
+            } else {
+                if (result.code() == 401) return Result.Error(UnauthorizedException())
+                Result.Error(Exception(ApiError(result.errorBody()).message))
+            }
+        } catch (e: Throwable) {
+            Logger.d(e.toString())
+            return Result.Error(IOException("Erro ao excluir recebivel do pedido", e))
         }
     }
 

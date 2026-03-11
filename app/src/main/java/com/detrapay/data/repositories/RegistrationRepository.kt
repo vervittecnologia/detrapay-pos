@@ -47,7 +47,7 @@ class RegistrationRepository @Inject constructor(
     suspend fun calculateFees(
         value: Double,
         paymentType: String,
-        brand: String
+        brand: String? = null
     ): Result<CalculateFeesResponse> {
         return detrapayRemoteDataSource.calculateFees(value, paymentType, brand)
     }

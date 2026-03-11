@@ -3,13 +3,11 @@ package com.detrapay.ui.home
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.view.View
 import android.window.OnBackInvokedDispatcher
 import androidx.activity.addCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Observer
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
@@ -18,7 +16,6 @@ import androidx.navigation.ui.setupWithNavController
 import com.detrapay.R
 import com.detrapay.databinding.ActivityHomeBinding
 import com.detrapay.ui.login.LoginActivity
-import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.Logger
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import dagger.hilt.android.AndroidEntryPoint
@@ -38,8 +35,6 @@ class HomeActivity : AppCompatActivity() {
         viewModel.loadScreenContent()
         addOnBackPressedCallback()
         setupNavigation()
-        setupObservers()
-        setupToolbar()
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -60,32 +55,6 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupToolbar() {
-        binding.homeToolbar.toolbarLogout.setOnClickListener {
-            showLogoutDialog()
-        }
-//        binding.homeToolbar.toolbarNotifications.setOnClickListener {
-//            findNavController().navigate(R.id.notificationsActivity)
-//        }
-    }
-
-    private fun setupObservers() {
-        viewModel.homeState.observe(this, Observer { status ->
-            when (status) {
-                is UIState.Loading -> {}
-                is UIState.Success -> {
-                    status.data?.let {
-                        binding.homeToolbar.companyName.text = it.companyName
-                        binding.homeToolbar.dispatcherName.text = it.dispatcherName
-                    }
-                }
-
-                is UIState.Error -> {}
-                is UIState.Idle -> {}
-            }
-        })
-    }
-
     private fun setupNavigation() {
         navHostFragment =
             supportFragmentManager.findFragmentById(R.id.home_activity_nav_host) as NavHostFragment
@@ -94,11 +63,6 @@ class HomeActivity : AppCompatActivity() {
         val bottomNavView: BottomNavigationView = binding.bottomAppBar
 
         bottomNavView.setupWithNavController(navController)
-        navController.addOnDestinationChangedListener { _, destination, _ ->
-            val hideLegacyToolbar =
-                destination.id == R.id.registrationFragment || destination.id == R.id.orderListFragment
-            binding.homeToolbar.root.visibility = if (hideLegacyToolbar) View.GONE else View.VISIBLE
-        }
     }
 
     private fun showLogoutDialog() {

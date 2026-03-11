@@ -6,6 +6,7 @@ import com.detrapay.data.model.Company
 import com.detrapay.data.model.Dispatcher
 import com.detrapay.data.model.LoggedInUser
 import com.detrapay.data.model.OrderStatus
+import com.detrapay.data.model.OrderReceivableItemStatus
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.Simulation
 import com.detrapay.data.model.SimulationCustomer
@@ -275,6 +276,68 @@ class OrderRepositoryTest {
     }
 
     @Test
+    fun `payOrder refetches order details when confirm payment returns partial payload`() = runTest {
+        val receivable = receivable()
+        val paymentData = mockk<com.detrapay.data.model.PaymentData>(relaxed = true) {
+            io.mockk.every { date } returns "06/03/2026"
+            io.mockk.every { time } returns "10:20:30"
+            io.mockk.every { copy(date = any()) } answers { callOriginal() }
+        }
+        coEvery { remoteDataSource.payOrderReceivable(any(), any()) } returns Result.Success(
+            OrderResponse(
+                id = 123,
+                status = "paid",
+                customerName = "Joao Silva"
+            )
+        )
+        coEvery { remoteDataSource.getOrder(123) } returns Result.Success(
+            OrderResponse(
+                id = 123,
+                status = "paid",
+                createdAt = "2026-03-06T10:30:00Z",
+                billingDate = "2026-03-06",
+                currentAmount = 1299.9,
+                originalAmount = 1299.9,
+                customer = FlatCustomerResponse(
+                    id = 88,
+                    name = "Joao Silva",
+                    cpfCnpj = "12345678901"
+                ),
+                vehicleType = FlatVehicleTypeResponse(id = 3, name = "Carro"),
+                salesman = FlatSalesmanResponse(id = 4, name = "Maria"),
+                receivables = listOf(
+                    FlatOrderReceivableResponse(
+                        id = 20,
+                        documentId = "abc",
+                        status = "paid",
+                        installments = 1,
+                        paymentDate = "2026-03-06T10:40:00Z",
+                        amountOriginal = 1299.9,
+                        amountFinal = 1299.9,
+                        paymentMethod = FlatPaymentMethodResponse(
+                            id = 1,
+                            name = "Dinheiro",
+                            installments = 1,
+                            interestTax = 0.0,
+                            paymentType = "cash"
+                        )
+                    )
+                )
+            )
+        )
+
+        val result = repository.payOrder(123, receivable, paymentData)
+
+        assertTrue(result is Result.Success)
+        val order = (result as Result.Success).data
+        assertEquals(1299.9, order.originalAmount, 0.0)
+        assertEquals(1, order.receivables.size)
+        assertEquals("Dinheiro", order.receivables.single().paymentMethod.name)
+        coVerify(exactly = 1) { remoteDataSource.payOrderReceivable(any(), any()) }
+        coVerify(exactly = 1) { remoteDataSource.getOrder(123) }
+    }
+
+    @Test
     fun `addPendingReceivable uses updated order returned by backend without extra fetch`() = runTest {
         coEvery {
             remoteDataSource.addOrderReceivable(
@@ -344,6 +407,94 @@ class OrderRepositoryTest {
         coVerify(exactly = 0) { remoteDataSource.getOrder(any()) }
     }
 
+    @Test
+    fun `cancelPendingReceivable allows paid cash receivable`() = runTest {
+        val receivable = receivable(
+            status = OrderReceivableItemStatus.PAID,
+            paymentMethod = PaymentMethod(
+                id = 2,
+                name = "Dinheiro",
+                installments = 1,
+                interestTax = 0.0,
+                paymentType = "cash"
+            )
+        )
+        coEvery { remoteDataSource.deleteOrderReceivableItem("abc") } returns Result.Success(
+            OrderResponse(
+                id = 123,
+                status = "pending",
+                createdAt = "2026-03-10T16:30:00Z",
+                billingDate = "2026-03-10",
+                currentAmount = 0.0,
+                originalAmount = 1299.9,
+                customer = FlatCustomerResponse(
+                    id = 88,
+                    name = "Joao Silva",
+                    cpfCnpj = "12345678901"
+                ),
+                vehicleType = FlatVehicleTypeResponse(id = 3, name = "Carro"),
+                salesman = FlatSalesmanResponse(id = 4, name = "Maria"),
+                receivables = emptyList()
+            )
+        )
+
+        val result = repository.cancelPendingReceivable(123, receivable)
+
+        assertTrue(result is Result.Success)
+        coVerify(exactly = 1) { remoteDataSource.deleteOrderReceivableItem("abc") }
+    }
+
+    @Test
+    fun `cancelPendingReceivable rejects paid credit receivable`() = runTest {
+        val receivable = receivable(status = OrderReceivableItemStatus.PAID)
+
+        val result = repository.cancelPendingReceivable(123, receivable)
+
+        assertTrue(result is Result.Error)
+        assertEquals(
+            "Este pagamento nao pode ser excluido no status atual.",
+            (result as Result.Error).exception.message
+        )
+        coVerify(exactly = 0) { remoteDataSource.deleteOrderReceivableItem(any()) }
+    }
+
+    @Test
+    fun `cancelPendingReceivable allows paid pix receivable`() = runTest {
+        val receivable = receivable(
+            status = OrderReceivableItemStatus.PAID,
+            paymentMethod = PaymentMethod(
+                id = 3,
+                name = "Pix",
+                installments = 1,
+                interestTax = 0.0,
+                paymentType = "pix"
+            )
+        )
+        coEvery { remoteDataSource.deleteOrderReceivableItem("abc") } returns Result.Success(
+            OrderResponse(
+                id = 123,
+                status = "pending",
+                createdAt = "2026-03-10T16:30:00Z",
+                billingDate = "2026-03-10",
+                currentAmount = 0.0,
+                originalAmount = 1299.9,
+                customer = FlatCustomerResponse(
+                    id = 88,
+                    name = "Joao Silva",
+                    cpfCnpj = "12345678901"
+                ),
+                vehicleType = FlatVehicleTypeResponse(id = 3, name = "Carro"),
+                salesman = FlatSalesmanResponse(id = 4, name = "Maria"),
+                receivables = emptyList()
+            )
+        )
+
+        val result = repository.cancelPendingReceivable(123, receivable)
+
+        assertTrue(result is Result.Success)
+        coVerify(exactly = 1) { remoteDataSource.deleteOrderReceivableItem("abc") }
+    }
+
     private fun simulation() = Simulation(
         customer = SimulationCustomer(
             cpfCnpj = "05257121352",
@@ -383,20 +534,23 @@ class OrderRepositoryTest {
         installment = 1,
     )
 
-    private fun receivable() = com.detrapay.data.model.OrderReceivableItem(
-        id = 20,
-        documentId = "abc",
-        amountOriginal = 1299.9,
-        amountFinal = 1299.9,
-        installments = 1,
-        status = com.detrapay.data.model.OrderReceivableItemStatus.PENDING,
-        paymentMethod = PaymentMethod(
+    private fun receivable(
+        status: OrderReceivableItemStatus = OrderReceivableItemStatus.PENDING,
+        paymentMethod: PaymentMethod = PaymentMethod(
             id = 1,
             name = "Credito",
             installments = 12,
             interestTax = 0.02,
             paymentType = "credit"
-        ),
+        )
+    ) = com.detrapay.data.model.OrderReceivableItem(
+        id = 20,
+        documentId = "abc",
+        amountOriginal = 1299.9,
+        amountFinal = 1299.9,
+        installments = 1,
+        status = status,
+        paymentMethod = paymentMethod,
         paymentDate = null,
         refundDate = null,
         cardLast4 = null,

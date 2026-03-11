@@ -2,151 +2,79 @@ package com.detrapay.ui.home.payment_history
 
 import android.annotation.SuppressLint
 import android.content.Context
-import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.RecyclerView
 import com.detrapay.R
 import com.detrapay.data.model.local.Payment
 import com.detrapay.databinding.PaymentListItemBinding
 
 class PaymentHistoryRecyclerViewAdapter(
-    private var values: List<Payment>
+    private var values: List<Payment>,
 ) : RecyclerView.Adapter<PaymentHistoryRecyclerViewAdapter.PaymentViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PaymentViewHolder {
-        val itemBinding =
-            PaymentListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        val itemBinding = PaymentListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return PaymentViewHolder(parent.context, itemBinding)
     }
 
     @SuppressLint("NotifyDataSetChanged")
     fun swapData(newList: List<Payment>) {
-        this.values = newList
+        values = newList
         notifyDataSetChanged()
     }
 
-    private fun stringToFormattedDate(
-        date: String,
-    ): String {
-        val day = date.substring(8, 10)
-        val month = date.substring(5, 7)
-        val year = date.substring(0, 4)
-        return "$day/$month/$year"
-    }
-
-    @SuppressLint("UseCompatLoadingForDrawables")
     override fun onBindViewHolder(holder: PaymentViewHolder, position: Int) {
-        val item: Payment = values[position]
-        holder.bind(item)
+        holder.bind(values[position])
     }
 
     override fun getItemCount(): Int = values.size
 
-    inner class PaymentViewHolder(val context: Context, val binding: PaymentListItemBinding) :
-        RecyclerView.ViewHolder(binding.root) {
-        private val orderIdView: TextView = binding.ordeId
-        private val amountView: TextView = binding.amount
-        private val installmentView: TextView = binding.installments
-        private val paymentMethodView: TextView = binding.paymentMethod
-        private val dateView: TextView = binding.paymentDate
-        private val statusTextView: TextView = binding.status
-        private val transactionId: TextView = binding.transactionId
-        private val transactionCode: TextView = binding.transactionCode
-        private val message: TextView = binding.message
-        private val errorCode: TextView = binding.errorCode
+    inner class PaymentViewHolder(
+        private val context: Context,
+        private val binding: PaymentListItemBinding,
+    ) : RecyclerView.ViewHolder(binding.root) {
 
-        private val cardBrand: TextView = binding.cardBrand
-        private val cardLast4: TextView = binding.cardLast4
-        private val cardHolder: TextView = binding.cardHolder
-        private val pixIdentification: TextView = binding.pixIdentification
+        @SuppressLint("SetTextI18n")
+        fun bind(item: Payment) {
+            binding.ordeId.text = "Pedido #${item.orderId}"
+            binding.amount.text = item.amount
+            binding.installments.text = "Parcelas: ${item.installments}"
+            binding.paymentMethod.text = "Metodo: ${item.paymentType}"
+            binding.paymentDate.text = item.date.orEmpty()
 
-        @SuppressLint("UseCompatLoadingForDrawables", "SetTextI18n")
-        fun bind(
-            item: Payment
-        ) {
-            orderIdView.text = "Pedido n: ${item.orderId}"
-            amountView.text = "Valor: ${item.amount}"
-            installmentView.text = "Parcelas: ${item.installments}"
-            paymentMethodView.text = "Parcelas: ${item.paymentType}"
-            statusTextView.text = if (item.result == 0 ) { "Sucesso" } else { "Erro" }
-            statusTextView.background = if (item.result == 0 ) {context.getDrawable(R.drawable.payment_success_status_background)} else {context.getDrawable(R.drawable.payment_error_status_background)}
-            dateView.text = item.date ?: ""
+            val isSuccess = item.result == 0
+            binding.status.text = if (isSuccess) "Sucesso" else "Erro"
+            binding.status.background = ContextCompat.getDrawable(
+                context,
+                if (isSuccess) R.drawable.payment_success_status_background else R.drawable.payment_error_status_background,
+            )
+            binding.status.setTextColor(
+                ContextCompat.getColor(
+                    context,
+                    if (isSuccess) R.color.green else R.color.red,
+                ),
+            )
 
-            item.transactionId?.let {
-                if (it.isNotEmpty()) {
-                    transactionId.visibility = View.VISIBLE
-                    transactionId.text = "Id da transação: $it"
-                } else {
-                    transactionId.visibility = View.GONE
-                }
-            }
-
-            item.transactionCode?.let {
-                if (it.isNotEmpty()) {
-                    transactionCode.visibility = View.VISIBLE
-                    transactionCode.text = "Código da transação: $it"
-                } else {
-                    transactionCode.visibility = View.GONE
-                }
-            }
-
-            item.errorCode?.let {
-                if (it.isNotEmpty()) {
-                    errorCode.visibility = View.VISIBLE
-                    errorCode.text = "Código de erro: $it"
-                } else {
-                    errorCode.visibility = View.GONE
-                }
-            }
-
-            item.message?.let {
-                if (it.isNotEmpty()) {
-                    message.visibility = View.VISIBLE
-                    message.text = "Detalhes: $it"
-                } else {
-                    message.visibility = View.GONE
-                }
-            }
-
-            item.cardBrand?.let {
-                if (it.isNotEmpty()) {
-                    cardBrand.visibility = View.VISIBLE
-                    cardBrand.text = "Bandeira do cartão: $it"
-                } else {
-                    cardBrand.visibility = View.GONE
-                }
-            }
-
-            item.cardHolder?.let {
-                if (it.isNotEmpty()) {
-                    cardHolder.visibility = View.VISIBLE
-                    cardHolder.text = "Titular do cartão: $it"
-                } else {
-                    cardHolder.visibility = View.GONE
-                }
-            }
-
-            item.cardLast4?.let {
-                if (it.isNotEmpty()) {
-                    cardLast4.visibility = View.VISIBLE
-                    cardLast4.text = "Últimos digitos do cartão: $it"
-                } else {
-                    cardLast4.visibility = View.GONE
-                }
-            }
-
-            item.pixTxIdCode?.let {
-                if (it.isNotEmpty()) {
-                    pixIdentification.visibility = View.VISIBLE
-                    pixIdentification.text = "Identificação do pix: $it"
-                } else {
-                    pixIdentification.visibility = View.GONE
-                }
-            }
+            toggleText(binding.transactionId, item.transactionId, "Transacao")
+            toggleText(binding.transactionCode, item.transactionCode, "Codigo")
+            toggleText(binding.errorCode, item.errorCode, "Codigo do erro")
+            toggleText(binding.message, item.message, "Detalhes")
+            toggleText(binding.cardBrand, item.cardBrand, "Bandeira")
+            toggleText(binding.cardHolder, item.cardHolder, "Titular")
+            toggleText(binding.cardLast4, item.cardLast4, "Final do cartao")
+            toggleText(binding.pixIdentification, item.pixTxIdCode, "Identificacao PIX")
         }
 
+        private fun toggleText(view: android.widget.TextView, value: String?, label: String) {
+            if (value.isNullOrBlank()) {
+                view.visibility = View.GONE
+            } else {
+                view.visibility = View.VISIBLE
+                view.text = "$label: $value"
+            }
+        }
     }
-
 }

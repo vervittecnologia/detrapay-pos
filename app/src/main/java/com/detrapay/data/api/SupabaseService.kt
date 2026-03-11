@@ -11,7 +11,7 @@ interface SupabaseService {
     suspend fun calculateFees(
         @Query("value") value: Double,
         @Query("payment_type") paymentType: String,
-        @Query("bandeira") brand: String
+        @Query("bandeira") brand: String? = null
     ): Response<CalculateFeesResponse>
 
     @GET("mobile/card-brand-icons")

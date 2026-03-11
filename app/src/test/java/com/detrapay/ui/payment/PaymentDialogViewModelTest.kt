@@ -164,7 +164,7 @@ class PaymentDialogViewModelTest {
         val state = viewModel.paymentState.getOrAwaitValueMatching { it is UIState.Error<*> }
 
         assertTrue(state is UIState.Error)
-        assertEquals("DECLINED - Operacao negada", state.message)
+        assertEquals("Falha no pagamento.", state.message)
         coVerify(exactly = 1) { paymentRepository.saveTransaction(orderId = 10, amount = 25.67, installments = 1, paymentType = "VISA", transactionId = null, transactionCode = null, date = "2026-03-06", result = 5, cardBrand = "VISA", cardLast4 = "1234", cardHolder = "Cliente", pixTxIdCode = null, message = "Operacao negada", errorCode = "DECLINED") }
         coVerify(exactly = 0) { orderRepository.payOrder(any(), any(), any()) }
     }

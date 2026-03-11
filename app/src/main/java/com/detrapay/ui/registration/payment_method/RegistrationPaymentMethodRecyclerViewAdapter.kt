@@ -11,6 +11,7 @@ import com.detrapay.R
 import com.detrapay.data.model.SimulationPayment
 import com.detrapay.databinding.RegistrationPaymentLaunchedItemBinding
 import com.detrapay.ui.registration.RegistrationViewModel
+import java.text.NumberFormat
 import java.util.Locale
 
 interface OnItemClickListener {
@@ -22,12 +23,14 @@ interface OnItemClickListener {
 
 class RegistrationPaymentMethodRecyclerViewAdapter(
     private val viewModel: RegistrationViewModel,
-    private val listener: OnItemClickListener
+    private val listener: OnItemClickListener,
 ) : ListAdapter<SimulationPayment, RegistrationPaymentMethodRecyclerViewAdapter.ViewHolder>(DiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = RegistrationPaymentLaunchedItemBinding.inflate(
-            LayoutInflater.from(parent.context), parent, false
+            LayoutInflater.from(parent.context),
+            parent,
+            false,
         )
         return ViewHolder(binding)
     }
@@ -36,51 +39,58 @@ class RegistrationPaymentMethodRecyclerViewAdapter(
         holder.bind(getItem(position))
     }
 
-    inner class ViewHolder(private val binding: RegistrationPaymentLaunchedItemBinding) :
-        RecyclerView.ViewHolder(binding.root) {
+    inner class ViewHolder(
+        private val binding: RegistrationPaymentLaunchedItemBinding,
+    ) : RecyclerView.ViewHolder(binding.root) {
 
         @SuppressLint("SetTextI18n")
         fun bind(item: SimulationPayment) {
             val type = item.paymentMethod.paymentType ?: ""
-            val brand = item.paymentMethod.name
+            val normalizedType = type.lowercase()
 
-            setupBrandUI(type, brand, binding)
+            setupBrandUI(normalizedType)
 
-            binding.tvMethodName.text = when (type.lowercase()) {
+            val methodLabel = when (normalizedType) {
                 "credito", "credit" -> "Crédito"
                 "debito", "debit" -> "Débito"
                 "pix" -> "Pix"
                 "dinheiro", "cash" -> "Dinheiro"
                 "store_credit" -> "Crédito loja"
-                else -> type.lowercase()
-                    .replace("pix", "Pix")
-                    .replace("store_credit", "Crédito loja")
-                    .replace("credit", "Crédito")
-                    .replace("debit", "Débito")
-                    .replace("cash", "Dinheiro")
-                    .replaceFirstChar { it.uppercase() }
+                else -> type.replaceFirstChar { it.uppercase() }
             }
 
-            if (
-                type.lowercase() == "pix" ||
-                type.lowercase() == "dinheiro" ||
-                type.lowercase() == "cash" ||
-                type.lowercase() == "store_credit"
-            ) {
-                binding.tvInstallmentDetail.text = "À vista"
-                binding.tvInstallmentsInfo.visibility = View.GONE
+            val methodName = if (normalizedType in listOf("credito", "credit") && item.installment > 1) {
+                "$methodLabel ${item.installment}x"
             } else {
-                val installmentValue = item.amountFinal.replace(".", "").replace(",", ".").toDouble() / item.installment
-                binding.tvInstallmentDetail.text =
-                    "${item.installment}x de R$ ${"%.2f".format(Locale.getDefault(), installmentValue)}"
-                binding.tvInstallmentsInfo.text = brand
-                binding.tvInstallmentsInfo.visibility = if (isBrandIconSet(brand)) View.GONE else View.VISIBLE
+                methodLabel
             }
+            binding.tvMethodName.text = methodName
 
             binding.tvAmount.text = "R$ ${item.amountFinal}"
+            binding.tvAmountLabel.text = binding.root.context.getString(R.string.order_details_status_pending).uppercase(Locale("pt", "BR"))
+            binding.tvInstallmentsInfo.visibility = View.GONE
+
+            val amountFinal = parseAmount(item.amountFinal)
+            val amountOriginal = parseAmount(item.amountOriginal)
+            val detailText = when {
+                item.installment > 1 -> {
+                    val installmentValue = amountFinal / item.installment
+                    "(${item.installment}x de R$ ${formatAmount(installmentValue)})"
+                }
+                amountOriginal > 0.0 && amountOriginal != amountFinal -> {
+                    "(original R$ ${formatAmount(amountOriginal)})"
+                }
+                else -> ""
+            }
+            binding.tvInstallmentDetail.text = detailText
+            binding.tvInstallmentDetail.visibility = if (detailText.isBlank()) View.GONE else View.VISIBLE
 
             binding.btnDelete.setOnClickListener {
                 listener.onDelete(item)
+            }
+
+            binding.btnPay.setOnClickListener {
+                listener.onItemClicked(item)
             }
 
             binding.root.setOnClickListener {
@@ -88,31 +98,29 @@ class RegistrationPaymentMethodRecyclerViewAdapter(
             }
         }
 
-        private fun isBrandIconSet(brand: String): Boolean {
-            val b = brand.lowercase()
-            return b.contains("visa") || b.contains("mastercard") || b.contains("elo")
+        private fun parseAmount(amount: String): Double {
+            return amount
+                .replace(".", "")
+                .replace(",", ".")
+                .toDoubleOrNull() ?: 0.0
         }
 
-        private fun setupBrandUI(type: String, brand: String, binding: RegistrationPaymentLaunchedItemBinding) {
-            val t = type.lowercase()
-            val b = brand.lowercase()
-
-            val iconResId = when {
-                b.contains("visa") -> R.drawable.ic_visa
-                b.contains("mastercard") || b.contains("master") -> R.drawable.ic_mastercard
-                b.contains("elo") -> R.drawable.ic_elo
-                else -> 0
+        private fun formatAmount(amount: Double): String {
+            val numberFormatter = NumberFormat.getNumberInstance(Locale("pt", "BR")).apply {
+                minimumFractionDigits = 2
+                maximumFractionDigits = 2
             }
+            return numberFormatter.format(amount)
+        }
 
-            if (iconResId != 0) {
-                binding.ivIcon.setImageResource(iconResId)
-                return
-            }
-
+        private fun setupBrandUI(normalizedType: String) {
             when {
-                t == "pix" -> binding.ivIcon.setImageResource(R.drawable.ic_pix_green)
-                t == "dinheiro" || t == "cash" -> binding.ivIcon.setImageResource(R.drawable.ic_money_green)
-                t == "credito" || t == "debito" || t == "credit" || t == "debit" || t == "store_credit" -> binding.ivIcon.setImageResource(R.drawable.ic_card_launched)
+                normalizedType == "pix" -> binding.ivIcon.setImageResource(R.drawable.ic_pix_green)
+                normalizedType == "dinheiro" || normalizedType == "cash" -> binding.ivIcon.setImageResource(R.drawable.ic_money)
+                normalizedType in listOf("credito", "debito", "credit", "debit", "store_credit") -> {
+                    binding.ivIcon.setImageResource(R.drawable.ic_card_launched)
+                }
+
                 else -> binding.ivIcon.setImageResource(R.drawable.ic_article)
             }
         }

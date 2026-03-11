@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.view.WindowManager
 import android.widget.Toast
@@ -52,7 +53,6 @@ class RegistrationPaymentConfigBottomSheet : BottomSheetDialogFragment() {
     private var paymentType: String = "credito"
     private var editingPaymentId: Long = -1L
     private var mode: PaymentConfigMode = PaymentConfigMode.SIMPLE_QUOTE
-    private var selectedBrand: String = ""
     private var selectedFee: InstallmentFee? = null
     private var simpleQuote: SimplePaymentQuote? = null
     private var adapter: InstallmentsAdapter? = null
@@ -112,21 +112,12 @@ class RegistrationPaymentConfigBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun setupUi() {
-        binding.tvSheetTitle.text = if (editingPaymentId == -1L) {
-            "Adicionar ${paymentTypeLabel(paymentType)}"
-        } else {
-            "Editar ${paymentTypeLabel(paymentType)}"
-        }
-        binding.tvSheetSubtitle.text = balanceSubtitle(registrationViewModel.remainingBalanceLiveData.value ?: 0.0)
-        binding.tvAmountLabel.text = if (mode == PaymentConfigMode.CREDIT) {
-            "VALOR DESTE CARTÃO"
-        } else if (mode == PaymentConfigMode.DEBIT) {
-            "VALOR DESTE CARTÃO"
-        } else {
-            "VALOR DESTE PAGAMENTO"
-        }
+        binding.tvSheetTitle.text = "Confirmar pagamento"
+        binding.tvSheetSubtitle.text =
+            balanceSubtitle(registrationViewModel.remainingBalanceLiveData.value ?: 0.0)
+        binding.tvAmountLabel.text = "Valor a pagar"
 
-        val usesBrand = mode == PaymentConfigMode.CREDIT || mode == PaymentConfigMode.DEBIT
+        val usesBrand = false
         binding.toggleGroupBrand.isVisible = usesBrand
         binding.tvBrandLabel.isVisible = usesBrand
         binding.groupCreditSection.isVisible = mode == PaymentConfigMode.CREDIT
@@ -140,42 +131,31 @@ class RegistrationPaymentConfigBottomSheet : BottomSheetDialogFragment() {
         binding.btnClose.setOnClickListener { dismiss() }
         binding.btnClearValue.setOnClickListener { binding.etPaymentValue.setText("0") }
         binding.root.setOnClickListener { hideKeyboard() }
+        binding.etPaymentValue.setOnEditorActionListener { _, actionId, _ ->
+            if (mode != PaymentConfigMode.DIRECT &&
+                (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE)
+            ) {
+                if (binding.btnPrimaryAction.isEnabled) {
+                    binding.btnPrimaryAction.performClick()
+                }
+                true
+            } else {
+                false
+            }
+        }
         binding.etPaymentValue.addTextChangedListener(Mask.moneyMask(binding.etPaymentValue) { value ->
             binding.btnClearValue.isVisible = value.isNotBlank() && value != "0,00"
             invalidateQuote()
         })
 
-        binding.btnVisa.setIconResource(R.drawable.ic_visa)
-        binding.btnMaster.setIconResource(R.drawable.ic_mastercard)
-        binding.btnElo.setIconResource(R.drawable.ic_elo)
-        binding.btnVisa.iconTint = null
-        binding.btnMaster.iconTint = null
-        binding.btnElo.iconTint = null
-
-        binding.toggleGroupBrand.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            selectedBrand = when (checkedId) {
-                R.id.btnVisa -> "VISA"
-                R.id.btnMaster -> "MASTERCARD"
-                R.id.btnElo -> "ELO"
-                else -> ""
-            }
-            invalidateQuote()
-            updatePrimaryActionState()
-            hideKeyboard()
-        }
-
         binding.btnPrimaryAction.setOnClickListener {
+            hideKeyboard()
             val amount = Mask.doubleValue(binding.etPaymentValue.text.toString())
             if (amount <= 0.0) {
                 showError("Informe um valor maior que zero.")
                 return@setOnClickListener
             }
-            if ((mode == PaymentConfigMode.CREDIT || mode == PaymentConfigMode.DEBIT) && selectedBrand.isBlank()) {
-                showError("Selecione a bandeira antes de consultar as parcelas.")
-                return@setOnClickListener
-            }
-            registrationViewModel.calculateFees(amount, paymentType, selectedBrand)
+            registrationViewModel.calculateFees(amount, paymentType)
         }
 
         binding.btnReset.setOnClickListener {
@@ -252,16 +232,9 @@ class RegistrationPaymentConfigBottomSheet : BottomSheetDialogFragment() {
         val cleanValue = payment.amountOriginal.replace("[R$.\\s]".toRegex(), "").replace(",", "")
         binding.etPaymentValue.setText(cleanValue)
         focusAmountInput(selectAll = true)
-        if (mode == PaymentConfigMode.CREDIT || mode == PaymentConfigMode.DEBIT) {
-            val brand = payment.paymentMethod.name.uppercase()
-            when {
-                brand.contains("VISA") -> binding.toggleGroupBrand.check(R.id.btnVisa)
-                brand.contains("MASTERCARD") || brand.contains("MASTER") -> binding.toggleGroupBrand.check(R.id.btnMaster)
-                brand.contains("ELO") -> binding.toggleGroupBrand.check(R.id.btnElo)
-            }
-        } else {
+        if (mode != PaymentConfigMode.CREDIT && mode != PaymentConfigMode.DEBIT) {
             binding.btnConfirm.isEnabled = Mask.toSafeDouble(payment.amountOriginal) > 0
-            binding.btnConfirm.text = "ADICIONAR ${paymentTypeLabel(paymentType)}"
+            binding.btnConfirm.text = "Efetuar pagamento"
             updateButtonVisualState(binding.btnConfirm, binding.btnConfirm.isEnabled)
         }
 
@@ -292,7 +265,7 @@ class RegistrationPaymentConfigBottomSheet : BottomSheetDialogFragment() {
         }
 
         binding.btnConfirm.isEnabled = false
-        binding.btnConfirm.text = "Confirmar"
+        binding.btnConfirm.text = "Efetuar pagamento"
         updateButtonVisualState(binding.btnConfirm, false)
         updatePrimaryActionState()
     }
@@ -300,7 +273,7 @@ class RegistrationPaymentConfigBottomSheet : BottomSheetDialogFragment() {
     private fun renderCreditSelection(fee: InstallmentFee) {
         binding.cardSimpleSummary.isVisible = false
         binding.btnConfirm.isEnabled = true
-        binding.btnConfirm.text = "Confirmar"
+        binding.btnConfirm.text = "Efetuar pagamento"
         binding.tvActionHint.isVisible = false
         updateButtonVisualState(binding.btnConfirm, true)
     }
@@ -339,7 +312,7 @@ class RegistrationPaymentConfigBottomSheet : BottomSheetDialogFragment() {
         binding.tvActionHint.text = "Revise taxa e valor final antes de adicionar o pagamento."
         binding.btnConfirm.isEnabled = true
         binding.btnConfirm.isVisible = true
-        binding.btnConfirm.text = "ADICIONAR ${paymentTypeLabel(paymentType)}"
+        binding.btnConfirm.text = "Efetuar pagamento"
         binding.btnPrimaryAction.isVisible = false
         binding.tvActionHint.isVisible = true
         updateButtonVisualState(binding.btnConfirm, true)
@@ -350,7 +323,7 @@ class RegistrationPaymentConfigBottomSheet : BottomSheetDialogFragment() {
         val amount = Mask.toSafeDouble(payment.amountOriginal)
         if (amount <= 0.0) return
 
-        val cachedFees = registrationViewModel.getCachedFees(amount, paymentType, selectedBrand)
+        val cachedFees = registrationViewModel.getCachedFees(amount, paymentType)
             ?.data
             .orEmpty()
             .firstOrNull()
@@ -397,14 +370,14 @@ class RegistrationPaymentConfigBottomSheet : BottomSheetDialogFragment() {
         binding.tvActionHint.isVisible = mode != PaymentConfigMode.CREDIT && mode != PaymentConfigMode.DIRECT
         binding.tvActionHint.text = when (mode) {
             PaymentConfigMode.CREDIT -> ""
-            PaymentConfigMode.DEBIT -> "Selecione a bandeira e calcule a taxa antes de confirmar."
+            PaymentConfigMode.DEBIT -> "Calcule a taxa antes de confirmar."
             PaymentConfigMode.SIMPLE_QUOTE -> "Calcule a taxa e o valor final antes de confirmar."
             PaymentConfigMode.DIRECT -> ""
         }
         if (mode == PaymentConfigMode.DIRECT) {
             val hasAmount = Mask.doubleValue(binding.etPaymentValue.text.toString()) > 0.0
             binding.btnConfirm.isEnabled = hasAmount
-            binding.btnConfirm.text = "ADICIONAR ${paymentTypeLabel(paymentType)}"
+            binding.btnConfirm.text = "Efetuar pagamento"
             updateButtonVisualState(binding.btnConfirm, hasAmount)
         } else {
             binding.btnConfirm.isEnabled = false
@@ -424,10 +397,9 @@ class RegistrationPaymentConfigBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun updatePrimaryActionState() {
-        selectedBrand = currentBrand()
         val hasAmount = Mask.doubleValue(binding.etPaymentValue.text.toString()) > 0.0
         val isEnabled = when (mode) {
-            PaymentConfigMode.CREDIT, PaymentConfigMode.DEBIT -> hasAmount && selectedBrand.isNotBlank()
+            PaymentConfigMode.CREDIT, PaymentConfigMode.DEBIT -> hasAmount
             PaymentConfigMode.SIMPLE_QUOTE -> hasAmount
             PaymentConfigMode.DIRECT -> false
         }
@@ -435,13 +407,6 @@ class RegistrationPaymentConfigBottomSheet : BottomSheetDialogFragment() {
         if (mode != PaymentConfigMode.DIRECT) {
             updateButtonVisualState(binding.btnPrimaryAction, isEnabled)
         }
-    }
-
-    private fun currentBrand(): String = when (binding.toggleGroupBrand.checkedButtonId) {
-        R.id.btnVisa -> "VISA"
-        R.id.btnMaster -> "MASTERCARD"
-        R.id.btnElo -> "ELO"
-        else -> ""
     }
 
     private fun confirmCreditPayment() {
@@ -455,7 +420,6 @@ class RegistrationPaymentConfigBottomSheet : BottomSheetDialogFragment() {
             paymentMethod = method.copy(
                 interestTax = 0.0,
                     installments = fee.installmentNumber,
-                name = "$selectedBrand ${method.name}"
             ),
             amountOriginal = binding.etPaymentValue.text.toString(),
             amountFinal = "%,.2f".format(locale, Mask.toSafeDouble(fee.totalValue)),
@@ -592,3 +556,6 @@ class RegistrationPaymentConfigBottomSheet : BottomSheetDialogFragment() {
         }
     }
 }
+
+
+

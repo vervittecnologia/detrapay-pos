@@ -18,7 +18,6 @@ import com.detrapay.data.model.remote.OrderResponse
 import com.detrapay.data.model.remote.OrderReceivableMutationResponse
 import com.detrapay.data.model.remote.PaymentMethodResponse
 import com.detrapay.data.model.remote.RefundOrderReceivableRequest
-import com.detrapay.data.model.remote.UpdateOrderReceivableRequest
 import com.detrapay.data.model.remote.UpdateOrderSalesmanRequest
 import com.google.gson.JsonObject
 import io.mockk.coEvery
@@ -122,9 +121,9 @@ class DetrapayRemoteDataSourceTest {
     }
 
     @Test
-    fun `updateOrderReceivableItem unwraps updated order from backend`() = runTest {
+    fun `deleteOrderReceivableItem unwraps updated order from backend`() = runTest {
         coEvery {
-            detrapayService.updateOrderReceivableItem("abc", any<UpdateOrderReceivableRequest>())
+            detrapayService.deleteOrderReceivableItem("abc")
         } returns Response.success(
             OrderReceivableMutationResponse(
                 data = JsonObject(),
@@ -132,7 +131,7 @@ class DetrapayRemoteDataSourceTest {
             )
         )
 
-        val result = dataSource.updateOrderReceivableItem("abc", OrderReceivableItemStatus.CANCELLED)
+        val result = dataSource.deleteOrderReceivableItem("abc")
 
         assertTrue(result is Result.Success)
         assertEquals("cancelled", (result as Result.Success).data.status)

@@ -39,9 +39,7 @@ class OrderRecyclerViewAdapter(
         notifyDataSetChanged()
     }
 
-    private fun stringToFormattedDate(
-        date: String,
-    ): String {
+    private fun stringToFormattedDate(date: String): String {
         val day = date.substring(8, 10)
         val month = date.substring(5, 7)
         val year = date.substring(0, 4)
@@ -78,7 +76,7 @@ class OrderRecyclerViewAdapter(
             item: Order,
             listener: OnItemClickListener
         ) {
-            val valueFormatted = "%,.2f".format(locale, item.currentAmount)
+            val valueFormatted = "%,.2f".format(locale, item.originalAmount)
             val salesmanName = item.salesman?.name.orEmpty()
             val salesmanLabel = if (salesmanName.isNotBlank()) {
                 "Vendedor: $salesmanName"
@@ -97,7 +95,7 @@ class OrderRecyclerViewAdapter(
             customerDocumentView.text = customerDocumentLabel
             valueView.text = "R$ $valueFormatted"
             serviceDateView.text = stringToFormattedDate(item.creationDate)
-            statusTextView.text = item.status.toString().uppercase(locale)
+            statusTextView.text = statusLabel(item.status)
 
             val (cardBackground, textColorRes) = when (item.status) {
                 OrderStatus.PENDING -> R.drawable.home_status_pending_background to R.color.home_status_pending_text
@@ -113,6 +111,14 @@ class OrderRecyclerViewAdapter(
             orderCard.setOnClickListener {
                 listener.onItemClick(item)
             }
+        }
+
+        private fun statusLabel(status: OrderStatus): String = when (status) {
+            OrderStatus.PENDING -> "Pendente"
+            OrderStatus.PAID -> "Pago"
+            OrderStatus.AUTHORIZED -> "Autorizado"
+            OrderStatus.COMPLETED -> "Finalizado"
+            OrderStatus.CANCELLED -> "Cancelado"
         }
 
         private fun formatCpfCnpj(cpfCnpj: String): String {

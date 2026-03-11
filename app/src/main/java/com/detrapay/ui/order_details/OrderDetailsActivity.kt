@@ -5,14 +5,13 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.text.InputType
 import android.view.View
-import android.widget.EditText
-import android.widget.FrameLayout
 import android.widget.Toast
+import androidx.activity.addCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -21,11 +20,11 @@ import com.detrapay.R
 import com.detrapay.data.UnauthorizedException
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.OrderReceivableItem
-import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.OrderReceivableItemStatus.CANCELLED
 import com.detrapay.data.model.OrderReceivableItemStatus.REFUNDED
 import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.RefundPaymentData
+import com.detrapay.data.model.canBeDeleted
 import com.detrapay.databinding.ActivityOrderDetailsBinding
 import com.detrapay.ui.home.HomeActivity
 import com.detrapay.ui.payment.PaymentDialogFragment
@@ -33,6 +32,7 @@ import com.detrapay.ui.refund.RefundPaymentDialogFragment
 import com.detrapay.ui.registration.RegistrationActivity
 import com.detrapay.ui.session_expired_dialog.SessionExpiredDialog
 import com.detrapay.ui.state.UIState
+import com.detrapay.ui.util.DebugConstants
 import com.detrapay.ui.util.DeviceUtils
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
@@ -52,6 +52,7 @@ class OrderDetailsActivity : AppCompatActivity(),
     private var prePaymentRetryCount = 0
     private var showPendingAdditionSuccess = false
     private var showPendingDeletionSuccess = false
+    private var isLoadingPaymentMethods = false
 
     private val viewModel: OrderDetailsViewModel by viewModels()
 
@@ -63,7 +64,7 @@ class OrderDetailsActivity : AppCompatActivity(),
         setContentView(binding.root)
 
         if (orderId <= 0) {
-            Toast.makeText(this, "Pedido inválido para exibir detalhes.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.order_details_invalid_order), Toast.LENGTH_SHORT).show()
             finish()
             return
         }
@@ -75,23 +76,25 @@ class OrderDetailsActivity : AppCompatActivity(),
             viewModel.loadScreenContent(orderId)
         }
 
-        setupToolbar()
+        setupHeaderActions()
         setupObservers()
         setupErrorBtn()
         setupSuccessActions()
         setupFinishAction()
         setupAddPaymentAction()
+        setupBottomSheetListeners()
+        setupBackNavigation()
     }
 
     override fun onSupportNavigateUp(): Boolean {
-        navigateToHome()
+        handleExitRequest()
         return true
     }
 
     private fun showSuccess(orderId: Int) {
         binding.successView.visibility = View.VISIBLE
         binding.contentView.visibility = View.GONE
-        binding.tvSuccessMessage.text = "O pedido #$orderId foi finalizado com sucesso e o recibo foi enviado ao cliente."
+        binding.tvSuccessMessage.text = getString(R.string.order_details_success_message, orderId)
     }
 
     private fun setupSuccessActions() {
@@ -101,8 +104,7 @@ class OrderDetailsActivity : AppCompatActivity(),
             finish()
         }
         binding.btnPrintReceipt.setOnClickListener {
-            // Logic for printing receipt if needed
-            Toast.makeText(this, "Imprimindo comprovante...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.order_details_printing_receipt), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -140,7 +142,7 @@ class OrderDetailsActivity : AppCompatActivity(),
                             binding.contentView.visibility = View.VISIBLE
                         }.onFailure {
                             binding.contentView.visibility = View.GONE
-                            binding.errorTxtView.text = "Ops! Nao foi possivel carregar os detalhes do pedido."
+                            binding.errorTxtView.text = getString(R.string.order_details_load_error)
                             binding.errorView.visibility = View.VISIBLE
                         }
 
@@ -167,7 +169,13 @@ class OrderDetailsActivity : AppCompatActivity(),
 
         viewModel.paymentMethodsState.observe(this, Observer { status ->
             when (status) {
+                is UIState.Loading -> {
+                    isLoadingPaymentMethods = true
+                    binding.addPaymentButton.isEnabled = false
+                }
                 is UIState.Success -> {
+                    isLoadingPaymentMethods = false
+                    binding.addPaymentButton.isEnabled = true
                     val methods = status.data.orEmpty()
                     if (methods.isEmpty()) {
                         Toast.makeText(
@@ -176,20 +184,24 @@ class OrderDetailsActivity : AppCompatActivity(),
                             Toast.LENGTH_SHORT
                         ).show()
                     } else {
-                        showPaymentMethodPicker(methods)
+                        showPaymentMethodPicker()
                     }
                 }
                 is UIState.Error -> {
+                    isLoadingPaymentMethods = false
+                    binding.addPaymentButton.isEnabled = true
                     Toast.makeText(
                         this,
                         status.message ?: getString(R.string.order_details_add_payment_load_error),
                         Toast.LENGTH_LONG
                     ).show()
                 }
-                is UIState.Loading, is UIState.Idle -> Unit
+                is UIState.Idle -> {
+                    isLoadingPaymentMethods = false
+                    binding.addPaymentButton.isEnabled = true
+                }
             }
         })
-
     }
 
     private fun showLoading() {
@@ -216,12 +228,16 @@ class OrderDetailsActivity : AppCompatActivity(),
                             viewModel.loadScreenContent(orderId)
                             Toast.makeText(
                                 this@OrderDetailsActivity,
-                                "QR Code PIX gerado. Aguarde a confirmacao do pagamento.",
+                                getString(R.string.order_details_pix_pending_confirmation),
                                 Toast.LENGTH_SHORT
                             ).show()
                         } else if (paymentData != null) {
                             viewModel.loadScreenContent(orderId)
-                            Toast.makeText(this@OrderDetailsActivity, "Pagamento realizado com sucesso!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                this@OrderDetailsActivity,
+                                getString(R.string.order_details_payment_success_toast),
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                 },
@@ -242,7 +258,7 @@ class OrderDetailsActivity : AppCompatActivity(),
 
     private fun getSerialForPrePay(): String {
         return if (BuildConfig.DEBUG) {
-            "6001062507098048"
+            DebugConstants.DEBUG_SPLIT_DEVICE_ID
         } else {
             DeviceUtils.getSerialNumber()
         }
@@ -265,145 +281,90 @@ class OrderDetailsActivity : AppCompatActivity(),
         binding.editOrderTxtView.setOnClickListener(editOrderClickListener)
         binding.editOrderImageView.setOnClickListener(editOrderClickListener)
 
-        binding.orderTitleTextView.text = "Pedido ${order.id}"
-        val customerInfo = runCatching {
-            buildCustomerInfoLabel(order.customer.cpfCnpj, order.customer.name)
-        }.getOrDefault("-")
-        binding.customerInfoTextView.text = customerInfo
-
+        binding.orderTitleTextView.text = "Pedido #${order.id}"
+        binding.orderCaptionTextView.text = getString(R.string.order_details_header_caption)
         binding.vehicleValueValue.text = "R$ $originalAmount"
 
         binding.saveSalesmanButton.visibility = View.GONE
     }
 
-    private fun buildCustomerInfoLabel(cpfCnpj: String?, customerName: String?): String {
-        val formattedDocument = formatCpfCnpj(cpfCnpj)
-        val trimmedName = customerName?.trim().orEmpty()
-        return if (trimmedName.isBlank()) {
-            formattedDocument
-        } else {
-            "$formattedDocument - $trimmedName"
-        }
-    }
-
     private fun setupFinishAction() {
         binding.finishServiceBtn.setOnClickListener {
-            navigateToHome()
+            handleExitRequest()
         }
     }
 
     private fun setupAddPaymentAction() {
         binding.addPaymentButton.setOnClickListener {
+            if (isLoadingPaymentMethods || hasDialogWithTag(PAYMENT_METHOD_PICKER_TAG)) {
+                return@setOnClickListener
+            }
             viewModel.loadPaymentMethods()
         }
     }
 
-    private fun showPaymentMethodPicker(methods: List<PaymentMethod>) {
-        val labels = methods.map(::paymentMethodLabel).toTypedArray()
-        AlertDialog.Builder(this)
-            .setTitle(R.string.order_details_add_payment_select_method)
-            .setItems(labels) { _, which ->
-                showAddAmountDialog(methods[which])
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+    private fun setupBottomSheetListeners() {
+        supportFragmentManager.setFragmentResultListener(
+            OrderDetailsPaymentMethodPickerBottomSheet.REQUEST_KEY,
+            this,
+        ) { _, bundle ->
+            val selectedType = bundle.getString(OrderDetailsPaymentMethodPickerBottomSheet.RESULT_PAYMENT_TYPE)
+                ?: return@setFragmentResultListener
+            openPaymentConfig(selectedType)
+        }
+        supportFragmentManager.setFragmentResultListener(
+            OrderDetailsPaymentConfigBottomSheet.REQUEST_PENDING_ADDED,
+            this,
+        ) { _, _ ->
+            showPendingAdditionSuccess = true
+        }
     }
 
-    private fun showAddAmountDialog(paymentMethod: PaymentMethod) {
-        val input = EditText(this).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-            hint = getString(R.string.order_details_add_payment_amount_hint)
-            setText(defaultAmountValue())
-            setSelection(text.length)
+    private fun showPaymentMethodPicker() {
+        if (hasDialogWithTag(PAYMENT_METHOD_PICKER_TAG)) {
+            return
         }
-        val container = FrameLayout(this).apply {
-            val horizontalPadding = (24 * resources.displayMetrics.density).toInt()
-            val topPadding = (12 * resources.displayMetrics.density).toInt()
-            setPadding(horizontalPadding, topPadding, horizontalPadding, 0)
-            addView(
-                input,
-                FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.WRAP_CONTENT
-                )
-            )
+        val types = viewModel.availablePaymentTypes()
+        if (types.isEmpty()) {
+            Toast.makeText(
+                this,
+                getString(R.string.order_details_add_payment_empty_methods),
+                Toast.LENGTH_SHORT,
+            ).show()
+            return
         }
 
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(
-                getString(
-                    R.string.order_details_add_payment_amount_title,
-                    paymentMethodLabel(paymentMethod)
-                )
-            )
-            .setView(container)
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(R.string.order_details_add_payment_confirm, null)
-            .create()
-
-        dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val amount = parseCurrencyInput(input.text.toString())
-                if (amount <= 0.0) {
-                    input.error = getString(R.string.order_details_add_payment_invalid_amount)
-                    return@setOnClickListener
-                }
-                showPendingAdditionSuccess = true
-                dialog.dismiss()
-                viewModel.addPendingReceivable(paymentMethod, amount)
-            }
-        }
-        dialog.show()
+        OrderDetailsPaymentMethodPickerBottomSheet.newInstance(types)
+            .show(supportFragmentManager, PAYMENT_METHOD_PICKER_TAG)
     }
 
-    private fun defaultAmountValue(): String {
-        val order = currentOrder ?: return ""
+    private fun openPaymentConfig(type: String) {
+        if (hasDialogWithTag(PAYMENT_CONFIG_TAG)) {
+            return
+        }
+        OrderDetailsPaymentConfigBottomSheet.newInstance(
+            paymentType = type,
+            defaultAmount = defaultPendingAmount(),
+        ).show(supportFragmentManager, PAYMENT_CONFIG_TAG)
+    }
+
+    private fun hasDialogWithTag(tag: String): Boolean {
+        val fragment = supportFragmentManager.findFragmentByTag(tag)
+        return (fragment as? DialogFragment)?.dialog?.isShowing == true || fragment?.isAdded == true
+    }
+
+    private fun defaultPendingAmount(): Double {
+        val order = currentOrder ?: return 0.0
         val registeredAmount = order.receivables
             .filter { it.status != CANCELLED && it.status != REFUNDED }
             .sumOf { it.amountOriginal }
         val remaining = order.originalAmount - registeredAmount
-        val suggestedValue = if (remaining > 0) remaining else order.originalAmount
-        return if (suggestedValue > 0) "%,.2f".format(locale, suggestedValue) else ""
+        val suggestedValue = if (remaining > 0.0) remaining else order.originalAmount
+        return suggestedValue.coerceAtLeast(0.0)
     }
 
-    private fun parseCurrencyInput(rawValue: String): Double {
-        return rawValue
-            .trim()
-            .replace("R$", "")
-            .replace(".", "")
-            .replace(",", ".")
-            .replace("\\s".toRegex(), "")
-            .toDoubleOrNull()
-            ?: 0.0
-    }
-
-    private fun paymentMethodLabel(method: PaymentMethod): String {
-        val installments = method.installments.coerceAtLeast(1)
-        return if (installments > 1) {
-            "${method.name} (${installments}x)"
-        } else {
-            method.name
-        }
-    }
-
-    private fun formatCpfCnpj(cpfCnpj: String?): String {
-        val document = cpfCnpj?.trim().orEmpty()
-        return when (document.length) {
-            11 -> "${document.substring(0, 3)}.${document.substring(3, 6)}.${document.substring(6, 9)}-${document.substring(9, 11)}"
-            14 -> "${document.substring(0, 2)}.${document.substring(2, 5)}.${document.substring(5, 8)}/${document.substring(8, 12)}-${document.substring(12, 14)}"
-            else -> if (document.isBlank()) "-" else document
-        }
-    }
-
-    private fun setupToolbar() {
-        binding.toolbar.title = ""
-        setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        binding.toolbar.navigationIcon =
-            ContextCompat.getDrawable(this, R.drawable.ic_arrow_left)
-        binding.toolbar.setNavigationOnClickListener {
-            navigateToHome()
-        }
+    private fun setupHeaderActions() {
+        // No header back button on this screen by design.
     }
 
     private fun navigateToHome() {
@@ -414,12 +375,58 @@ class OrderDetailsActivity : AppCompatActivity(),
         finish()
     }
 
+    private fun setupBackNavigation() {
+        onBackPressedDispatcher.addCallback(this) {
+            handleExitRequest()
+        }
+    }
+
+    private fun handleExitRequest() {
+        if (binding.successView.visibility == View.VISIBLE) {
+            navigateToHome()
+            return
+        }
+
+        showExitConfirmationDialog()
+    }
+
+    private fun showExitConfirmationDialog() {
+        val balance = currentBalance()
+        val message = when {
+            balance > 0.0 -> getString(
+                R.string.order_details_exit_dialog_pending_message,
+                formatCurrency(abs(balance))
+            )
+            balance < 0.0 -> getString(
+                R.string.order_details_exit_dialog_excess_message,
+                formatCurrency(abs(balance))
+            )
+            else -> getString(R.string.order_details_exit_dialog_settled_message)
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.order_details_exit_dialog_title)
+            .setMessage(message)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.order_details_exit_dialog_confirm) { _, _ ->
+                navigateToHome()
+            }
+            .show()
+    }
+
+    private fun currentBalance(): Double {
+        val order = currentOrder ?: return 0.0
+        val activeReceivables = order.receivables.filter { it.status != CANCELLED && it.status != REFUNDED }
+        val registeredAmount = activeReceivables.sumOf { it.amountOriginal }
+        return order.originalAmount - registeredAmount
+    }
+
     private fun setupPayments(order: Order) {
         paymentsAdapter = OrderDetailsPaymentsRecyclerViewAdapter(order.receivables, this)
         val recyclerView: RecyclerView = binding.receivablesRecyclerView
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = paymentsAdapter
-        binding.emptyPaymentsTextView.visibility =
+        binding.emptyPaymentsContainer.visibility =
             if (order.receivables.isEmpty()) View.VISIBLE else View.GONE
     }
 
@@ -427,14 +434,14 @@ class OrderDetailsActivity : AppCompatActivity(),
     private fun setupBalanceSummary(order: Order) {
         val activeReceivables = order.receivables.filter { it.status != CANCELLED && it.status != REFUNDED }
         val registeredAmount = activeReceivables.sumOf { it.amountOriginal }
-        val balance = order.originalAmount - registeredAmount
+        val balance = currentBalance()
 
         binding.registeredAmountValueTextView.text = formatCurrency(registeredAmount)
 
         val (labelRes, colorRes, displayAmount) = when {
             balance > 0 -> Triple(
                 R.string.order_details_balance_pending,
-                R.color.orange,
+                R.color.primary_500,
                 abs(balance)
             )
             balance < 0 -> Triple(
@@ -453,6 +460,17 @@ class OrderDetailsActivity : AppCompatActivity(),
         binding.balanceLabelTextView.setTextColor(ContextCompat.getColor(this, colorRes))
         binding.balanceValueTextView.text = formatCurrency(displayAmount)
         binding.balanceValueTextView.setTextColor(ContextCompat.getColor(this, colorRes))
+        binding.balanceHintTextView.text = when {
+            balance > 0 -> getString(R.string.order_details_pending_message)
+            balance < 0 -> getString(R.string.order_details_registered_amount_hint)
+            else -> getString(R.string.order_details_settled_message)
+        }
+        binding.balanceHintTextView.visibility = View.VISIBLE
+        binding.finishServiceBtn.text = when {
+            balance > 0 -> getString(R.string.order_details_finish_pending_cta)
+            balance < 0 -> getString(R.string.order_details_finish_excess_cta)
+            else -> getString(R.string.order_details_finish_settled_cta)
+        }
     }
 
     private fun formatCurrency(value: Double): String {
@@ -466,10 +484,9 @@ class OrderDetailsActivity : AppCompatActivity(),
     }
 
     private fun validateErrorType(error: Exception?) {
-        if (error is UnauthorizedException) SessionExpiredDialog().show(
-            supportFragmentManager,
-            "SessionExpiredDialog"
-        )
+        if (error is UnauthorizedException) {
+            SessionExpiredDialog.showIfNeeded(supportFragmentManager)
+        }
     }
 
     override fun onItemClick(receivable: OrderReceivableItem) {
@@ -482,17 +499,21 @@ class OrderDetailsActivity : AppCompatActivity(),
             override fun onResult(refundPaymentData: RefundPaymentData?) {
                 if (refundPaymentData != null) {
                     viewModel.refundItem(receivable, refundPaymentData)
-                    Toast.makeText(this@OrderDetailsActivity, "Estorno de Pagamento realizado com sucesso!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@OrderDetailsActivity, getString(R.string.order_details_refund_success_toast), Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(this@OrderDetailsActivity, "Falha ao realizar estorno", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@OrderDetailsActivity, getString(R.string.order_details_refund_error_toast), Toast.LENGTH_SHORT).show()
                 }
             }
         }, receivable)
         refundPaymentDialogFragment.show(this.supportFragmentManager, "RefundPaymentDialogFragment")
-
     }
 
     override fun onDeletePendingClick(receivable: OrderReceivableItem) {
+        if (!receivable.canBeDeleted()) {
+            Toast.makeText(this, getString(R.string.order_details_delete_not_allowed), Toast.LENGTH_SHORT).show()
+            return
+        }
+
         AlertDialog.Builder(this)
             .setTitle(R.string.order_details_delete_pending_payment)
             .setMessage(R.string.order_details_delete_pending_payment_message)
@@ -511,5 +532,10 @@ class OrderDetailsActivity : AppCompatActivity(),
             @Suppress("DEPRECATION")
             intent.getSerializableExtra("order") as? Order
         }
+    }
+
+    companion object {
+        private const val PAYMENT_METHOD_PICKER_TAG = "OrderDetailsPaymentMethodPickerBottomSheet"
+        private const val PAYMENT_CONFIG_TAG = "OrderDetailsPaymentConfigBottomSheet"
     }
 }

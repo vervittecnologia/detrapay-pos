@@ -20,10 +20,15 @@ data class OrderResponse(
     val id: Int,
     val attributes: OrderAttributesResponse? = null,
     val status: String? = null,
+    @SerializedName(value = "originalAmount", alternate = ["original_amount"])
     val originalAmount: Double? = null,
+    @SerializedName(value = "currentAmount", alternate = ["current_amount"])
     val currentAmount: Double? = null,
+    @SerializedName(value = "billingDate", alternate = ["billing_date"])
     val billingDate: String? = null,
+    @SerializedName(value = "createdAt", alternate = ["created_at"])
     val createdAt: String? = null,
+    @SerializedName(value = "vehiclePrice", alternate = ["vehicle_price"])
     val vehiclePrice: Double? = null,
     @SerializedName(value = "isVehicleFinanced", alternate = ["is_vehicle_financed"])
     val isVehicleFinanced: Boolean? = null,
@@ -38,21 +43,29 @@ data class OrderResponse(
     val customerName: String? = null,
     @SerializedName(value = "customerCpfCnpj", alternate = ["customer_cpf_cnpj", "cpfCnpj"])
     val customerCpfCnpj: String? = null,
+    @SerializedName(value = "vehicleTypeName", alternate = ["vehicle_type_name"])
     val vehicleTypeName: String? = null,
+    @SerializedName(value = "salesmanName", alternate = ["salesman_name"])
     val salesmanName: String? = null,
+    @SerializedName(value = "paymentStatusSummary", alternate = ["payment_status_summary"])
     val paymentStatusSummary: String? = null
 )
 
 @Serializable
 data class OrderAttributesResponse(
     val status: String? = null,
+    @SerializedName(value = "originalAmount", alternate = ["original_amount"])
     val originalAmount: Double? = null,
+    @SerializedName(value = "currentAmount", alternate = ["current_amount"])
     val currentAmount: Double? = null,
+    @SerializedName(value = "billingDate", alternate = ["billing_date"])
     val billingDate: String? = null,
+    @SerializedName(value = "createdAt", alternate = ["created_at"])
     val createdAt: String? = null,
     val customers: CustomerDataWrapper? = null,
     val companies: CompanyDataWrapper? = null,
     val receivables: OrderReceivableDataWrapper? = null,
+    @SerializedName(value = "vehiclePrice", alternate = ["vehicle_price"])
     val vehiclePrice: Double? = null,
     val isVehicleFinanced: Boolean? = null,
     val isSpecialPlate: Boolean? = null,

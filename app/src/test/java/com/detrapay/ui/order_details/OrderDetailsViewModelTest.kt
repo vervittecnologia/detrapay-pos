@@ -11,6 +11,9 @@ import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.RefundPaymentData
 import com.detrapay.data.model.VehicleType
+import com.detrapay.data.model.remote.BrandFeesData
+import com.detrapay.data.model.remote.CalculateFeesResponse
+import com.detrapay.data.model.remote.InstallmentFee
 import com.detrapay.data.repositories.OrderRepository
 import com.detrapay.data.repositories.RegistrationRepository
 import com.detrapay.data.repositories.SalesmanRepository
@@ -18,8 +21,10 @@ import com.detrapay.testing.MainDispatcherRule
 import com.detrapay.testing.getOrAwaitValueMatching
 import com.detrapay.ui.state.UIState
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -51,7 +56,7 @@ class OrderDetailsViewModelTest {
     @Test
     fun `updateOrderSalesman publishes updated order from repository`() {
         val updatedOrder = order(status = OrderStatus.PAID)
-        coEvery { orderRepository.getOrder(123) } returns Result.Success(order(status = OrderStatus.PENDING))
+        coEvery { orderRepository.getOrder(123, forceRefresh = true) } returns Result.Success(order(status = OrderStatus.PENDING))
         coEvery { orderRepository.updateOrderSalesman(123, 4) } returns Result.Success(updatedOrder)
 
         viewModel.loadScreenContent(123)
@@ -64,6 +69,19 @@ class OrderDetailsViewModelTest {
 
         assertTrue(state is UIState.Success)
         assertEquals(OrderStatus.PAID, state.data?.status)
+    }
+
+    @Test
+    fun `loadScreenContent forces backend refresh for order details`() {
+        coEvery { orderRepository.getOrder(123, forceRefresh = true) } returns Result.Success(order(status = OrderStatus.PAID))
+
+        viewModel.loadScreenContent(123)
+
+        val state = viewModel.orderState.getOrAwaitValueMatching { it is UIState.Success<*> }
+
+        assertTrue(state is UIState.Success)
+        assertEquals(OrderStatus.PAID, state.data?.status)
+        coVerify(exactly = 1) { orderRepository.getOrder(123, forceRefresh = true) }
     }
 
     @Test
@@ -108,6 +126,151 @@ class OrderDetailsViewModelTest {
         assertEquals(OrderStatus.PENDING, state.data?.status)
     }
 
+    @Test
+    fun `cancelPendingItem rejects paid credit receivable`() {
+        val receivable = receivable().copy(status = OrderReceivableItemStatus.PAID)
+
+        viewModel.cancelPendingItem(receivable)
+
+        val state = viewModel.orderState.getOrAwaitValueMatching { it is UIState.Error<*> } as UIState.Error
+
+        assertEquals("Este pagamento nao pode ser excluido no status atual.", state.message)
+    }
+
+    @Test
+    fun `cancelPendingItem allows paid pix receivable`() {
+        val updatedOrder = order(status = OrderStatus.PENDING)
+        val receivable = receivable(
+            status = OrderReceivableItemStatus.PAID,
+            paymentMethod = PaymentMethod(
+                id = 4,
+                name = "Pix",
+                installments = 1,
+                interestTax = 0.0,
+                paymentType = "pix"
+            )
+        )
+        coEvery { orderRepository.cancelPendingReceivable(0, receivable) } returns Result.Success(updatedOrder)
+
+        viewModel.cancelPendingItem(receivable)
+
+        val state = viewModel.orderState.getOrAwaitValueMatching { it is UIState.Success<*> }
+
+        assertTrue(state is UIState.Success)
+    }
+
+    @Test
+    fun `cancelPendingItem allows paid cash receivable`() {
+        val updatedOrder = order(status = OrderStatus.PENDING)
+        val receivable = receivable(
+            status = OrderReceivableItemStatus.PAID,
+            paymentMethod = PaymentMethod(
+                id = 2,
+                name = "Dinheiro",
+                installments = 1,
+                interestTax = 0.0,
+                paymentType = "cash"
+            )
+        )
+        coEvery { orderRepository.cancelPendingReceivable(0, receivable) } returns Result.Success(updatedOrder)
+
+        viewModel.cancelPendingItem(receivable)
+
+        val state = viewModel.orderState.getOrAwaitValueMatching { it is UIState.Success<*> }
+
+        assertTrue(state is UIState.Success)
+    }
+
+    @Test
+    fun `cancelPendingItem allows refunded store credit receivable`() {
+        val updatedOrder = order(status = OrderStatus.PENDING)
+        val receivable = receivable(
+            status = OrderReceivableItemStatus.REFUNDED,
+            paymentMethod = PaymentMethod(
+                id = 3,
+                name = "Credito Loja",
+                installments = 1,
+                interestTax = 0.0,
+                paymentType = "store_credit"
+            )
+        )
+        coEvery { orderRepository.cancelPendingReceivable(0, receivable) } returns Result.Success(updatedOrder)
+
+        viewModel.cancelPendingItem(receivable)
+
+        val state = viewModel.orderState.getOrAwaitValueMatching { it is UIState.Success<*> }
+
+        assertTrue(state is UIState.Success)
+    }
+
+    @Test
+    fun `loadPaymentMethods groups and exposes available payment types`() {
+        val methods = listOf(
+            PaymentMethod(id = 1, name = "Credito 1x", installments = 1, interestTax = 0.0, paymentType = "credit"),
+            PaymentMethod(id = 2, name = "Credito 12x", installments = 12, interestTax = 0.0, paymentType = "credito"),
+            PaymentMethod(id = 3, name = "Pix", installments = 1, interestTax = 0.0, paymentType = "pix"),
+        )
+        coEvery { registrationRepository.loadPaymentMethods() } returns Result.Success(methods)
+
+        viewModel.loadPaymentMethods()
+        viewModel.paymentMethodsState.getOrAwaitValueMatching { it is UIState.Success<*> }
+
+        assertEquals(listOf("credito", "pix"), viewModel.availablePaymentTypes())
+        assertEquals(2, viewModel.getPaymentMethodsByType("credito").size)
+        assertEquals(2, viewModel.getPaymentMethodsByType("credit").size)
+    }
+
+    @Test
+    fun `resolvePaymentMethod prioritizes exact installment match`() {
+        val methods = listOf(
+            PaymentMethod(id = 1, name = "Credito 1x", installments = 1, interestTax = 0.0, paymentType = "credito"),
+            PaymentMethod(id = 2, name = "Credito 12x", installments = 12, interestTax = 0.0, paymentType = "credito"),
+        )
+        coEvery { registrationRepository.loadPaymentMethods() } returns Result.Success(methods)
+
+        viewModel.loadPaymentMethods()
+        viewModel.paymentMethodsState.getOrAwaitValueMatching { it is UIState.Success<*> }
+
+        val resolved = viewModel.resolvePaymentMethod("credito", 12)
+        assertNotNull(resolved)
+        assertEquals(2, resolved?.id)
+    }
+
+    @Test
+    fun `calculateFees publishes validation error when value is invalid`() {
+        viewModel.calculateFees(0.0, "credito")
+
+        val state = viewModel.calculateFeesState.getOrAwaitValueMatching { it is UIState.Error<*> } as UIState.Error
+        assertEquals("Informe um valor maior que zero.", state.message)
+    }
+
+    @Test
+    fun `calculateFees publishes success when repository returns installments`() {
+        val response = CalculateFeesResponse(
+            data = listOf(
+                BrandFeesData(
+                    brand = "VISA",
+                    installments = listOf(
+                        InstallmentFee(
+                            installmentNumber = 1,
+                            installmentValue = "100,00",
+                            totalValue = "100,00",
+                            interestValue = "0,00",
+                            noInterest = true
+                        )
+                    )
+                )
+            )
+        )
+        coEvery { registrationRepository.calculateFees(100.0, "credito") } returns Result.Success(response)
+
+        viewModel.calculateFees(100.0, "credito")
+
+        val state = viewModel.calculateFeesState.getOrAwaitValueMatching { it is UIState.Success<*> } as UIState.Success
+        assertEquals(1, state.data?.data?.firstOrNull()?.installments?.size)
+        coVerify(exactly = 1) { registrationRepository.calculateFees(100.0, "credito") }
+    }
+
     private fun order(status: OrderStatus) = Order(
         id = 123,
         serviceName = "Detrapay",
@@ -132,20 +295,23 @@ class OrderDetailsViewModelTest {
         salesman = com.detrapay.data.model.Salesman(id = 4, name = "Maria")
     )
 
-    private fun receivable() = OrderReceivableItem(
-        id = 20,
-        documentId = "abc",
-        amountOriginal = 1299.9,
-        amountFinal = 1299.9,
-        installments = 1,
-        status = OrderReceivableItemStatus.PENDING,
-        paymentMethod = PaymentMethod(
+    private fun receivable(
+        status: OrderReceivableItemStatus = OrderReceivableItemStatus.PENDING,
+        paymentMethod: PaymentMethod = PaymentMethod(
             id = 1,
             name = "Credito",
             installments = 12,
             interestTax = 0.02,
             paymentType = "credit"
-        ),
+        )
+    ) = OrderReceivableItem(
+        id = 20,
+        documentId = "abc",
+        amountOriginal = 1299.9,
+        amountFinal = 1299.9,
+        installments = 1,
+        status = status,
+        paymentMethod = paymentMethod,
         paymentDate = null,
         refundDate = null,
         cardLast4 = null,

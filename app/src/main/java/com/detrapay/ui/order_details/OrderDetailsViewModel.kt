@@ -11,6 +11,8 @@ import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.RefundPaymentData
 import com.detrapay.data.model.Salesman
+import com.detrapay.data.model.canBeDeleted
+import com.detrapay.data.model.remote.CalculateFeesResponse
 import com.detrapay.data.repositories.OrderRepository
 import com.detrapay.data.repositories.RegistrationRepository
 import com.detrapay.data.repositories.SalesmanRepository
@@ -28,6 +30,7 @@ class OrderDetailsViewModel @Inject constructor(
 ) : ViewModel() {
 
     private var orderId: Int = 0
+    private var paymentMethods: List<PaymentMethod> = emptyList()
     private val _orderState = MutableLiveData<UIState<Order>>()
     val orderState: LiveData<UIState<Order>> = _orderState
 
@@ -37,11 +40,14 @@ class OrderDetailsViewModel @Inject constructor(
     private val _paymentMethodsState = MutableLiveData<UIState<List<PaymentMethod>>>()
     val paymentMethodsState: LiveData<UIState<List<PaymentMethod>>> = _paymentMethodsState
 
+    private val _calculateFeesState = MutableLiveData<UIState<CalculateFeesResponse>>(UIState.Idle())
+    val calculateFeesState: LiveData<UIState<CalculateFeesResponse>> = _calculateFeesState
+
     fun loadScreenContent(orderId: Int) {
         this.orderId = orderId
         _orderState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
-            val result = orderRepository.getOrder(orderId)
+            val result = orderRepository.getOrder(orderId, forceRefresh = true)
             if (result is Result.Success) {
                 _orderState.postValue(UIState.Success(result.data))
             } else {
@@ -97,7 +103,10 @@ class OrderDetailsViewModel @Inject constructor(
         _paymentMethodsState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
             when (val result = registrationRepository.loadPaymentMethods()) {
-                is Result.Success -> _paymentMethodsState.postValue(UIState.Success(result.data))
+                is Result.Success -> {
+                    paymentMethods = result.data
+                    _paymentMethodsState.postValue(UIState.Success(result.data))
+                }
                 is Result.Error -> _paymentMethodsState.postValue(
                     UIState.Error(
                         message = result.exception.message ?: "Nao foi possivel carregar os meios de pagamento.",
@@ -106,6 +115,54 @@ class OrderDetailsViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    fun availablePaymentTypes(): List<String> {
+        val desiredOrder = listOf("credito", "debito", "pix", "dinheiro", "store_credit")
+        val available = paymentMethods
+            .mapNotNull { it.paymentType }
+            .map(::normalizePaymentType)
+            .toSet()
+
+        return desiredOrder.filter(available::contains)
+    }
+
+    fun getPaymentMethodsByType(type: String): List<PaymentMethod> {
+        val normalizedType = normalizePaymentType(type)
+        return paymentMethods.filter { method ->
+            normalizePaymentType(method.paymentType) == normalizedType
+        }
+    }
+
+    fun resolvePaymentMethod(type: String, installments: Int): PaymentMethod? {
+        val methods = getPaymentMethodsByType(type)
+        return methods.firstOrNull { it.installments == installments }
+            ?: methods.firstOrNull { it.installments == 1 }
+            ?: methods.firstOrNull()
+    }
+
+    fun calculateFees(value: Double, paymentType: String) {
+        if (value <= 0.0) {
+            _calculateFeesState.postValue(UIState.Error("Informe um valor maior que zero."))
+            return
+        }
+
+        _calculateFeesState.postValue(UIState.Loading())
+        viewModelScope.launch(Dispatchers.IO) {
+            when (val result = registrationRepository.calculateFees(value, paymentType)) {
+                is Result.Success -> _calculateFeesState.postValue(UIState.Success(result.data))
+                is Result.Error -> _calculateFeesState.postValue(
+                    UIState.Error(
+                        message = result.exception.message ?: "Nao foi possivel calcular as parcelas.",
+                        exception = result.exception
+                    )
+                )
+            }
+        }
+    }
+
+    fun clearFeesState() {
+        _calculateFeesState.postValue(UIState.Idle())
     }
 
     fun addPendingReceivable(paymentMethod: PaymentMethod, amountOriginal: Double) {
@@ -183,6 +240,13 @@ class OrderDetailsViewModel @Inject constructor(
     }
 
     fun cancelPendingItem(receivable: OrderReceivableItem) {
+        if (!receivable.canBeDeleted()) {
+            _orderState.postValue(
+                UIState.Error(message = "Este pagamento nao pode ser excluido no status atual.")
+            )
+            return
+        }
+
         _orderState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
             val result = orderRepository.cancelPendingReceivable(orderId, receivable)
@@ -193,11 +257,22 @@ class OrderDetailsViewModel @Inject constructor(
                 _orderState.postValue(
                     UIState.Error(
                         message = error.exception.message
-                            ?: "Algo deu errado ao excluir o pagamento pendente, tente novamente.",
+                            ?: "Algo deu errado ao excluir o pagamento, tente novamente.",
                         exception = error.exception,
                     )
                 )
             }
+        }
+    }
+
+    private fun normalizePaymentType(rawType: String?): String {
+        return when (rawType.orEmpty().trim().lowercase()) {
+            "credito", "credit", "cartao_credito", "cartao de credito" -> "credito"
+            "debito", "debit", "cartao_debito", "cartao de debito" -> "debito"
+            "pix" -> "pix"
+            "dinheiro", "cash" -> "dinheiro"
+            "store_credit", "credito_loja", "credito loja", "storecredit" -> "store_credit"
+            else -> rawType.orEmpty().trim().lowercase()
         }
     }
 }

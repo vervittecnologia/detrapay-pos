@@ -1,0 +1,115 @@
+# Resumo de falhas relevantes (pedido)
+Arquivo base: app_logs_fixed_v5.txt
+
+## Koin / WorkManager
+2510-02-15 02:23:21.423  2256  2256 E wpa_supplicant: eap_proxy: card_state=1 error_code=0
+2511-02-15 02:23:21.423  2256  2256 E wpa_supplicant: eap_proxy: card_state=2 error_code=3
+2512-02-15 02:23:21.423  2256  2256 E wpa_supplicant: eap_proxy: __wpa_qmi_client_indication_cb: msg_id=0x00000032
+2513-02-15 02:23:21.423  2256  2256 E wpa_supplicant: eap_proxy: card_state=1 error_code=0
+2514-02-15 02:23:21.423  2256  2256 E wpa_supplicant: eap_proxy: card_state=2 error_code=3
+2515-02-15 02:23:21.423  2256  2256 E wpa_supplicant: eap_proxy: __wpa_qmi_client_indication_cb: msg_id=0x00000032
+2516-02-15 02:23:21.423  2256  2256 E wpa_supplicant: eap_proxy: card_state=1 error_code=0
+2517-02-15 02:23:21.423  2256  2256 E wpa_supplicant: eap_proxy: card_state=2 error_code=3
+2518:02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: Could not instantiate br.com.uol.ps.coreauth.service.RefreshSubscriptionStatusWorker
+2519-02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: java.lang.reflect.InvocationTargetException
+2520-02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: 	at java.lang.reflect.Constructor.newInstance0(Native Method)
+2521-02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: 	at java.lang.reflect.Constructor.newInstance(Constructor.java:343)
+2522-02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: 	at androidx.work.WorkerFactory.createWorkerWithDefaultFallback(WorkerFactory.java:96)
+2523-02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: 	at androidx.work.impl.WorkerWrapper.runWorker(WorkerWrapper.java:245)
+2524-02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: 	at androidx.work.impl.WorkerWrapper.run(WorkerWrapper.java:137)
+2525-02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: 	at androidx.work.impl.utils.SerialExecutor$Task.run(SerialExecutor.java:91)
+2526-02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1167)
+2527-02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:641)
+2528-02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: 	at java.lang.Thread.run(Thread.java:923)
+2529:02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: Caused by: org.koin.core.error.NoDefinitionFoundException: No definition found for type 'br.com.uol.ps.coreauth.domain.AnonymousUseCase'. Check your Modules configuration and add missing type and/or qualifier!
+2530-02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: 	at org.koin.core.scope.Scope.resolveFromContext(Scope.kt:378)
+2531-02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: 	at org.koin.core.scope.Scope.stackParametersCall(Scope.kt:277)
+2532-02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: 	at org.koin.core.scope.Scope.resolveInstance(Scope.kt:263)
+2533-02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: 	at org.koin.core.scope.Scope.resolve(Scope.kt:236)
+2534-02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: 	at org.koin.core.scope.Scope.get(Scope.kt:218)
+2535-02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: 	at br.com.uol.ps.coreauth.service.RefreshSubscriptionStatusWorker.<init>(RefreshSubscriptionStatusWorker.kt:137)
+2536-02-15 02:23:21.447 32689 32756 E WM-WorkerFactory: 	... 9 more
+2537-02-15 02:23:21.447 32689 32756 E WM-WorkerWrapper: Could not create Worker br.com.uol.ps.coreauth.service.RefreshSubscriptionStatusWorker
+
+## WrapperSDK ICC
+41-02-15 02:12:31.563  1051  2053 E ActivityManager: 	at com.android.server.AlarmManagerService$AlarmThread.run(AlarmManagerService.java:4128)
+42-02-15 02:12:32.291  1051  1595 E PackageManager: skip verify key ,set it to Enhance level app!
+43-02-15 02:12:32.310  1051  1595 E PackageManager: skip verify key ,set it to Enhance level app!
+44-02-15 02:12:32.614  1021  3936 E installd: Couldn't opendir /data/app/vmdl1948397955.tmp: No such file or directory
+45-02-15 02:12:32.615  1021  3936 E installd: Failed to delete /data/app/vmdl1948397955.tmp: No such file or directory
+46:02-15 02:12:32.713  4224 30185 E WrapperSDK: Fail to execute cancelDetectICCCard
+47:02-15 02:12:32.713  4224 30185 E WrapperSDK: java.lang.IllegalArgumentException: Receiver not registered: br.com.uol.pagseguro.wrappersdk.gertec.card.ICCCardBroadCastReceiver@1075949
+48-02-15 02:12:32.713  4224 30185 E WrapperSDK: 	at android.app.LoadedApk.forgetReceiverDispatcher(LoadedApk.java:1459)
+49-02-15 02:12:32.713  4224 30185 E WrapperSDK: 	at android.app.ContextImpl.unregisterReceiver(ContextImpl.java:1642)
+50-02-15 02:12:32.713  4224 30185 E WrapperSDK: 	at android.content.ContextWrapper.unregisterReceiver(ContextWrapper.java:715)
+51-02-15 02:12:32.713  4224 30185 E WrapperSDK: 	at br.com.uol.pagseguro.wrappersdk.gertec.GertecManager$cancelDetectICCCard$1.invoke(GertecManager.kt:390)
+52-02-15 02:12:32.713  4224 30185 E WrapperSDK: 	at br.com.uol.pagseguro.wrappersdk.gertec.GertecManager$cancelDetectICCCard$1.invoke(GertecManager.kt:387)
+--
+1826-02-15 02:20:49.747   595 16194 E audio_hw_extn: audio_extn_perf_lock_acquire: Failed to acquire perf lock, err: -1
+1827-02-15 02:20:49.762   595 16194 E msm8974_platform: platform_set_channel_map: Could not set ctl, error:-1 ch_count:2
+1828-02-15 02:20:49.813  1051 16531 E VibratorService: Failed to issue command to vibrator HAL. Retrying.
+1829-02-15 02:20:49.814  1051 16531 E VibratorService: Failed to issue command to vibrator HAL. Retrying.
+1830-02-15 02:20:49.836   595 16194 E audio_hw_extn: audio_extn_perf_lock_release: Perf lock release error 
+1831:02-15 02:20:49.966  4224 25345 E WrapperSDK: Fail to execute cancelDetectICCCard
+1832:02-15 02:20:49.966  4224 25345 E WrapperSDK: java.lang.IllegalArgumentException: Receiver not registered: br.com.uol.pagseguro.wrappersdk.gertec.card.ICCCardBroadCastReceiver@d8cc531
+1833-02-15 02:20:49.966  4224 25345 E WrapperSDK: 	at android.app.LoadedApk.forgetReceiverDispatcher(LoadedApk.java:1459)
+1834-02-15 02:20:49.966  4224 25345 E WrapperSDK: 	at android.app.ContextImpl.unregisterReceiver(ContextImpl.java:1642)
+1835-02-15 02:20:49.966  4224 25345 E WrapperSDK: 	at android.content.ContextWrapper.unregisterReceiver(ContextWrapper.java:715)
+1836-02-15 02:20:49.966  4224 25345 E WrapperSDK: 	at br.com.uol.pagseguro.wrappersdk.gertec.GertecManager$cancelDetectICCCard$1.invoke(GertecManager.kt:390)
+1837-02-15 02:20:49.966  4224 25345 E WrapperSDK: 	at br.com.uol.pagseguro.wrappersdk.gertec.GertecManager$cancelDetectICCCard$1.invoke(GertecManager.kt:387)
+--
+1850-02-15 02:20:49.966  4224 25345 E WrapperSDK: 	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:100)
+1851-02-15 02:20:49.966  4224 25345 E WrapperSDK: 	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:584)
+1852-02-15 02:20:49.966  4224 25345 E WrapperSDK: 	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:793)
+1853-02-15 02:20:49.966  4224 25345 E WrapperSDK: 	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:697)
+1854-02-15 02:20:49.966  4224 25345 E WrapperSDK: 	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:684)
+1855:02-15 02:20:50.224  4224 30185 E WrapperSDK: Fail to execute cancelDetectICCCard
+1856:02-15 02:20:50.224  4224 30185 E WrapperSDK: java.lang.IllegalArgumentException: Receiver not registered: br.com.uol.pagseguro.wrappersdk.gertec.card.ICCCardBroadCastReceiver@1fed6f5
+1857-02-15 02:20:50.224  4224 30185 E WrapperSDK: 	at android.app.LoadedApk.forgetReceiverDispatcher(LoadedApk.java:1459)
+1858-02-15 02:20:50.224  4224 30185 E WrapperSDK: 	at android.app.ContextImpl.unregisterReceiver(ContextImpl.java:1642)
+1859-02-15 02:20:50.224  4224 30185 E WrapperSDK: 	at android.content.ContextWrapper.unregisterReceiver(ContextWrapper.java:715)
+1860-02-15 02:20:50.224  4224 30185 E WrapperSDK: 	at br.com.uol.pagseguro.wrappersdk.gertec.GertecManager$cancelDetectICCCard$1.invoke(GertecManager.kt:390)
+1861-02-15 02:20:50.224  4224 30185 E WrapperSDK: 	at br.com.uol.pagseguro.wrappersdk.gertec.GertecManager$cancelDetectICCCard$1.invoke(GertecManager.kt:387)
+--
+1962-02-15 02:21:25.091   437   437 E lowmemorykiller: Error opening /sys/kernel/debug/tracing/trace_marker; errno=2
+1963-02-15 02:21:25.091   437   437 E lowmemorykiller: Error opening /sys/kernel/debug/tracing/trace_marker; errno=2
+1964-02-15 02:21:25.147  1051  1595 E PackageManager: skip verify key ,set it to Enhance level app!
+1965-02-15 02:21:25.164  1051  1595 E PackageManager: skip verify key ,set it to Enhance level app!
+1966-02-15 02:21:25.193   437   437 E lowmemorykiller: Error opening /sys/kernel/debug/tracing/trace_marker; errno=2
+1967:02-15 02:21:25.385  4224 25341 E WrapperSDK: Fail to execute cancelDetectICCCard
+1968:02-15 02:21:25.385  4224 25341 E WrapperSDK: java.lang.IllegalArgumentException: Receiver not registered: br.com.uol.pagseguro.wrappersdk.gertec.card.ICCCardBroadCastReceiver@94914e1
+1969-02-15 02:21:25.385  4224 25341 E WrapperSDK: 	at android.app.LoadedApk.forgetReceiverDispatcher(LoadedApk.java:1459)
+1970-02-15 02:21:25.385  4224 25341 E WrapperSDK: 	at android.app.ContextImpl.unregisterReceiver(ContextImpl.java:1642)
+1971-02-15 02:21:25.385  4224 25341 E WrapperSDK: 	at android.content.ContextWrapper.unregisterReceiver(ContextWrapper.java:715)
+1972-02-15 02:21:25.385  4224 25341 E WrapperSDK: 	at br.com.uol.pagseguro.wrappersdk.gertec.GertecManager$cancelDetectICCCard$1.invoke(GertecManager.kt:390)
+1973-02-15 02:21:25.385  4224 25341 E WrapperSDK: 	at br.com.uol.pagseguro.wrappersdk.gertec.GertecManager$cancelDetectICCCard$1.invoke(GertecManager.kt:387)
+--
+2591-02-15 02:23:22.683   437   437 E lowmemorykiller: Error opening /sys/kernel/debug/tracing/trace_marker; errno=2
+2592-02-15 02:23:22.871 32689   413 E newrelic: Metric.increment() called with negative value[-1]
+2593-02-15 02:23:22.877  1051  3987 E TaskPersister: File error accessing recents directory (directory doesn't exist?).
+2594-02-15 02:23:22.882  1051  1358 E ActivityManager: ProcessRecord{f2cd26 32279:com.detrapay/u0a122} is attached to a previous process
+2595-02-15 02:23:22.908  1051  1358 E ActivityManager: Already have existing proc ProcessRecord{f2cd26 32279:com.detrapay/u0a122} when adding ProcessRecord{447d9ce 0:com.detrapay/u0a122}
+2596:02-15 02:23:23.004  4224 25345 E WrapperSDK: Fail to execute cancelDetectICCCard
+2597:02-15 02:23:23.004  4224 25345 E WrapperSDK: java.lang.IllegalArgumentException: Receiver not registered: br.com.uol.pagseguro.wrappersdk.gertec.card.ICCCardBroadCastReceiver@84e5cd6
+2598-02-15 02:23:23.004  4224 25345 E WrapperSDK: 	at android.app.LoadedApk.forgetReceiverDispatcher(LoadedApk.java:1459)
+2599-02-15 02:23:23.004  4224 25345 E WrapperSDK: 	at android.app.ContextImpl.unregisterReceiver(ContextImpl.java:1642)
+2600-02-15 02:23:23.004  4224 25345 E WrapperSDK: 	at android.content.ContextWrapper.unregisterReceiver(ContextWrapper.java:715)
+2601-02-15 02:23:23.004  4224 25345 E WrapperSDK: 	at br.com.uol.pagseguro.wrappersdk.gertec.GertecManager$cancelDetectICCCard$1.invoke(GertecManager.kt:390)
+2602-02-15 02:23:23.004  4224 25345 E WrapperSDK: 	at br.com.uol.pagseguro.wrappersdk.gertec.GertecManager$cancelDetectICCCard$1.invoke(GertecManager.kt:387)
+--
+2627-02-15 02:23:26.201   595 16194 E audio_hw_extn: audio_extn_perf_lock_acquire: Failed to acquire perf lock, err: -1
+2628-02-15 02:23:26.218   595 16194 E msm8974_platform: platform_set_channel_map: Could not set ctl, error:-1 ch_count:2
+2629-02-15 02:23:26.295   595 16194 E audio_hw_extn: audio_extn_perf_lock_release: Perf lock release error 
+2630-02-15 02:23:26.344   467   467 E ackageinstalle: Not starting debugger since process cannot load the jdwp agent.
+2631-02-15 02:23:27.219  1051  3987 E TaskPersister: File error accessing recents directory (directory doesn't exist?).
+2632:02-15 02:23:27.785  4224 25341 E WrapperSDK: Fail to execute cancelDetectICCCard
+2633:02-15 02:23:27.785  4224 25341 E WrapperSDK: java.lang.IllegalArgumentException: Receiver not registered: br.com.uol.pagseguro.wrappersdk.gertec.card.ICCCardBroadCastReceiver@e46ab4
+2634-02-15 02:23:27.785  4224 25341 E WrapperSDK: 	at android.app.LoadedApk.forgetReceiverDispatcher(LoadedApk.java:1459)
+2635-02-15 02:23:27.785  4224 25341 E WrapperSDK: 	at android.app.ContextImpl.unregisterReceiver(ContextImpl.java:1642)
+2636-02-15 02:23:27.785  4224 25341 E WrapperSDK: 	at android.content.ContextWrapper.unregisterReceiver(ContextWrapper.java:715)
+2637-02-15 02:23:27.785  4224 25341 E WrapperSDK: 	at br.com.uol.pagseguro.wrappersdk.gertec.GertecManager$cancelDetectICCCard$1.invoke(GertecManager.kt:390)
+2638-02-15 02:23:27.785  4224 25341 E WrapperSDK: 	at br.com.uol.pagseguro.wrappersdk.gertec.GertecManager$cancelDetectICCCard$1.invoke(GertecManager.kt:387)
+
+## Processo com.detrapay (ActivityManager)
+2594:02-15 02:23:22.882  1051  1358 E ActivityManager: ProcessRecord{f2cd26 32279:com.detrapay/u0a122} is attached to a previous process
+2595:02-15 02:23:22.908  1051  1358 E ActivityManager: Already have existing proc ProcessRecord{f2cd26 32279:com.detrapay/u0a122} when adding ProcessRecord{447d9ce 0:com.detrapay/u0a122}

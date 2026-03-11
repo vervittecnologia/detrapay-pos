@@ -28,6 +28,7 @@ import retrofit2.http.Url
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -101,6 +102,9 @@ interface DetrapayService {
 
     @PUT("order-receivables/{id}")
     suspend fun updateOrderReceivableItem(@Path("id") id: String, @Body payload: UpdateOrderReceivableRequest): Response<OrderReceivableMutationResponse>
+
+    @DELETE("receivables/{id}")
+    suspend fun deleteOrderReceivableItem(@Path("id") id: String): Response<OrderReceivableMutationResponse>
 
     @POST("update-split-config")
     suspend fun updateSplitConfig(@Body payload: SplitConfigRequest): Response<Unit>

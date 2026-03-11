@@ -84,6 +84,9 @@ class RegistrationResumeFragment : Fragment() {
         binding.registrationOrderResumeNextBtn.setOnClickListener {
             registrationViewModel.createOrderWithoutPayments()
         }
+        binding.printResumeButton.setOnClickListener {
+            printResume()
+        }
 
         binding.btnMore.setOnClickListener {
             showOverflowMenu(it)
@@ -108,8 +111,8 @@ class RegistrationResumeFragment : Fragment() {
 
     private fun showOverflowMenu(view: View) {
         val popup = PopupMenu(requireContext(), view)
-        popup.menu.add(0, 1, 0, "Adicionar desconto")
-        popup.menu.add(0, 2, 1, "Imprimir Resumo")
+        popup.menu.add(0, 1, 0, getString(R.string.registration_resume_add_discount))
+        popup.menu.add(0, 2, 1, getString(R.string.registration_resume_print_menu))
 
         popup.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {

@@ -4,62 +4,39 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/dialog_background">
+    android:background="@color/neutral_100">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:paddingHorizontal="16dp"
-        android:paddingTop="12dp"
-        android:paddingBottom="16dp">
-
-        <View
-            android:layout_width="48dp"
-            android:layout_height="4dp"
-            android:layout_gravity="center_horizontal"
-            android:background="#E5E7EB" />
+        android:orientation="vertical">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
             android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/tvSheetTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/neutral_900"
-                    android:textSize="22sp"
-                    android:textStyle="bold"
-                    tools:text="Adicionar CREDITO" />
-
-                <TextView
-                    android:id="@+id/tvSheetSubtitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="@color/neutral_500"
-                    android:textSize="12sp"
-                    tools:text="Saldo pendente: R$ 1.445,71" />
-            </LinearLayout>
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingTop="14dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="14dp">
 
             <ImageView
                 android:id="@+id/btnClose"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:padding="6dp"
-                android:src="@drawable/ic_close"
-                app:tint="@color/neutral_500" />
+                style="@style/Widget.DS.IconButton"
+                android:src="@drawable/ic_arrow_left"
+                app:tint="@color/neutral_900" />
+
+            <TextView
+                android:id="@+id/tvSheetTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:textColor="@color/neutral_900"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                tools:text="Confirmar Pagamento" />
         </LinearLayout>
 
         <androidx.core.widget.NestedScrollView
@@ -67,78 +44,85 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:fillViewport="true"
-            android:overScrollMode="never">
+            android:fillViewport="true">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingTop="12dp">
+                android:paddingStart="16dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="20dp">
+
+                <TextView
+                    android:id="@+id/tvSheetSubtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/neutral_500"
+                    android:textSize="12sp"
+                    tools:text="Saldo pendente: R$ 1.469,18" />
+
+                <TextView
+                    android:id="@+id/tvAmountLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:text="Valor a pagar"
+                    android:textColor="@color/neutral_900"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardBackgroundColor="@color/white"
-                    app:cardCornerRadius="18dp"
+                    android:layout_marginTop="10dp"
+                    app:cardBackgroundColor="@color/neutral_200"
+                    app:cardCornerRadius="14dp"
                     app:cardElevation="0dp"
-                    app:strokeColor="#E5E7EB"
+                    app:strokeColor="@color/neutral_300"
                     app:strokeWidth="1dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="12dp">
+                        android:gravity="center_vertical"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="12dp">
 
                         <TextView
-                            android:id="@+id/tvAmountLabel"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:text="R$"
                             android:textColor="@color/neutral_500"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            tools:text="VALOR DESTE PAGAMENTO" />
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
+                        <EditText
+                            android:id="@+id/etPaymentValue"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
+                            android:layout_marginStart="8dp"
+                            android:layout_weight="1"
+                            android:background="@null"
+                            android:hint="0,00"
+                            android:imeOptions="actionSearch"
+                            android:inputType="numberDecimal"
+                            android:maxLines="1"
+                            android:textColor="@color/neutral_900"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            tools:text="3.469,18" />
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="R$"
-                                android:textColor="@color/neutral_400"
-                                android:textSize="18sp"
-                                android:textStyle="bold" />
-
-                            <EditText
-                                android:id="@+id/etPaymentValue"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:background="@null"
-                                android:hint="0,00"
-                                android:inputType="numberDecimal"
-                                android:paddingStart="8dp"
-                                android:textColor="@color/primary_800"
-                                android:textSize="26sp"
-                                android:textStyle="bold"
-                                tools:text="1.445,71" />
-
-                            <ImageView
-                                android:id="@+id/btnClearValue"
-                                android:layout_width="28dp"
-                                android:layout_height="28dp"
-                                android:background="?attr/selectableItemBackgroundBorderless"
-                                android:padding="4dp"
-                                android:src="@drawable/ic_close"
-                                android:visibility="gone"
-                                app:tint="@color/neutral_400" />
-                        </LinearLayout>
+                        <ImageView
+                            android:id="@+id/btnClearValue"
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:padding="4dp"
+                            android:src="@drawable/ic_close"
+                            android:visibility="gone"
+                            app:tint="@color/neutral_400" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -146,10 +130,10 @@
                     android:id="@+id/tvBrandLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="BANDEIRA DO CARTÃO"
-                    android:textColor="@color/neutral_500"
-                    android:textSize="12sp"
+                    android:layout_marginTop="18dp"
+                    android:text="Bandeira"
+                    android:textColor="@color/neutral_900"
+                    android:textSize="15sp"
                     android:textStyle="bold"
                     android:visibility="gone" />
 
@@ -157,7 +141,7 @@
                     android:id="@+id/toggleGroupBrand"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="8dp"
                     android:visibility="gone"
                     app:singleSelection="true">
 
@@ -165,48 +149,33 @@
                         android:id="@+id/btnVisa"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         android:layout_width="0dp"
-                        android:layout_height="56dp"
+                        android:layout_height="44dp"
                         android:layout_weight="1"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
                         android:text="VISA"
-                        android:textSize="9sp"
-                        android:textStyle="bold"
-                        app:iconGravity="top"
-                        app:iconPadding="1dp"
-                        app:iconSize="20dp"
+                        app:icon="@drawable/ic_visa"
+                        app:iconGravity="textStart"
                         app:iconTint="@null" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnMaster"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         android:layout_width="0dp"
-                        android:layout_height="56dp"
+                        android:layout_height="44dp"
                         android:layout_weight="1"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
                         android:text="MASTER"
-                        android:textSize="9sp"
-                        android:textStyle="bold"
-                        app:iconGravity="top"
-                        app:iconPadding="1dp"
-                        app:iconSize="20dp"
+                        app:icon="@drawable/ic_mastercard"
+                        app:iconGravity="textStart"
                         app:iconTint="@null" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnElo"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         android:layout_width="0dp"
-                        android:layout_height="56dp"
+                        android:layout_height="44dp"
                         android:layout_weight="1"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
                         android:text="ELO"
-                        android:textSize="9sp"
-                        android:textStyle="bold"
-                        app:iconGravity="top"
-                        app:iconPadding="1dp"
-                        app:iconSize="20dp"
+                        app:icon="@drawable/ic_elo"
+                        app:iconGravity="textStart"
                         app:iconTint="@null" />
                 </com.google.android.material.button.MaterialButtonToggleGroup>
 
@@ -214,30 +183,34 @@
                     android:id="@+id/groupCreditSection"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="22dp"
                     android:orientation="vertical"
                     android:visibility="gone">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="PARCELAMENTO"
-                        android:textColor="@color/neutral_500"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Escolha as parcelas"
+                            android:textColor="@color/neutral_900"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/rvInstallments"
                         android:layout_width="match_parent"
-                        android:layout_height="280dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:clipToPadding="false"
-                        android:nestedScrollingEnabled="true"
-                        android:overScrollMode="ifContentScrolls"
-                        android:paddingBottom="8dp"
-                        android:scrollbars="vertical"
+                        android:nestedScrollingEnabled="false"
                         android:visibility="gone"
-                        tools:itemCount="3"
+                        tools:itemCount="5"
                         tools:listitem="@layout/registration_payment_installment_item" />
                 </LinearLayout>
 
@@ -245,12 +218,12 @@
                     android:id="@+id/cardSimpleSummary"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="18dp"
                     android:visibility="gone"
-                    app:cardBackgroundColor="@color/primary_100"
-                    app:cardCornerRadius="18dp"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="14dp"
                     app:cardElevation="0dp"
-                    app:strokeColor="@color/primary_200"
+                    app:strokeColor="@color/neutral_300"
                     app:strokeWidth="1dp">
 
                     <LinearLayout
@@ -263,112 +236,66 @@
                             android:id="@+id/tvSummaryTitle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textColor="@color/primary_800"
+                            android:textColor="@color/neutral_900"
                             android:textSize="16sp"
                             android:textStyle="bold"
                             tools:text="Resumo do pagamento" />
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
+                        <TextView
+                            android:id="@+id/tvSummaryLine1Label"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="12dp"
-                            android:orientation="horizontal">
+                            android:textColor="@color/neutral_500"
+                            android:textSize="12sp"
+                            tools:text="Valor informado" />
 
-                            <TextView
-                                android:id="@+id/tvSummaryLine1Label"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:textColor="@color/neutral_500"
-                                android:textSize="13sp"
-                                tools:text="Valor informado" />
-
-                            <TextView
-                                android:id="@+id/tvSummaryLine1Value"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textColor="@color/neutral_900"
-                                android:textSize="13sp"
-                                android:textStyle="bold"
-                                tools:text="R$ 500,00" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
+                        <TextView
+                            android:id="@+id/tvSummaryLine1Value"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:orientation="horizontal">
+                            android:textColor="@color/neutral_900"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            tools:text="R$ 500,00" />
 
-                            <TextView
-                                android:id="@+id/tvSummaryLine2Label"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:textColor="@color/neutral_500"
-                                android:textSize="13sp"
-                                tools:text="Taxa" />
-
-                            <TextView
-                                android:id="@+id/tvSummaryLine2Value"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textColor="@color/neutral_900"
-                                android:textSize="13sp"
-                                android:textStyle="bold"
-                                tools:text="R$ 0,00" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
+                        <TextView
+                            android:id="@+id/tvSummaryLine2Label"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:orientation="horizontal">
+                            android:layout_marginTop="10dp"
+                            android:textColor="@color/neutral_500"
+                            android:textSize="12sp"
+                            tools:text="Taxa" />
 
-                            <TextView
-                                android:id="@+id/tvSummaryLine3Label"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:textColor="@color/neutral_500"
-                                android:textSize="13sp"
-                                tools:text="Valor final" />
+                        <TextView
+                            android:id="@+id/tvSummaryLine2Value"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/neutral_900"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            tools:text="R$ 0,00" />
 
-                            <TextView
-                                android:id="@+id/tvSummaryLine3Value"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textColor="@color/primary_800"
-                                android:textSize="14sp"
-                                android:textStyle="bold"
-                                tools:text="R$ 500,00" />
-                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/tvSummaryLine3Label"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:textColor="@color/neutral_500"
+                            android:textSize="12sp"
+                            tools:text="Valor final" />
+
+                        <TextView
+                            android:id="@+id/tvSummaryLine3Value"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/primary_500"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            tools:text="R$ 500,00" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnPrimaryAction"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="12dp"
-                    android:enabled="false"
-                    android:text="CALCULAR"
-                    android:textAllCaps="false"
-                    android:textColor="@color/white"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    app:backgroundTint="@color/primary_500"
-                    app:cornerRadius="12dp" />
-
-                <TextView
-                    android:id="@+id/tvActionHint"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:gravity="center"
-                    android:text="Calcule a taxa e o valor final antes de confirmar."
-                    android:textColor="@color/neutral_400"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/btnReset"
@@ -378,27 +305,65 @@
                     android:layout_marginTop="10dp"
                     android:background="?attr/selectableItemBackground"
                     android:padding="4dp"
-                    android:text="ALTERAR DADOS"
+                    android:text="Alterar"
                     android:textColor="@color/primary_500"
                     android:textSize="12sp"
                     android:textStyle="bold"
                     android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvActionHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center"
+                    android:text="Calcule primeiro para confirmar o pagamento."
+                    android:textColor="@color/neutral_400"
+                    android:textSize="11sp" />
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnConfirm"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_marginTop="10dp"
-            android:enabled="false"
-            android:text="ADICIONAR PAGAMENTO"
-            android:textAllCaps="false"
-            android:textColor="@color/white"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            app:backgroundTint="@color/primary_500"
-            app:cornerRadius="12dp" />
+            android:layout_height="wrap_content"
+            android:background="@color/white"
+            android:elevation="10dp"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPrimaryAction"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:enabled="false"
+                android:text="Ver parcelas"
+                android:textAllCaps="false"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:cornerRadius="14dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnConfirm"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="10dp"
+                android:enabled="false"
+                android:text="Efetuar Pagamento"
+                android:textAllCaps="false"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:cornerRadius="14dp" />
+
+            <TextView
+                android:id="@+id/tvSecureHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="@string/registration_payment_secure_hint"
+                android:textColor="@color/neutral_400"
+                android:textSize="11sp" />
+        </LinearLayout>
     </LinearLayout>
 
     <FrameLayout

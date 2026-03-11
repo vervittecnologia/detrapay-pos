@@ -7,11 +7,13 @@ import android.content.DialogInterface
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.util.Base64
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.activityViewModels
@@ -57,24 +59,39 @@ class PaymentDialogFragment(
         startPayment(orderId, receivableItem)
     }
 
+    override fun onStart() {
+        super.onStart()
+        dialog?.window?.apply {
+            setLayout(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        }
+    }
+
     private fun startPayment(orderId: Int, receivable: OrderReceivableItem){
         viewModel.payOrder(orderId, receivable, serial)
     }
 
     private fun setupObservers() {
         viewModel.init()
-        viewModel.paymentState.observe(this, Observer { status ->
+        viewModel.paymentState.observe(viewLifecycleOwner, Observer { status ->
             when (status) {
                 is UIState.Loading -> {
-                    status.message.let {
-                        binding.transactionMessage.text = it
-                    }
+                    binding.dialogTitle.text = getString(R.string.payment_dialog_title_processing)
+                    binding.transactionMessage.text =
+                        status.message ?: getString(R.string.payment_dialog_loading_default)
+                    binding.loadingSupportMessage.visibility = View.VISIBLE
+                    binding.loadingSupportMessage.text = getString(R.string.payment_dialog_support_loading)
                     binding.successView.visibility = View.GONE
                     binding.errorView.visibility = View.GONE
                     binding.loadingView.visibility = View.VISIBLE
                 }
 
                 is UIState.Success -> {
+                    binding.dialogTitle.text = getString(R.string.payment_dialog_title_success)
                     status.data?.let {
                         result = it
                         binding.errorView.visibility = View.GONE
@@ -85,6 +102,7 @@ class PaymentDialogFragment(
                 }
 
                 is UIState.Error -> {
+                    binding.dialogTitle.text = getString(R.string.payment_dialog_title_error)
                     binding.loadingView.visibility = View.GONE
                     binding.successView.visibility = View.GONE
                     binding.errorMessage.text = status.message ?: getString(R.string.employees_default_error_message)
@@ -133,24 +151,47 @@ class PaymentDialogFragment(
             val clipboardManager =
                 requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             clipboardManager.setPrimaryClip(ClipData.newPlainText("pix_code", pixCode))
-            Toast.makeText(requireContext(), "Codigo PIX copiado.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), getString(R.string.payment_dialog_pix_copied), Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun showSuccessContent(paymentData: PaymentData) {
         if (!paymentData.pendingConfirmation) {
-            binding.successMessage.text = "Pagamento realizado com sucesso!"
+            binding.successMessage.text = getString(R.string.payment_dialog_success_title)
+            binding.successSupportMessage.visibility = View.VISIBLE
+            binding.successSupportMessage.text = getString(R.string.payment_dialog_support_success)
             binding.pixQrCodeImage.visibility = View.GONE
             binding.pixCopyPasteLabel.visibility = View.GONE
             binding.pixCopyPasteValue.visibility = View.GONE
-            binding.pixMetaInfo.visibility = View.GONE
+            val successMeta = buildList {
+                paymentData.date?.takeIf { it.isNotBlank() }?.let { date ->
+                    val time = paymentData.time?.takeIf { value -> value.isNotBlank() }
+                    if (time != null) {
+                        add(getString(R.string.payment_dialog_meta_date_time, date, time))
+                    } else {
+                        add(getString(R.string.payment_dialog_meta_date, date))
+                    }
+                }
+                paymentData.transactionId?.takeIf { it.isNotBlank() }?.let {
+                    add(getString(R.string.payment_dialog_meta_transaction, it))
+                }
+            }.joinToString("\n")
+
+            if (successMeta.isBlank()) {
+                binding.pixMetaInfo.visibility = View.GONE
+            } else {
+                binding.pixMetaInfo.visibility = View.VISIBLE
+                binding.pixMetaInfo.text = successMeta
+            }
             binding.copyPixCodeBtn.visibility = View.GONE
-            binding.backSuccessBtn.text = "Voltar ao pedido"
+            binding.backSuccessBtn.text = getString(R.string.payment_dialog_success_continue)
             return
         }
 
-        binding.successMessage.text = "QR Code PIX gerado"
-        binding.backSuccessBtn.text = "Fechar"
+        binding.successMessage.text = getString(R.string.payment_dialog_pix_generated)
+        binding.successSupportMessage.visibility = View.VISIBLE
+        binding.successSupportMessage.text = getString(R.string.payment_dialog_support_pix)
+        binding.backSuccessBtn.text = getString(R.string.payment_dialog_success_close)
 
         val pixCode = paymentData.pixCopyPasteCode?.takeIf { it.isNotBlank() }
             ?: paymentData.pixQrCodeContent.orEmpty()
@@ -161,8 +202,12 @@ class PaymentDialogFragment(
         binding.pixCopyPasteValue.text = pixCode
 
         val metaInfo = buildList {
-            paymentData.pixTxIdCode?.takeIf { it.isNotBlank() }?.let { add("TxId: $it") }
-            paymentData.pixExpiresAt?.takeIf { it.isNotBlank() }?.let { add("Expira em: $it") }
+            paymentData.pixTxIdCode?.takeIf { it.isNotBlank() }?.let {
+                add(getString(R.string.payment_dialog_meta_txid, it))
+            }
+            paymentData.pixExpiresAt?.takeIf { it.isNotBlank() }?.let {
+                add(getString(R.string.payment_dialog_meta_expires, it))
+            }
         }.joinToString("\n")
 
         if (metaInfo.isBlank()) {

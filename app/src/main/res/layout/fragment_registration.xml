@@ -61,7 +61,7 @@
                 android:id="@+id/logoutButton"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
-                android:contentDescription="@string/toolbar_content_description"
+                android:contentDescription="@string/toolbar_logout_content_description"
                 android:src="@drawable/ic_logout"
                 app:layout_constraintBottom_toBottomOf="@id/logoContainer"
                 app:layout_constraintEnd_toEndOf="parent"

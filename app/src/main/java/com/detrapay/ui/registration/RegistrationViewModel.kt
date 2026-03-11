@@ -81,6 +81,9 @@ class RegistrationViewModel @Inject constructor(
     private val _paymentsLiveData = MutableLiveData<List<SimulationPayment>>()
     val paymentsLiveData: LiveData<List<SimulationPayment>> = _paymentsLiveData
 
+    private val _lastSavedPaymentId = MutableLiveData<Long?>()
+    val lastSavedPaymentId: LiveData<Long?> = _lastSavedPaymentId
+
     private val _remainingBalanceLiveData = MutableLiveData<Double>()
     val remainingBalanceLiveData: LiveData<Double> = _remainingBalanceLiveData
 
@@ -156,6 +159,8 @@ class RegistrationViewModel @Inject constructor(
     }
 
     fun simulationSimulation() = simulation?.simulation
+    fun simulationCustomer() = simulation?.customer
+    fun currentOrderId(): Int? = order?.id
 
     fun loadOrderScreenContent() {
         Logger.d("RegistrationViewModel - loadScreenContent")
@@ -390,7 +395,7 @@ class RegistrationViewModel @Inject constructor(
         return payments.find { it.id == id }
     }
 
-    fun getCachedFees(value: Double, paymentType: String, brand: String): CalculateFeesResponse? {
+    fun getCachedFees(value: Double, paymentType: String, brand: String? = null): CalculateFeesResponse? {
         return feesCache[feesCacheKey(value, paymentType, brand)]
     }
 
@@ -398,7 +403,7 @@ class RegistrationViewModel @Inject constructor(
         _registrationState.postValue(RegistrationState(currentScreen = 3))
     }
 
-    fun calculateFees(value: Double, paymentType: String, brand: String) {
+    fun calculateFees(value: Double, paymentType: String, brand: String? = null) {
         _calculateFeesState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
             val result = registrationRepository.calculateFees(value, paymentType, brand)
@@ -417,11 +422,11 @@ class RegistrationViewModel @Inject constructor(
         }
     }
 
-    private fun feesCacheKey(value: Double, paymentType: String, brand: String): FeesCacheKey {
+    private fun feesCacheKey(value: Double, paymentType: String, brand: String? = null): FeesCacheKey {
         return FeesCacheKey(
             value = value.roundTo2DecimalPlacesMath(),
             paymentType = paymentType.trim().lowercase(),
-            brand = brand.trim().uppercase(),
+            brand = "",
         )
     }
 
@@ -579,6 +584,7 @@ class RegistrationViewModel @Inject constructor(
     fun addPayment(item: SimulationPayment) {
         payments.add(item)
         updatePaymentsList()
+        _lastSavedPaymentId.value = item.id
     }
 
     fun removePayment(item: SimulationPayment) {
@@ -591,7 +597,12 @@ class RegistrationViewModel @Inject constructor(
         if (index != -1) {
             payments[index] = item
             updatePaymentsList()
+            _lastSavedPaymentId.value = item.id
         }
+    }
+
+    fun consumeLastSavedPaymentId() {
+        _lastSavedPaymentId.value = null
     }
 
     fun removeDiscount(item: SimulationItem): Int? {

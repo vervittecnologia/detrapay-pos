@@ -6,6 +6,7 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
@@ -52,6 +53,8 @@ class RegistrationPaymentDetailFragment : Fragment() {
         setupUI()
         setupObservers()
         loadBrandIcons()
+        updateConfirmButtonState()
+        updateConsultationHint()
         
         if (editingPaymentId != -1L) {
             loadEditingPayment()
@@ -90,6 +93,13 @@ class RegistrationPaymentDetailFragment : Fragment() {
     }
 
     private fun setupUI() {
+        binding.btnConfirm.text = getString(
+            if (editingPaymentId != -1L) {
+                R.string.registration_payment_detail_confirm_edit
+            } else {
+                R.string.registration_payment_detail_confirm_add
+            }
+        )
         binding.btnBack.setOnClickListener { findNavController().popBackStack() }
         binding.btnClose.setOnClickListener { (activity as? RegistrationActivity)?.showExitConfirmation() }
         binding.btnBackFooter.setOnClickListener { findNavController().popBackStack() }
@@ -105,9 +115,10 @@ class RegistrationPaymentDetailFragment : Fragment() {
 
         // Large Value Input with Mask
         binding.etCardValue.addTextChangedListener(Mask.moneyMask(binding.etCardValue) { value ->
-            // Reset installments if value changes?
             hideInstallments()
             binding.btnClearValue.visibility = if (value.isNotEmpty() && value != "0,00") View.VISIBLE else View.GONE
+            updateConsultButtonState()
+            updateConsultationHint()
         })
 
         binding.btnClearValue.setOnClickListener {
@@ -130,6 +141,7 @@ class RegistrationPaymentDetailFragment : Fragment() {
         }
 
         binding.btnConsultInstallments.isEnabled = selectedBrand.isNotEmpty()
+        updateConsultButtonState()
 
         binding.toggleGroupBrand.addOnButtonCheckedListener { group, checkedId, isChecked ->
             if (isChecked) {
@@ -141,8 +153,9 @@ class RegistrationPaymentDetailFragment : Fragment() {
                 }
                 binding.btnConsultInstallments.isEnabled = selectedBrand.isNotEmpty()
                 hideInstallments()
+                updateConsultButtonState()
+                updateConsultationHint()
                 
-                // Hide keyboard when a brand is selected
                 val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
                 imm.hideSoftInputFromWindow(group.windowToken, 0)
                 binding.etCardValue.clearFocus()
@@ -183,8 +196,12 @@ class RegistrationPaymentDetailFragment : Fragment() {
                 }
                 is UIState.Error -> {
                     binding.loadingView.visibility = View.GONE
-                    binding.btnConsultInstallments.isEnabled = true
-                    // Show error toast or similar
+                    updateConsultButtonState()
+                    Toast.makeText(
+                        requireContext(),
+                        state.message ?: getString(R.string.registration_payment_detail_calculate_error),
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
                 is UIState.Idle -> {}
             }
@@ -193,9 +210,10 @@ class RegistrationPaymentDetailFragment : Fragment() {
 
     private fun showInstallmentsList(fees: List<InstallmentFee>) {
         binding.btnConsultInstallments.visibility = View.GONE
-        binding.tvConsultHint.visibility = View.GONE
+        binding.tvConsultHint.visibility = View.VISIBLE
         binding.rvInstallments.visibility = View.VISIBLE
         binding.btnAlterarDados.visibility = View.VISIBLE
+        binding.tvConsultHint.text = getString(R.string.registration_payment_detail_consult_hint_select_installment)
         
         adapter?.submitList(fees)
         
@@ -205,10 +223,11 @@ class RegistrationPaymentDetailFragment : Fragment() {
                 fees.find { it.installmentNumber == payment.installment }?.let { fee ->
                     selectedFee = fee
                     adapter?.setSelected(fee)
-                    binding.btnConfirm.visibility = View.VISIBLE
+                    updateConfirmButtonState()
                 }
             }
         }
+        updateConfirmButtonState()
     }
 
     private fun hideInstallments() {
@@ -216,19 +235,40 @@ class RegistrationPaymentDetailFragment : Fragment() {
         binding.tvConsultHint.visibility = View.VISIBLE
         binding.rvInstallments.visibility = View.GONE
         binding.btnAlterarDados.visibility = View.GONE
-        binding.btnConfirm.visibility = View.INVISIBLE
         selectedFee = null
+        updateConfirmButtonState()
+        updateConsultationHint()
     }
 
     private fun setupAdapter() {
         adapter = InstallmentsAdapter(showRadioButton = true) { fee ->
             selectedFee = fee
-            binding.btnConfirm.visibility = View.VISIBLE
+            updateConfirmButtonState()
+            binding.tvConsultHint.text = getString(R.string.registration_payment_detail_consult_hint_select_installment)
         }
         binding.rvInstallments.layoutManager = LinearLayoutManager(requireContext())
         binding.rvInstallments.adapter = adapter
-        // Ensure the RecyclerView can scroll inside the ScrollView if needed
         binding.rvInstallments.isNestedScrollingEnabled = true
+    }
+
+    private fun updateConsultButtonState() {
+        val amount = Mask.doubleValue(binding.etCardValue.text?.toString().orEmpty())
+        binding.btnConsultInstallments.isEnabled = amount > 0 && selectedBrand.isNotEmpty()
+    }
+
+    private fun updateConfirmButtonState() {
+        binding.btnConfirm.isEnabled = selectedFee != null
+        binding.btnConfirm.alpha = if (selectedFee != null) 1f else 0.6f
+    }
+
+    private fun updateConsultationHint() {
+        binding.tvConsultHint.text = getString(
+            if (selectedFee != null) {
+                R.string.registration_payment_detail_consult_hint_select_installment
+            } else {
+                R.string.registration_payment_detail_consult_hint_select_brand
+            }
+        )
     }
 
     private fun confirmPayment() {
@@ -237,7 +277,6 @@ class RegistrationPaymentDetailFragment : Fragment() {
         val total = Mask.toSafeDouble(fee.totalValue)
         val amountFinal = "%,.2f".format(Locale("pt", "BR"), total)
 
-        // Find a matching payment method for metadata if possible, or create a virtual one
         val baseMethods = registrationViewModel.getPaymentMethodsByType(paymentType)
         val method = baseMethods.firstOrNull { it.installments == fee.installmentNumber } 
                      ?: baseMethods.firstOrNull() 

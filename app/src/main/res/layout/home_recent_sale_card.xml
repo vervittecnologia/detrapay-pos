@@ -1,21 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/orderCard"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="16dp"
-    app:cardBackgroundColor="@color/neutral_100"
-    app:cardCornerRadius="10dp"
+    android:layout_marginTop="12dp"
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="16dp"
     app:cardElevation="0dp"
     app:strokeColor="@color/home_card_stroke"
-    app:strokeWidth="0dp">
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="14dp">
+        android:padding="16dp">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
@@ -35,55 +36,55 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:maxLines="2"
-                    android:text="@string/home_sale_one_customer"
                     android:textColor="@color/neutral_900"
                     android:textSize="16sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    tools:text="#188 - Ricardo S. Almeida" />
 
                 <TextView
                     android:id="@+id/serviceName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="@string/home_sale_one_seller"
-                    android:textColor="@color/neutral_500"
-                    android:textSize="14sp" />
+                    android:textColor="@color/neutral_600"
+                    android:textSize="13sp"
+                    tools:text="Vendedor: Marco Aurelio" />
 
                 <TextView
                     android:id="@+id/customerDocument"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="CPF/CNPJ: 000.000.000-00"
+                    android:layout_marginTop="4dp"
                     android:textColor="@color/neutral_500"
-                    android:textSize="13sp" />
+                    android:textSize="13sp"
+                    tools:text="CPF/CNPJ: 000.000.000-00" />
             </LinearLayout>
 
             <TextView
                 android:id="@+id/saleStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/home_status_finished_background"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="4dp"
-                android:text="@string/home_sale_finished"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="5dp"
                 android:textColor="@color/home_status_finished_text"
                 android:textSize="11sp"
                 android:textStyle="bold"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent"
+                tools:background="@drawable/home_status_finished_background"
+                tools:text="Finalizado" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="14dp"
             android:background="@color/neutral_200" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp">
+            android:layout_marginTop="12dp">
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -95,9 +96,8 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/home_value_label"
-                    android:textAllCaps="true"
-                    android:textColor="@color/neutral_400"
+                    android:text="@string/home_nominal_value_label"
+                    android:textColor="@color/neutral_500"
                     android:textSize="12sp"
                     android:textStyle="bold" />
 
@@ -105,11 +105,11 @@
                     android:id="@+id/saleValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="@string/home_sale_one_value"
-                    android:textColor="@color/neutral_800"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
+                    android:layout_marginTop="4dp"
+                    android:textColor="@color/neutral_900"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    tools:text="R$ 18.490,00" />
             </LinearLayout>
 
             <LinearLayout
@@ -124,8 +124,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/home_date_label"
-                    android:textAllCaps="true"
-                    android:textColor="@color/neutral_400"
+                    android:textColor="@color/neutral_500"
                     android:textSize="12sp"
                     android:textStyle="bold" />
 
@@ -133,10 +132,11 @@
                     android:id="@+id/serviceDate"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="@string/home_sale_one_date"
+                    android:layout_marginTop="4dp"
                     android:textColor="@color/neutral_700"
-                    android:textSize="15sp" />
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    tools:text="12/10/2023" />
             </LinearLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
     </LinearLayout>

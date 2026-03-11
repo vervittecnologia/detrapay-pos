@@ -1,13 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ds_primary">#0D47A1</color>
-    <color name="ds_primary_variant">#0B3C91</color>
-    <color name="ds_secondary">#FF6F00</color>
-    <color name="ds_background">#FFFFFF</color>
-    <color name="ds_surface">#FFFFFF</color>
-    <color name="ds_error">#B00020</color>
-    <color name="ds_on_primary">#FFFFFF</color>
-    <color name="ds_on_secondary">#000000</color>
-    <color name="ds_on_background">#000000</color>
-    <color name="ds_on_surface">#000000</color>
+    <color name="ds_primary">@color/primary_500</color>
+    <color name="ds_primary_variant">@color/primary_800</color>
+    <color name="ds_primary_container">@color/primary_100</color>
+    <color name="ds_secondary">@color/neutral_700</color>
+    <color name="ds_background">@color/neutral_100</color>
+    <color name="ds_surface">@color/white</color>
+    <color name="ds_surface_alt">@color/neutral_200</color>
+    <color name="ds_border">@color/neutral_300</color>
+    <color name="ds_error">@color/red</color>
+    <color name="ds_success">@color/green</color>
+    <color name="ds_warning">@color/orange</color>
+    <color name="ds_disabled">@color/neutral_300</color>
+    <color name="ds_on_primary">@color/white</color>
+    <color name="ds_on_secondary">@color/white</color>
+    <color name="ds_on_background">@color/neutral_900</color>
+    <color name="ds_on_surface">@color/neutral_800</color>
+    <color name="ds_on_disabled">@color/neutral_500</color>
 </resources>
