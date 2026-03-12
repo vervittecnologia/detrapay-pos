@@ -16,4 +16,8 @@ data class ConfirmPaymentRequest(
     val transactionLog: JsonElement?,
     @SerializedName("payment_date")
     val paymentDate: String? = null,
+    @SerializedName("amount_original")
+    val amountOriginal: Double? = null,
+    @SerializedName("amount_final")
+    val amountFinal: Double? = null,
 )

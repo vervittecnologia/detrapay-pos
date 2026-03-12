@@ -234,15 +234,6 @@
                         android:textSize="14sp"
                         tools:text="Valor base do pedido: R$ 4.368,18" />
 
-                    <TextView
-                        android:id="@+id/valueFinal"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:textColor="@color/neutral_900"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        tools:text="Valor total com juros: R$ 4.312,08" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

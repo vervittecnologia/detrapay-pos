@@ -4,8 +4,8 @@ import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.res.ColorStateList
 import android.os.Bundle
-import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
 import android.view.LayoutInflater
@@ -14,6 +14,7 @@ import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
+import android.widget.LinearLayout
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -33,6 +34,8 @@ import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.Mask
 import com.detrapay.ui.util.isValidCpnj
 import com.detrapay.ui.util.isValidCpf
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.textview.MaterialTextView
 import java.util.Date
 
 class RegistrationOrderDataFragment : Fragment() {
@@ -214,9 +217,9 @@ class RegistrationOrderDataFragment : Fragment() {
         val vehicleTypeId = selectedVehicle?.id
         if (vehicleTypeId == null) {
             hasInvalidFields = true
-            binding.vehicleTypeDropdownLayout.error = "Campo obrigatorio"
+            binding.vehicleTypeErrorText.visibility = View.VISIBLE
         } else {
-            binding.vehicleTypeDropdownLayout.error = null
+            binding.vehicleTypeErrorText.visibility = View.GONE
         }
 
         if (hasInvalidFields) {
@@ -241,12 +244,7 @@ class RegistrationOrderDataFragment : Fragment() {
     }
 
     private fun configureDropdownInputs() {
-        configureDropdownInput(binding.vehicleTypeAutoComplete)
         configureDropdownInput(binding.salesmanAutoComplete)
-
-        binding.vehicleTypeDropdownLayout.setEndIconOnClickListener {
-            showDropdownWithoutKeyboard(binding.vehicleTypeAutoComplete)
-        }
 
         binding.salesmanTextInputLayout.setEndIconOnClickListener {
             showDropdownWithoutKeyboard(binding.salesmanAutoComplete)
@@ -334,7 +332,7 @@ class RegistrationOrderDataFragment : Fragment() {
                             selectedSalesman = it.salesmen.find { salesman -> salesman.id == data.salesmanId }
                         }
 
-                        setupVehiclesTypesAdapter(it.vehicleTypes)
+                        setupVehicleTypeCards(it.vehicleTypes)
                         setupSalesmanAdapter(it.salesmen)
                     }
                 }
@@ -409,26 +407,77 @@ class RegistrationOrderDataFragment : Fragment() {
         })
     }
 
-    private fun setupVehiclesTypesAdapter(vehicleTypes: List<VehicleType>) {
-        val adapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_spinner_dropdown_item,
-            vehicleTypes.map { it.name },
-        )
-
-        binding.vehicleTypeAutoComplete.setAdapter(adapter)
-
-        if (selectedVehicle != null) {
-            binding.vehicleTypeAutoComplete.setText(selectedVehicle?.name, false)
-        } else if (BuildConfig.DEBUG && vehicleTypes.isNotEmpty()) {
-            binding.vehicleTypeAutoComplete.setText(vehicleTypes[0].name, false)
-            selectedVehicle = vehicleTypes[0]
+    private fun setupVehicleTypeCards(vehicleTypes: List<VehicleType>) {
+        val sortedVehicleTypes = vehicleTypes.sortedBy { it.id }
+        if (selectedVehicle == null && BuildConfig.DEBUG && sortedVehicleTypes.isNotEmpty()) {
+            selectedVehicle = sortedVehicleTypes.first()
+        } else if (selectedVehicle != null) {
+            selectedVehicle = sortedVehicleTypes.firstOrNull { it.id == selectedVehicle?.id } ?: selectedVehicle
         }
 
-        binding.vehicleTypeAutoComplete.setOnItemClickListener { _, _, position, _ ->
-            selectedVehicle = vehicleTypes[position]
-            binding.vehicleTypeDropdownLayout.error = null
-            clearSubmitError()
+        binding.vehicleTypeCardsContainer.removeAllViews()
+        sortedVehicleTypes.forEach { vehicleType ->
+            binding.vehicleTypeCardsContainer.addView(createVehicleTypeCard(vehicleType))
+        }
+        updateVehicleTypeCardSelection()
+    }
+
+    private fun createVehicleTypeCard(vehicleType: VehicleType): MaterialCardView {
+        val context = requireContext()
+        val card = MaterialCardView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = context.dpToPx(8)
+            }
+            radius = context.dpToPx(12).toFloat()
+            strokeWidth = context.dpToPx(1)
+            isClickable = true
+            isFocusable = true
+            rippleColor = ColorStateList.valueOf(context.getColor(R.color.primary_100))
+            setOnClickListener {
+                selectedVehicle = vehicleType
+                binding.vehicleTypeErrorText.visibility = View.GONE
+                updateVehicleTypeCardSelection()
+                clearSubmitError()
+            }
+        }
+
+        val label = MaterialTextView(context).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            setPadding(
+                context.dpToPx(16),
+                context.dpToPx(16),
+                context.dpToPx(16),
+                context.dpToPx(16)
+            )
+            text = "${vehicleType.id}. ${vehicleType.name}"
+            setTextColor(context.getColor(R.color.neutral_900))
+            textSize = 15f
+        }
+
+        card.tag = vehicleType.id
+        card.addView(label)
+        return card
+    }
+
+    private fun updateVehicleTypeCardSelection() {
+        val selectedId = selectedVehicle?.id
+        val context = requireContext()
+        for (index in 0 until binding.vehicleTypeCardsContainer.childCount) {
+            val child = binding.vehicleTypeCardsContainer.getChildAt(index) as? MaterialCardView ?: continue
+            val isSelected = child.tag == selectedId
+            child.setCardBackgroundColor(
+                context.getColor(if (isSelected) R.color.primary_100 else R.color.white)
+            )
+            child.strokeColor = context.getColor(
+                if (isSelected) R.color.primary_500 else R.color.neutral_300
+            )
+            child.strokeWidth = context.dpToPx(if (isSelected) 2 else 1)
         }
     }
 
@@ -480,7 +529,7 @@ class RegistrationOrderDataFragment : Fragment() {
 
     private fun validateErrorType(error: Exception?) {
         if (error is UnauthorizedException) {
-            SessionExpiredDialog.showIfNeeded(requireActivity().supportFragmentManager)
+            SessionExpiredDialog.showIfNeeded(requireActivity().supportFragmentManager, error)
         }
     }
 
@@ -496,6 +545,10 @@ class RegistrationOrderDataFragment : Fragment() {
         val digitsOnly = Mask.replaceChars(value)
         if (digitsOnly.isBlank()) return
         registrationPreferences.edit().putString(KEY_LAST_ORDER_CPF_CNPJ, digitsOnly).apply()
+    }
+
+    private fun Context.dpToPx(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
     }
 
     companion object {

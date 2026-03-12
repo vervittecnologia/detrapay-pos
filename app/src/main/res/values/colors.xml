@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <color name="primary_800">#083A6E</color>
-    <color name="primary_500">#0E5FB2</color>
-    <color name="primary_400">#4A9FE0</color>
-    <color name="primary_300">#80BDEE</color>
-    <color name="primary_200">#B3D7F5</color>
-    <color name="primary_100">#E1EFFB</color>
+    <color name="primary_800">#1E4E8C</color>
+    <color name="primary_500">#3182CE</color>
+    <color name="primary_400">#4299E1</color>
+    <color name="primary_300">#90CDF4</color>
+    <color name="primary_200">#BEE3F8</color>
+    <color name="primary_100">#EBF8FF</color>
 
     <color name="neutral_900">#171923</color>
     <color name="neutral_800">#1A202C</color>
@@ -26,7 +26,7 @@
     <color name="home_screen_background">#F4F3F6</color>
     <color name="home_logo_background">#F2E2AF</color>
     <color name="home_logo_border">#D7C488</color>
-    <color name="home_icon_background">#E7EEF8</color>
+    <color name="home_icon_background">@color/primary_100</color>
     <color name="home_service_background">#E9EDF3</color>
     <color name="home_card_stroke">#E2E8F0</color>
     <color name="home_placeholder_stroke">#D4DBE6</color>
@@ -34,6 +34,39 @@
     <color name="home_status_finished_text">#208436</color>
     <color name="home_status_pending_bg">#F8E8C8</color>
     <color name="home_status_pending_text">#F18400</color>
+    <color name="payment_screen_gradient_start">#F7FAFC</color>
+    <color name="payment_screen_gradient_mid">#EDF2F7</color>
+    <color name="payment_screen_gradient_end">#E2E8F0</color>
+    <color name="payment_header_gradient_start">@color/primary_100</color>
+    <color name="payment_header_gradient_end">#F7FAFC</color>
+    <color name="payment_header_stroke">#D6E9FF</color>
+    <color name="payment_shadow">#1A000000</color>
+    <color name="payment_blue_gradient_start">@color/primary_400</color>
+    <color name="payment_blue_gradient_end">@color/primary_500</color>
+    <color name="payment_pending_gradient_start">#ED8936</color>
+    <color name="payment_pending_gradient_end">#DD6B20</color>
+    <color name="payment_paid_gradient_start">#48BB78</color>
+    <color name="payment_paid_gradient_end">#38A169</color>
+    <color name="payment_overdue_gradient_start">#F56565</color>
+    <color name="payment_overdue_gradient_end">#E53E3E</color>
+    <color name="payment_credit_bg">@color/primary_100</color>
+    <color name="payment_credit_stroke">#334299E1</color>
+    <color name="payment_credit_icon">@color/primary_500</color>
+    <color name="payment_debit_bg">#F3E8FF</color>
+    <color name="payment_debit_stroke">#339F7AEA</color>
+    <color name="payment_debit_icon">#805AD5</color>
+    <color name="payment_pix_bg">#E0F7F5</color>
+    <color name="payment_pix_stroke">#3300B8A9</color>
+    <color name="payment_pix_icon">#00A89D</color>
+    <color name="payment_cash_bg">#F0FFF4</color>
+    <color name="payment_cash_stroke">#3348BB78</color>
+    <color name="payment_cash_icon">#38A169</color>
+    <color name="payment_received_bg">#F0FFF4</color>
+    <color name="payment_received_icon_bg">#C6F6D5</color>
+    <color name="payment_received_text">#2F855A</color>
+    <color name="payment_missing_bg">#FFF5F5</color>
+    <color name="payment_missing_icon_bg">#FED7D7</color>
+    <color name="payment_missing_text">#E53E3E</color>
     <color name="sales_list_status_cancelled_bg">#FEE2E2</color>
     <color name="bottom_nav_inactive">#97A4B8</color>
 

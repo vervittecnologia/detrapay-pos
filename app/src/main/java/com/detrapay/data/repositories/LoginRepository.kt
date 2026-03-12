@@ -22,6 +22,7 @@ import javax.inject.Singleton
 class LoginRepository @Inject constructor(
     private var userLocalDataSource: UsersDao,
     private var detrapayRemoteDataSource: DetrapayRemoteDataSource,
+    private val authRepository: AuthRepository,
     @ApplicationContext private val context: Context
 ) {
     private val preferences by lazy {
@@ -69,7 +70,7 @@ class LoginRepository @Inject constructor(
                     }
 
                     val user = User(
-                        token = result.data.token,
+                        token = result.data.resolvedAccessToken(),
                         id = result.data.user.id,
                         name = result.data.user.name,
                         email = result.data.user.email,
@@ -81,6 +82,7 @@ class LoginRepository @Inject constructor(
                     )
 
                     userLocalDataSource.insertUser(user)
+                    authRepository.saveLoginSession(result.data, user)
                     saveLastLoggedCnpj(user.cpfCnpj)
 
                     val loggedInUser = LoggedInUser(

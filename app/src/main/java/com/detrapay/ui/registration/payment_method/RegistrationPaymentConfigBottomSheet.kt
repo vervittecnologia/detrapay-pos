@@ -23,6 +23,7 @@ import com.detrapay.databinding.BottomSheetRegistrationPaymentConfigBinding
 import com.detrapay.ui.registration.RegistrationViewModel
 import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.Mask
+import com.detrapay.ui.util.PaymentTypeRules
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -63,10 +64,10 @@ class RegistrationPaymentConfigBottomSheet : BottomSheetDialogFragment() {
         super.onCreate(savedInstanceState)
         paymentType = requireArguments().getString(ARG_PAYMENT_TYPE) ?: "credito"
         editingPaymentId = requireArguments().getLong(ARG_PAYMENT_ID, -1L)
-        mode = when (paymentType.lowercase()) {
-            "credito", "credit" -> PaymentConfigMode.CREDIT
-            "debito", "debit" -> PaymentConfigMode.DEBIT
-            "dinheiro", "cash", "store_credit" -> PaymentConfigMode.DIRECT
+        mode = when (PaymentTypeRules.normalize(paymentType)) {
+            "credito" -> PaymentConfigMode.CREDIT
+            "debito" -> PaymentConfigMode.DEBIT
+            "dinheiro", "store_credit" -> PaymentConfigMode.DIRECT
             else -> PaymentConfigMode.SIMPLE_QUOTE
         }
     }
@@ -265,7 +266,7 @@ class RegistrationPaymentConfigBottomSheet : BottomSheetDialogFragment() {
         }
 
         binding.btnConfirm.isEnabled = false
-        binding.btnConfirm.text = "Efetuar pagamento"
+        binding.btnConfirm.text = getString(R.string.registration_payment_detail_save)
         updateButtonVisualState(binding.btnConfirm, false)
         updatePrimaryActionState()
     }
@@ -273,7 +274,7 @@ class RegistrationPaymentConfigBottomSheet : BottomSheetDialogFragment() {
     private fun renderCreditSelection(fee: InstallmentFee) {
         binding.cardSimpleSummary.isVisible = false
         binding.btnConfirm.isEnabled = true
-        binding.btnConfirm.text = "Efetuar pagamento"
+        binding.btnConfirm.text = getString(R.string.registration_payment_detail_save)
         binding.tvActionHint.isVisible = false
         updateButtonVisualState(binding.btnConfirm, true)
     }

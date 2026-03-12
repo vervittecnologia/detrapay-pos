@@ -164,9 +164,39 @@ class PaymentDialogViewModelTest {
         val state = viewModel.paymentState.getOrAwaitValueMatching { it is UIState.Error<*> }
 
         assertTrue(state is UIState.Error)
-        assertEquals("Falha no pagamento.", state.message)
+        assertEquals("DECLINED - Operacao negada", state.message)
         coVerify(exactly = 1) { paymentRepository.saveTransaction(orderId = 10, amount = 25.67, installments = 1, paymentType = "VISA", transactionId = null, transactionCode = null, date = "2026-03-06", result = 5, cardBrand = "VISA", cardLast4 = "1234", cardHolder = "Cliente", pixTxIdCode = null, message = "Operacao negada", errorCode = "DECLINED") }
         coVerify(exactly = 0) { orderRepository.payOrder(any(), any(), any()) }
+    }
+
+    @Test
+    fun `failure result keeps error state after declined transaction`() {
+        val transactionResult = mockk<PlugPagTransactionResult> {
+            every { result } returns 5
+            every { errorCode } returns "S906"
+            every { message } returns "Erro imprevisto. Tente novamente."
+            every { transactionId } returns null
+            every { transactionCode } returns null
+            every { date } returns "2026-03-06"
+            every { cardBrand } returns "VISA"
+            every { holder } returns "1234"
+            every { holderName } returns "Cliente"
+            every { pixTxIdCode } returns null
+        }
+
+        coEvery { orderRepository.updateSplitConfig(1, "SER123") } returns Result.Success(Unit)
+        every { plugPag.isAuthenticated() } returns true
+        every { plugPag.doPayment(any()) } returns transactionResult
+
+        viewModel.payOrder(
+            orderId = 10,
+            receivable = receivable(paymentMethod = creditMethod(name = "VISA")),
+            serial = "SER123"
+        )
+
+        val failureState = viewModel.paymentState.getOrAwaitValueMatching { it is UIState.Error<*> }
+        assertTrue(failureState is UIState.Error)
+        assertEquals("S906 - Erro imprevisto. Tente novamente.", failureState.message)
     }
 
     @Test
@@ -203,6 +233,28 @@ class PaymentDialogViewModelTest {
     }
 
     @Test
+    fun `payOrder blocks cash without split config or maquininha`() {
+        val cashReceivable = receivable(
+            paymentMethod = PaymentMethod(
+                id = 8,
+                name = "Dinheiro",
+                installments = 1,
+                interestTax = 0.0,
+                paymentType = "cash",
+            )
+        )
+
+        viewModel.payOrder(orderId = 10, receivable = cashReceivable, serial = "SER123")
+
+        val state = viewModel.paymentState.getOrAwaitValueMatching { it is UIState.Error<*> }
+
+        assertTrue(state is UIState.Error)
+        assertEquals("Este tipo de pagamento deve ser confirmado manualmente.", state.message)
+        coVerify(exactly = 0) { orderRepository.updateSplitConfig(any(), any()) }
+        verify(exactly = 0) { plugPag.doPayment(any<PlugPagPaymentData>()) }
+    }
+
+    @Test
     fun `payOrder surfaces backend confirmation failure after approved card transaction`() {
         val transactionResult = successfulTransactionResult()
         val paymentDataSlot = slot<PaymentData>()
@@ -229,6 +281,8 @@ class PaymentDialogViewModelTest {
         assertEquals("VISA", paymentDataSlot.captured.cardBrand)
         assertEquals("1234", paymentDataSlot.captured.cardLast4)
         assertEquals("Cliente", paymentDataSlot.captured.cardHolder)
+        assertEquals(25.67, paymentDataSlot.captured.amountOriginal ?: 0.0, 0.0)
+        assertEquals(25.67, paymentDataSlot.captured.amountFinal ?: 0.0, 0.0)
         assertTrue(paymentDataSlot.captured.transactionLog?.contains("txn-1") == true)
         coVerify(exactly = 1) { paymentRepository.saveTransaction(orderId = 10, amount = 25.67, installments = 1, paymentType = "VISA", transactionId = "txn-1", transactionCode = "code-1", date = "06/03/2026", result = PlugPag.RET_OK, cardBrand = "VISA", cardLast4 = "1234", cardHolder = "Cliente", pixTxIdCode = null, message = "OK", errorCode = null) }
         coVerify(exactly = 1) { orderRepository.payOrder(10, any(), any()) }

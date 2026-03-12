@@ -130,6 +130,7 @@
     <string name="registration_payment_detail_consult_hint_select_installment">Selecione uma parcela para liberar a confirmacao.</string>
     <string name="registration_payment_detail_confirm_add">Adicionar pagamento</string>
     <string name="registration_payment_detail_confirm_edit">Salvar alteracoes</string>
+    <string name="registration_payment_detail_save">Salvar</string>
     <string name="registration_payment_detail_calculate_error">Nao foi possivel consultar as parcelas agora.</string>
     <string name="registration_payment_detail_clear_value">Limpar valor informado</string>
     <string name="registration_payment_total_label">Total</string>
@@ -152,6 +153,11 @@
     <string name="registration_payment_picker_cancel">Cancelar</string>
     <string name="registration_payment_secure_hint">Ambiente seguro e criptografado</string>
     <string name="registration_payment_pay_button">Pagar</string>
+    <string name="registration_payment_total_order_title">Valor total do pedido</string>
+    <string name="registration_payment_value_total_title">Valor total</string>
+    <string name="registration_payment_add_payment_cta">Adicionar pagamento</string>
+    <string name="registration_payment_pay_now_cta">Pagar agora</string>
+    <string name="registration_payment_confirm_receipt_cta">Confirmar recebimento</string>
     <string name="registration_payment_finish_cta">Encerrar atendimento</string>
     <string name="registration_resume_title">Resumo do pedido</string>
     <string name="registration_resume_subtitle">Revise os itens e conclua o cadastro do pedido.</string>
@@ -175,10 +181,12 @@
     <string name="registration_print_button">Imprimir</string>
 
     <string name="order_details_edit_order_text_view">Editar dados</string>
+    <string name="order_details_back_content_description">Voltar</string>
     <string name="order_details_more_options_content_description">Mais opcoes do pedido</string>
     <string name="order_details_view_details_text_view">Ver detalhes</string>
     <string name="order_details_report_title">Relatorio do pedido</string>
     <string name="order_details_header_caption">Finalizacao de Venda</string>
+    <string name="order_details_payments_subtitle">Pagamentos</string>
     <string name="order_details_summary_title">Resumo financeiro</string>
     <string name="order_details_vehicle_value_label">Total Geral do Pedido</string>
     <string name="order_details_payment_methods_title">Pagamentos</string>
@@ -188,6 +196,13 @@
     <string name="order_details_add_payment_amount_title">Adicionar %1$s</string>
     <string name="order_details_add_payment_amount_hint">0,00</string>
     <string name="order_details_add_payment_confirm">Adicionar</string>
+    <string name="order_details_payment_config_sheet_title">Confirmar Pagamento</string>
+    <string name="order_details_payment_config_amount_label">Valor a pagar</string>
+    <string name="order_details_payment_config_confirm">Efetuar Pagamento</string>
+    <string name="order_details_payment_config_summary_title">Resumo do pagamento</string>
+    <string name="order_details_payment_config_summary_value">Valor informado</string>
+    <string name="order_details_payment_config_summary_fee">Taxa</string>
+    <string name="order_details_payment_config_summary_total">Valor final</string>
     <string name="order_details_add_payment_invalid_amount">Informe um valor maior que zero.</string>
     <string name="order_details_add_payment_success">Pagamento adicionado com sucesso.</string>
     <string name="order_details_add_payment_empty_methods">Nenhum meio de pagamento disponivel para adicionar.</string>
@@ -207,7 +222,9 @@
     <string name="order_details_pending_message">Ainda ha valor pendente para concluir este pedido.</string>
     <string name="order_details_settled_message">Todos os pagamentos necessarios ja foram registrados.</string>
     <string name="order_details_registered_amount">Total pago</string>
+    <string name="order_details_received_amount">Total recebido</string>
     <string name="order_details_registered_amount_hint">Resumo atualizado conforme os pagamentos registrados neste pedido.</string>
+    <string name="order_details_excess_amount_hint">O valor recebido ultrapassa o total do pedido.</string>
     <string name="order_details_delete_pending_payment">Excluir pagamento</string>
     <string name="order_details_delete_payment">Excluir pagamento</string>
     <string name="order_details_delete_pending_payment_message">Deseja excluir este pagamento?</string>
@@ -221,6 +238,9 @@
     <string name="order_details_status_paid">Pago</string>
     <string name="order_details_status_refunded">Estornado</string>
     <string name="order_details_status_cancelled">Cancelado</string>
+    <string name="order_details_manual_payment_sheet_title">Confirmar pagamento manual</string>
+    <string name="order_details_manual_payment_amount_label">Valor recebido</string>
+    <string name="order_details_manual_payment_backend_requirement">Backend precisa aceitar atualizar `amountOriginal` ou confirmar pagamento manual com valor recebido no endpoint do recebivel para dinheiro e credito loja. Hoje o app so consegue quitar com o mesmo valor pendente.</string>
     <string name="order_details_manual_payment_pending_hint">Pagamento manual aguardando conferencia.</string>
     <string name="order_details_paid_at">Pago em %1$s</string>
     <string name="order_details_refunded_at">Estornado em %1$s</string>

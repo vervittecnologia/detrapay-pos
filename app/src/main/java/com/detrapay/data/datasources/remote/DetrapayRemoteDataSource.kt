@@ -48,6 +48,15 @@ class DetrapayRemoteDataSource @Inject constructor(
     private var detrapayService: DetrapayService,
     private var supabaseService: SupabaseService
 ) {
+    private fun unauthorizedError(
+        endpoint: String,
+        errorBody: ResponseBody? = null
+    ): Result.Error {
+        val details = errorBody?.string().orEmpty()
+        val backendMessage = details.takeIf { it.isNotBlank() }
+        Logger.d("401 Unauthorized on $endpoint${backendMessage?.let { " -> $it" } ?: ""}")
+        return Result.Error(UnauthorizedException(endpoint, backendMessage))
+    }
 
     private fun extractUpdatedOrder(response: OrderReceivableMutationResponse): OrderResponse? {
         response.updatedOrder?.data?.let { return it }
@@ -303,7 +312,9 @@ class DetrapayRemoteDataSource @Inject constructor(
                 cardBrand = paymentData.cardBrand ?: "",
                 cardHolder = paymentData.cardHolder ?: "",
                 cardLast4 = paymentData.cardLast4 ?: "",
-                transactionLog = transactionLogJson
+                transactionLog = transactionLogJson,
+                amountOriginal = paymentData.amountOriginal,
+                amountFinal = paymentData.amountFinal,
             )
             val result = detrapayService.confirmPayment(receivable.id.toString(), confirmPaymentRequest)
             if (result.isSuccessful) {

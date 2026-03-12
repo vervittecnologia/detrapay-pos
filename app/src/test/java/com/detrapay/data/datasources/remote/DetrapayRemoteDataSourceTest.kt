@@ -21,9 +21,11 @@ import com.detrapay.data.model.remote.RefundOrderReceivableRequest
 import com.detrapay.data.model.remote.UpdateOrderSalesmanRequest
 import com.google.gson.JsonObject
 import io.mockk.coEvery
+import io.mockk.slot
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -77,6 +79,30 @@ class DetrapayRemoteDataSourceTest {
         assertTrue(result is Result.Success)
         assertEquals(123, (result as Result.Success).data.id)
         assertEquals("paid", result.data.status)
+    }
+
+    @Test
+    fun `payOrderReceivable forwards manual amount final without overwriting original`() = runTest {
+        val requestSlot = slot<ConfirmPaymentRequest>()
+        coEvery {
+            detrapayService.confirmPayment("20", capture(requestSlot))
+        } returns Response.success(CreateOrderResponse(updatedOrderResponse()))
+
+        val result = dataSource.payOrderReceivable(
+            receivable().copy(
+                paymentMethod = receivable().paymentMethod.copy(
+                    installments = 1,
+                    paymentType = "cash"
+                )
+            ),
+            paymentData().copy(
+                amountFinal = 100.0
+            )
+        )
+
+        assertTrue(result is Result.Success)
+        assertNull(requestSlot.captured.amountOriginal)
+        assertEquals(100.0, requestSlot.captured.amountFinal)
     }
 
     @Test

@@ -6,7 +6,17 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class AuthResponse(
     @SerializedName("jwt")
-    var token: String,
+    var token: String?,
+    @SerializedName("access_token")
+    var accessToken: String? = null,
+    @SerializedName("refresh_token")
+    var refreshToken: String? = null,
+    @SerializedName("expires_in")
+    var expiresIn: Long? = null,
+    @SerializedName("expires_at")
+    var expiresAt: Long? = null,
+    @SerializedName("token_type")
+    var tokenType: String? = null,
     @SerializedName("user")
     var user: UserResponse,
     @SerializedName("companies")
@@ -15,7 +25,9 @@ data class AuthResponse(
     var dispatchers: List<DispatcherResponse>,
     @SerializedName("salesmen")
     var salesmen: List<LoginSalesmanResponse>
-)
+) {
+    fun resolvedAccessToken(): String = accessToken ?: token.orEmpty()
+}
 
 @Serializable
 data class UserResponse(

@@ -22,6 +22,7 @@ import com.detrapay.databinding.BottomSheetRegistrationPaymentConfigBinding
 import com.detrapay.ui.registration.payment_method.InstallmentsAdapter
 import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.Mask
+import com.detrapay.ui.util.PaymentTypeRules
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -30,6 +31,11 @@ import java.util.Locale
 private enum class OrderDetailsPaymentMode {
     CREDIT,
     SIMPLE_DIRECT,
+}
+
+private enum class OrderDetailsPaymentAction {
+    ADD_PENDING,
+    CONFIRM_MANUAL,
 }
 
 class OrderDetailsPaymentConfigBottomSheet : BottomSheetDialogFragment() {
@@ -41,6 +47,7 @@ class OrderDetailsPaymentConfigBottomSheet : BottomSheetDialogFragment() {
 
     private var paymentType: String = OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CREDIT
     private var mode: OrderDetailsPaymentMode = OrderDetailsPaymentMode.SIMPLE_DIRECT
+    private var action: OrderDetailsPaymentAction = OrderDetailsPaymentAction.ADD_PENDING
     private var defaultAmount: Double = 0.0
 
     private var selectedInstallment: InstallmentFee? = null
@@ -52,7 +59,10 @@ class OrderDetailsPaymentConfigBottomSheet : BottomSheetDialogFragment() {
         super.onCreate(savedInstanceState)
         paymentType = requireArguments().getString(ARG_PAYMENT_TYPE).orEmpty()
         defaultAmount = requireArguments().getDouble(ARG_DEFAULT_AMOUNT, 0.0)
-        mode = if (paymentType == OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CREDIT) {
+        action = OrderDetailsPaymentAction.valueOf(
+            requireArguments().getString(ARG_ACTION) ?: OrderDetailsPaymentAction.ADD_PENDING.name
+        )
+        mode = if (PaymentTypeRules.normalize(paymentType) == OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CREDIT) {
             OrderDetailsPaymentMode.CREDIT
         } else {
             OrderDetailsPaymentMode.SIMPLE_DIRECT
@@ -106,9 +116,18 @@ class OrderDetailsPaymentConfigBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun setupUi() {
-        binding.tvSheetTitle.text = "Confirmar Pagamento"
+        val isManualConfirmation = action == OrderDetailsPaymentAction.CONFIRM_MANUAL
+        binding.tvSheetTitle.text = if (isManualConfirmation) {
+            getString(R.string.order_details_manual_payment_sheet_title)
+        } else {
+            getString(R.string.order_details_payment_config_sheet_title)
+        }
         binding.tvSheetSubtitle.text = paymentTypeSubtitle(paymentType)
-        binding.tvAmountLabel.text = "Valor a pagar"
+        binding.tvAmountLabel.text = if (isManualConfirmation) {
+            getString(R.string.order_details_manual_payment_amount_label)
+        } else {
+            getString(R.string.order_details_payment_config_amount_label)
+        }
 
         val isCredit = mode == OrderDetailsPaymentMode.CREDIT
         binding.tvBrandLabel.isVisible = false
@@ -125,7 +144,11 @@ class OrderDetailsPaymentConfigBottomSheet : BottomSheetDialogFragment() {
         updateButtonVisualState(binding.btnPrimaryAction, false)
 
         binding.btnConfirm.isVisible = true
-        binding.btnConfirm.text = "Efetuar Pagamento"
+        binding.btnConfirm.text = if (isManualConfirmation) {
+            getString(R.string.order_details_pay_now)
+        } else {
+            getString(R.string.order_details_payment_config_confirm)
+        }
         binding.btnConfirm.isEnabled = !isCredit
         updateButtonVisualState(binding.btnConfirm, !isCredit)
 
@@ -249,12 +272,12 @@ class OrderDetailsPaymentConfigBottomSheet : BottomSheetDialogFragment() {
     private fun renderSimpleSummary() {
         val amount = currentAmount()
         binding.cardSimpleSummary.isVisible = true
-        binding.tvSummaryTitle.text = "Resumo do pagamento"
-        binding.tvSummaryLine1Label.text = "Valor informado"
+        binding.tvSummaryTitle.text = getString(R.string.order_details_payment_config_summary_title)
+        binding.tvSummaryLine1Label.text = getString(R.string.order_details_payment_config_summary_value)
         binding.tvSummaryLine1Value.text = formatCurrency(amount)
-        binding.tvSummaryLine2Label.text = "Taxa"
+        binding.tvSummaryLine2Label.text = getString(R.string.order_details_payment_config_summary_fee)
         binding.tvSummaryLine2Value.text = formatCurrency(0.0)
-        binding.tvSummaryLine3Label.text = "Valor final"
+        binding.tvSummaryLine3Label.text = getString(R.string.order_details_payment_config_summary_total)
         binding.tvSummaryLine3Value.text = formatCurrency(amount)
     }
 
@@ -284,7 +307,19 @@ class OrderDetailsPaymentConfigBottomSheet : BottomSheetDialogFragment() {
             showError("Metodo de pagamento indisponivel.")
             return
         }
+        if (action == OrderDetailsPaymentAction.CONFIRM_MANUAL) {
+            confirmManualPayment(amount)
+            return
+        }
         submitPendingPayment(method, amount)
+    }
+
+    private fun confirmManualPayment(amount: Double) {
+        parentFragmentManager.setFragmentResult(
+            REQUEST_MANUAL_PAYMENT_CONFIRMED,
+            bundleOf(RESULT_AMOUNT to amount)
+        )
+        dismiss()
     }
 
     private fun submitPendingPayment(paymentMethod: PaymentMethod, amount: Double) {
@@ -307,7 +342,7 @@ class OrderDetailsPaymentConfigBottomSheet : BottomSheetDialogFragment() {
     private fun formatCurrency(value: Double): String = "R$ %,.2f".format(locale, value)
 
     private fun paymentTypeSubtitle(type: String): String {
-        return when (type.lowercase()) {
+        return when (PaymentTypeRules.normalize(type)) {
             OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CREDIT -> "Cartao de credito"
             OrderDetailsPaymentMethodPickerBottomSheet.TYPE_DEBIT -> "Cartao de debito"
             OrderDetailsPaymentMethodPickerBottomSheet.TYPE_PIX -> "Pix"
@@ -360,16 +395,35 @@ class OrderDetailsPaymentConfigBottomSheet : BottomSheetDialogFragment() {
 
     companion object {
         const val REQUEST_PENDING_ADDED = "order_details_pending_added_request"
+        const val REQUEST_MANUAL_PAYMENT_CONFIRMED = "order_details_manual_payment_confirmed_request"
+        const val RESULT_AMOUNT = "resultAmount"
         private const val ARG_PAYMENT_TYPE = "paymentType"
         private const val ARG_DEFAULT_AMOUNT = "defaultAmount"
+        private const val ARG_ACTION = "action"
 
-        fun newInstance(paymentType: String, defaultAmount: Double): OrderDetailsPaymentConfigBottomSheet {
+        fun newInstance(
+            paymentType: String,
+            defaultAmount: Double,
+            action: String = OrderDetailsPaymentAction.ADD_PENDING.name
+        ): OrderDetailsPaymentConfigBottomSheet {
             return OrderDetailsPaymentConfigBottomSheet().apply {
                 arguments = bundleOf(
                     ARG_PAYMENT_TYPE to paymentType,
                     ARG_DEFAULT_AMOUNT to defaultAmount,
+                    ARG_ACTION to action,
                 )
             }
+        }
+
+        fun newManualConfirmationInstance(
+            paymentType: String,
+            defaultAmount: Double
+        ): OrderDetailsPaymentConfigBottomSheet {
+            return newInstance(
+                paymentType = paymentType,
+                defaultAmount = defaultAmount,
+                action = OrderDetailsPaymentAction.CONFIRM_MANUAL.name
+            )
         }
     }
 }

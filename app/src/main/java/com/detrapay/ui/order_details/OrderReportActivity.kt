@@ -15,6 +15,7 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
 import com.detrapay.R
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.OrderReceivableItem
@@ -28,6 +29,11 @@ import java.util.Locale
 
 @AndroidEntryPoint
 class OrderReportActivity : AppCompatActivity() {
+
+    private fun receiptTypeface(isBold: Boolean = false): Typeface {
+        val baseTypeface = ResourcesCompat.getFont(this, R.font.font) ?: Typeface.SANS_SERIF
+        return if (isBold) Typeface.create(baseTypeface, Typeface.BOLD) else baseTypeface
+    }
 
     private lateinit var binding: ActivityOrderReportBinding
     private val locale = Locale("pt", "BR")
@@ -76,11 +82,8 @@ class OrderReportActivity : AppCompatActivity() {
         } else {
             order.items.sumOf { (it.price ?: 0.0) - it.discount }
         }
-        val totalFinalAmount = order.receivables.sumOf { it.amountFinal }
-
         binding.valueVehicle.text = "Valor do veiculo: R$ ${formatMoney(order.vehiclePrice)}"
         binding.valueBase.text = "Valor base do pedido: R$ ${formatMoney(orderAmount)}"
-        binding.valueFinal.text = "Valor total com juros: R$ ${formatMoney(totalFinalAmount)}"
 
         binding.itemsContent.text = buildItemsBlock(order)
         binding.paymentsContent.text = buildPaymentsBlock(order)
@@ -158,7 +161,6 @@ class OrderReportActivity : AppCompatActivity() {
         } else {
             order.items.sumOf { (it.price ?: 0.0) - it.discount }
         }
-        val totalFinalAmount = order.receivables.sumOf { it.amountFinal }
         val printWidth = resolvePrintWidth()
         val horizontalPadding = 24
         val logoWidth = ((printWidth - (horizontalPadding * 2)) * 0.96f).toInt()
@@ -189,7 +191,7 @@ class OrderReportActivity : AppCompatActivity() {
             text = getString(R.string.home_brand_name).lowercase(Locale.getDefault())
             setTextColor(Color.BLACK)
             setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 24f)
-            typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
+            typeface = receiptTypeface(isBold = true)
             gravity = Gravity.CENTER_HORIZONTAL
             layoutParams = android.widget.LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -204,7 +206,7 @@ class OrderReportActivity : AppCompatActivity() {
             text = getString(R.string.print_slogan)
             setTextColor(Color.BLACK)
             setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13f)
-            typeface = Typeface.SANS_SERIF
+            typeface = receiptTypeface()
             gravity = Gravity.CENTER_HORIZONTAL
             layoutParams = android.widget.LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -226,7 +228,7 @@ class OrderReportActivity : AppCompatActivity() {
             tv.text = text
             tv.setTextColor(Color.BLACK)
             tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, sizeSp)
-            tv.typeface = if (isBold) Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD) else Typeface.SANS_SERIF
+            tv.typeface = if (isBold) receiptTypeface(isBold = true) else receiptTypeface()
             tv.letterSpacing = 0.01f
             tv.gravity = gravity
             tv.layoutParams = android.widget.LinearLayout.LayoutParams(
@@ -286,14 +288,13 @@ class OrderReportActivity : AppCompatActivity() {
         addDivider()
 
         addTextView("VALOR DO VEICULO: R$ ${formatMoney(order.vehiclePrice)}", isBold = true)
-        addTextView("VALOR BASE DO PEDIDO: R$ ${formatMoney(orderAmount)}", isBold = true)
-        addTextView("VALOR TOTAL COM JUROS: R$ ${formatMoney(totalFinalAmount)}", isBold = true, sizeSp = 24f, bottomMargin = 0)
+        addTextView("VALOR BASE DO PEDIDO: R$ ${formatMoney(orderAmount)}", isBold = true, bottomMargin = 0)
 
         val footer = TextView(this).apply {
             text = "Pedido #${order.id}"
             setTextColor(Color.BLACK)
             setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14f)
-            typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
+            typeface = receiptTypeface(isBold = true)
             gravity = Gravity.CENTER_HORIZONTAL
             layoutParams = android.widget.LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,

@@ -5,6 +5,7 @@ import com.detrapay.data.datasources.remote.DetrapayRemoteDataSource
 import com.detrapay.data.model.Company
 import com.detrapay.data.model.Dispatcher
 import com.detrapay.data.model.LoggedInUser
+import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.OrderStatus
 import com.detrapay.data.model.OrderReceivableItemStatus
 import com.detrapay.data.model.PaymentMethod
@@ -338,6 +339,74 @@ class OrderRepositoryTest {
     }
 
     @Test
+    fun `payOrder preserves manual amount final when formatting confirm payload`() = runTest {
+        val payloadSlot = slot<PaymentData>()
+        coEvery { remoteDataSource.payOrderReceivable(any(), capture(payloadSlot)) } returns Result.Success(
+            OrderResponse(
+                id = 123,
+                status = "paid",
+                customerName = "Joao Silva"
+            )
+        )
+        coEvery { remoteDataSource.getOrder(123) } returns Result.Success(
+            OrderResponse(
+                id = 123,
+                status = "paid",
+                createdAt = "2026-03-06T10:30:00Z",
+                billingDate = "2026-03-06",
+                currentAmount = 100.0,
+                originalAmount = 80.0,
+                customer = FlatCustomerResponse(
+                    id = 88,
+                    name = "Joao Silva",
+                    cpfCnpj = "12345678901"
+                ),
+                vehicleType = FlatVehicleTypeResponse(id = 3, name = "Carro"),
+                receivables = listOf(
+                    FlatOrderReceivableResponse(
+                        id = 20,
+                        documentId = "abc",
+                        status = "paid",
+                        installments = 1,
+                        paymentDate = "2026-03-06T10:40:00Z",
+                        amountOriginal = 80.0,
+                        amountFinal = 100.0,
+                        paymentMethod = FlatPaymentMethodResponse(
+                            id = 1,
+                            name = "Dinheiro",
+                            installments = 1,
+                            interestTax = 0.0,
+                            paymentType = "cash"
+                        )
+                    )
+                )
+            )
+        )
+
+        repository.payOrder(
+            123,
+            receivable().copy(
+                amountOriginal = 80.0,
+                amountFinal = 80.0,
+                paymentMethod = receivable().paymentMethod.copy(
+                    installments = 1,
+                    interestTax = 0.0,
+                    paymentType = "cash"
+                )
+            ),
+            PaymentData(
+                date = "06/03/2026",
+                time = "10:20:30",
+                amountFinal = 100.0
+            )
+        )
+
+        assertEquals("2026-03-06T10:20:30", payloadSlot.captured.date)
+        assertNull(payloadSlot.captured.amountOriginal)
+        assertEquals(100.0, payloadSlot.captured.amountFinal)
+    }
+
+    @Test
     fun `addPendingReceivable uses updated order returned by backend without extra fetch`() = runTest {
         coEvery {
             remoteDataSource.addOrderReceivable(
@@ -405,6 +474,80 @@ class OrderRepositoryTest {
             )
         }
         coVerify(exactly = 0) { remoteDataSource.getOrder(any()) }
+    }
+
+    @Test
+    fun `addPendingReceivable keeps cash payment pending without auto confirmation`() = runTest {
+        val cashMethod = PaymentMethod(
+            id = 22,
+            name = "Dinheiro",
+            installments = 1,
+            interestTax = 0.0,
+            paymentType = "cash"
+        )
+        coEvery {
+            remoteDataSource.addOrderReceivable(
+                orderId = 123,
+                paymentMethodId = 22,
+                amountOriginal = 500.0,
+                installments = 1,
+                paymentDate = null
+            )
+        } returns Result.Success(
+            OrderResponse(
+                id = 123,
+                status = "pending",
+                createdAt = "2026-03-10T16:30:00Z",
+                billingDate = "2026-03-10",
+                currentAmount = 500.0,
+                originalAmount = 1577.2,
+                customer = FlatCustomerResponse(
+                    id = 88,
+                    name = "Joao Silva",
+                    cpfCnpj = "12345678901"
+                ),
+                vehicleType = FlatVehicleTypeResponse(id = 3, name = "Carro"),
+                salesman = FlatSalesmanResponse(id = 4, name = "Maria"),
+                receivables = listOf(
+                    FlatOrderReceivableResponse(
+                        id = 56,
+                        documentId = "rec-56",
+                        status = "pending",
+                        installments = 1,
+                        paymentDate = null,
+                        amountOriginal = 500.0,
+                        amountFinal = 500.0,
+                        tax = 0.0,
+                        paymentMethod = FlatPaymentMethodResponse(
+                            id = 22,
+                            name = "Dinheiro",
+                            installments = 1,
+                            interestTax = 0.0,
+                            paymentType = "cash"
+                        )
+                    )
+                )
+            )
+        )
+
+        val result = repository.addPendingReceivable(
+            orderId = 123,
+            paymentMethod = cashMethod,
+            amountOriginal = 500.0
+        )
+
+        assertTrue(result is Result.Success)
+        assertEquals(OrderReceivableItemStatus.PENDING, (result as Result.Success).data.receivables.single().status)
+        coVerify(exactly = 1) {
+            remoteDataSource.addOrderReceivable(
+                orderId = 123,
+                paymentMethodId = 22,
+                amountOriginal = 500.0,
+                installments = 1,
+                paymentDate = null
+            )
+        }
+        coVerify(exactly = 0) { remoteDataSource.payOrderReceivable(any(), any()) }
     }
 
     @Test

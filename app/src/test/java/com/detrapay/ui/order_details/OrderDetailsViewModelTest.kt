@@ -271,6 +271,23 @@ class OrderDetailsViewModelTest {
         coVerify(exactly = 1) { registrationRepository.calculateFees(100.0, "credito") }
     }
 
+    @Test
+    fun `calculateFees returns local zero fee quote for store credit without remote call`() {
+        viewModel.calculateFees(150.0, "store_credit")
+
+        val state = viewModel.calculateFeesState.getOrAwaitValueMatching {
+            it is UIState.Success<*>
+        } as UIState.Success<CalculateFeesResponse>
+
+        val installment = state.data?.data?.firstOrNull()?.installments?.firstOrNull()
+        assertNotNull(installment)
+        assertEquals(1, installment?.installmentNumber)
+        assertEquals("150,00", installment?.totalValue)
+        assertEquals("0,00", installment?.interestValue)
+        assertTrue(installment?.noInterest == true)
+        coVerify(exactly = 0) { registrationRepository.calculateFees(any(), any()) }
+    }
+
     private fun order(status: OrderStatus) = Order(
         id = 123,
         serviceName = "Detrapay",

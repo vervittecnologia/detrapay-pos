@@ -16,8 +16,10 @@ import com.detrapay.data.model.remote.PaymentMethodResponse
 import com.detrapay.data.model.remote.PixChargeRequest
 import com.detrapay.data.model.remote.PixChargeResponse
 import com.detrapay.data.model.remote.RefundOrderReceivableRequest
+import com.detrapay.data.model.remote.RefreshSessionRequest
 import com.detrapay.data.model.remote.OrderReceivableMutationResponse
 import com.detrapay.data.model.remote.SalespeopleResponse
+import com.detrapay.data.model.remote.SessionRefreshResponse
 import com.detrapay.data.model.remote.SimulationRequest
 import com.detrapay.data.model.remote.SimulationResponse
 import com.detrapay.data.model.remote.SplitConfigRequest
@@ -30,6 +32,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
@@ -39,6 +42,12 @@ interface DetrapayService {
 
     @POST("auth/local")
     suspend fun auth(@Body payload: AuthRequest): Response<AuthResponse>
+
+    @POST("auth/refresh")
+    suspend fun refresh(
+        @Header("x-refresh-token") refreshTokenHeader: String,
+        @Body payload: RefreshSessionRequest,
+    ): Response<SessionRefreshResponse>
 
     @GET("companies")
     suspend fun getCompanies(): Response<CompanyListResponse>

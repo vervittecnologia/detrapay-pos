@@ -18,6 +18,7 @@ import com.detrapay.data.model.PaymentData
 import com.detrapay.data.repositories.OrderRepository
 import com.detrapay.data.repositories.PaymentRepository
 import com.detrapay.ui.state.UIState
+import com.detrapay.ui.util.PaymentTypeRules
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +41,8 @@ class PaymentDialogViewModel @Inject constructor(
 
     private val _paymentState = MutableLiveData<UIState<PaymentData>>()
     val paymentState: LiveData<UIState<PaymentData>> = _paymentState
+    @Volatile
+    private var terminalPaymentActive = false
 
     fun init() {
         setupPrintLayout()
@@ -67,6 +70,7 @@ class PaymentDialogViewModel @Inject constructor(
     }
 
     fun payOrder(orderId: Int, receivable: OrderReceivableItem, serial: String) {
+        terminalPaymentActive = false
         if (isPixPayment(receivable)) {
             _paymentState.postValue(UIState.Loading("Gerando QR Code PIX..."))
             viewModelScope.launch(Dispatchers.IO) {
@@ -108,11 +112,22 @@ class PaymentDialogViewModel @Inject constructor(
             return
         }
 
+        if (PaymentTypeRules.isDirectNoFeePaymentType(receivable.paymentMethod.paymentType) ||
+            PaymentTypeRules.isDirectNoFeePaymentType(receivable.paymentMethod.name)
+        ) {
+            _paymentState.postValue(
+                UIState.Error("Este tipo de pagamento deve ser confirmado manualmente.")
+            )
+            return
+        }
+
+        terminalPaymentActive = true
         postCardLoadingStep(CardPaymentStep.PREPARING)
         viewModelScope.launch(Dispatchers.Default) {
             try {
                 val prePayResult = orderRepository.updateSplitConfig(receivable.id, serial)
                 if (prePayResult is Result.Error) {
+                    terminalPaymentActive = false
                     _paymentState.postValue(
                         UIState.Error(
                             "Nao foi possivel configurar a maquininha: ${prePayResult.exception.message}"
@@ -122,6 +137,7 @@ class PaymentDialogViewModel @Inject constructor(
                 }
 
                 if (!plugPag.isAuthenticated()) {
+                    terminalPaymentActive = false
                     _paymentState.postValue(UIState.Error("Nenhum usuario autenticado, contate o suporte."))
                     return@launch
                 }
@@ -155,7 +171,9 @@ class PaymentDialogViewModel @Inject constructor(
                         cardLast4 = plugPagResult.holder,
                         cardHolder = plugPagResult.holderName,
                         pixTxIdCode = plugPagResult.pixTxIdCode,
-                        transactionLog = transactionLog
+                        transactionLog = transactionLog,
+                        amountOriginal = receivable.amountOriginal,
+                        amountFinal = receivable.amountFinal
                     )
 
                     paymentRepository.saveTransaction(
@@ -177,8 +195,12 @@ class PaymentDialogViewModel @Inject constructor(
 
                     postCardLoadingStep(CardPaymentStep.PROCESSING)
                     when (val apiResult = orderRepository.payOrder(orderId, receivable, transactionResult)) {
-                        is Result.Success -> _paymentState.postValue(UIState.Success(transactionResult))
+                        is Result.Success -> {
+                            terminalPaymentActive = false
+                            _paymentState.postValue(UIState.Success(transactionResult))
+                        }
                         is Result.Error -> {
+                            terminalPaymentActive = false
                             _paymentState.postValue(
                                 UIState.Error(
                                     apiResult.exception.message ?: "Falha ao concluir pagamento."
@@ -204,13 +226,27 @@ class PaymentDialogViewModel @Inject constructor(
                         errorCode = plugPagResult.errorCode
                     )
 
-                    _paymentState.postValue(UIState.Error("Falha no pagamento."))
+                    terminalPaymentActive = false
+                    _paymentState.postValue(UIState.Error(buildTerminalFailureMessage(plugPagResult)))
                 }
             } catch (_: PlugPagException) {
+                terminalPaymentActive = false
                 _paymentState.postValue(UIState.Error("Falha no pagamento."))
             } catch (e: Exception) {
+                terminalPaymentActive = false
                 _paymentState.postValue(UIState.Error(e.message ?: "Erro inesperado"))
             }
+        }
+    }
+
+    private fun buildTerminalFailureMessage(result: PlugPagTransactionResult): String {
+        val message = result.message?.trim().orEmpty()
+        val errorCode = result.errorCode?.trim().orEmpty()
+        return when {
+            message.isNotBlank() && errorCode.isNotBlank() -> "$errorCode - $message"
+            message.isNotBlank() -> message
+            errorCode.isNotBlank() -> "Falha no pagamento. Codigo: $errorCode"
+            else -> "Falha no pagamento."
         }
     }
 
@@ -227,15 +263,13 @@ class PaymentDialogViewModel @Inject constructor(
     }
 
     private fun isPixPayment(receivable: OrderReceivableItem): Boolean {
-        val paymentType = receivable.paymentMethod.paymentType.orEmpty()
-        val paymentName = receivable.paymentMethod.name
-        return paymentType.contains("pix", ignoreCase = true) ||
-            paymentName.contains("pix", ignoreCase = true)
+        return PaymentTypeRules.isPix(receivable.paymentMethod.paymentType) ||
+            PaymentTypeRules.isPix(receivable.paymentMethod.name)
     }
 
     private fun getPaymentType(receivable: OrderReceivableItem): Int {
-        val normalizedType = receivable.paymentMethod.paymentType.orEmpty().trim().lowercase()
-        val normalizedName = receivable.paymentMethod.name.trim().lowercase()
+        val normalizedType = PaymentTypeRules.normalize(receivable.paymentMethod.paymentType)
+        val normalizedName = PaymentTypeRules.normalize(receivable.paymentMethod.name)
 
         val isCreditCard = normalizedType.contains("credit") ||
             normalizedType.contains("credito") ||
@@ -254,6 +288,7 @@ class PaymentDialogViewModel @Inject constructor(
     }
 
     fun abortPayment() {
+        terminalPaymentActive = false
         viewModelScope.launch(Dispatchers.Default) {
             plugPag.abort()
             plugPag.disposeSubscriber()
@@ -261,6 +296,7 @@ class PaymentDialogViewModel @Inject constructor(
     }
 
     override fun onEvent(data: PlugPagEventData) {
+        if (!terminalPaymentActive) return
         val message = data.customMessage.orEmpty().trim().lowercase()
         val step = when {
             message.contains("insira") ||

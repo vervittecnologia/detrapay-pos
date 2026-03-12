@@ -14,6 +14,7 @@ import com.detrapay.data.model.SimulationItem
 import com.detrapay.data.model.SimulationPayment
 import com.detrapay.data.model.SimulationSimulation
 import com.detrapay.data.model.VehicleType
+import com.detrapay.data.model.remote.CalculateFeesResponse
 import com.detrapay.data.repositories.AuthRepository
 import com.detrapay.data.repositories.OrderRepository
 import com.detrapay.data.repositories.RegistrationRepository
@@ -217,6 +218,23 @@ class RegistrationViewModelTest {
         assertTrue(state is UIState.Success)
         assertNotNull(cached)
         assertEquals(response, cached)
+    }
+
+    @Test
+    fun `calculateFees returns local zero fee quote for cash without remote call`() {
+        viewModel.calculateFees(100.0, "cash")
+
+        val state = viewModel.calculateFeesState.getOrAwaitValueMatching {
+            it is UIState.Success<*>
+        } as UIState.Success<CalculateFeesResponse>
+
+        val installment = state.data?.data?.firstOrNull()?.installments?.firstOrNull()
+        assertNotNull(installment)
+        assertEquals(1, installment?.installmentNumber)
+        assertEquals("100,00", installment?.totalValue)
+        assertEquals("0,00", installment?.interestValue)
+        assertTrue(installment?.noInterest == true)
+        coVerify(exactly = 0) { registrationRepository.calculateFees(any(), any(), any()) }
     }
 
     @Test

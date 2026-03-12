@@ -23,19 +23,20 @@ import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.OrderReceivableItemStatus.CANCELLED
 import com.detrapay.data.model.OrderReceivableItemStatus.REFUNDED
 import com.detrapay.data.model.PaymentData
-import com.detrapay.data.model.RefundPaymentData
 import com.detrapay.data.model.canBeDeleted
 import com.detrapay.databinding.ActivityOrderDetailsBinding
 import com.detrapay.ui.home.HomeActivity
 import com.detrapay.ui.payment.PaymentDialogFragment
-import com.detrapay.ui.refund.RefundPaymentDialogFragment
 import com.detrapay.ui.registration.RegistrationActivity
 import com.detrapay.ui.session_expired_dialog.SessionExpiredDialog
 import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.DebugConstants
 import com.detrapay.ui.util.DeviceUtils
+import com.detrapay.ui.util.PaymentTypeRules
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
+import java.text.SimpleDateFormat
+import java.util.Date
 import kotlin.math.abs
 
 @AndroidEntryPoint
@@ -282,7 +283,7 @@ class OrderDetailsActivity : AppCompatActivity(),
         binding.editOrderImageView.setOnClickListener(editOrderClickListener)
 
         binding.orderTitleTextView.text = "Pedido #${order.id}"
-        binding.orderCaptionTextView.text = getString(R.string.order_details_header_caption)
+        binding.orderCaptionTextView.text = getString(R.string.order_details_payments_subtitle)
         binding.vehicleValueValue.text = "R$ $originalAmount"
 
         binding.saveSalesmanButton.visibility = View.GONE
@@ -318,6 +319,14 @@ class OrderDetailsActivity : AppCompatActivity(),
         ) { _, _ ->
             showPendingAdditionSuccess = true
         }
+        supportFragmentManager.setFragmentResultListener(
+            OrderDetailsPaymentConfigBottomSheet.REQUEST_MANUAL_PAYMENT_CONFIRMED,
+            this,
+        ) { _, bundle ->
+            confirmSelectedManualPayment(
+                bundle.getDouble(OrderDetailsPaymentConfigBottomSheet.RESULT_AMOUNT)
+            )
+        }
     }
 
     private fun showPaymentMethodPicker() {
@@ -348,6 +357,16 @@ class OrderDetailsActivity : AppCompatActivity(),
         ).show(supportFragmentManager, PAYMENT_CONFIG_TAG)
     }
 
+    private fun openManualPaymentConfig(receivable: OrderReceivableItem) {
+        if (hasDialogWithTag(PAYMENT_CONFIG_TAG)) {
+            return
+        }
+        OrderDetailsPaymentConfigBottomSheet.newManualConfirmationInstance(
+            paymentType = resolvedPaymentType(receivable),
+            defaultAmount = receivable.amountOriginal,
+        ).show(supportFragmentManager, PAYMENT_CONFIG_TAG)
+    }
+
     private fun hasDialogWithTag(tag: String): Boolean {
         val fragment = supportFragmentManager.findFragmentByTag(tag)
         return (fragment as? DialogFragment)?.dialog?.isShowing == true || fragment?.isAdded == true
@@ -355,16 +374,16 @@ class OrderDetailsActivity : AppCompatActivity(),
 
     private fun defaultPendingAmount(): Double {
         val order = currentOrder ?: return 0.0
-        val registeredAmount = order.receivables
-            .filter { it.status != CANCELLED && it.status != REFUNDED }
-            .sumOf { it.amountOriginal }
+        val registeredAmount = paidReceivables(order).sumOf { it.amountOriginal }
         val remaining = order.originalAmount - registeredAmount
         val suggestedValue = if (remaining > 0.0) remaining else order.originalAmount
         return suggestedValue.coerceAtLeast(0.0)
     }
 
     private fun setupHeaderActions() {
-        // No header back button on this screen by design.
+        binding.backButton.setOnClickListener {
+            handleExitRequest()
+        }
     }
 
     private fun navigateToHome() {
@@ -416,9 +435,8 @@ class OrderDetailsActivity : AppCompatActivity(),
 
     private fun currentBalance(): Double {
         val order = currentOrder ?: return 0.0
-        val activeReceivables = order.receivables.filter { it.status != CANCELLED && it.status != REFUNDED }
-        val registeredAmount = activeReceivables.sumOf { it.amountOriginal }
-        return order.originalAmount - registeredAmount
+        val totalReceived = paidReceivables(order).sumOf(::receivedAmountForSummary)
+        return order.originalAmount - totalReceived
     }
 
     private fun setupPayments(order: Order) {
@@ -432,11 +450,11 @@ class OrderDetailsActivity : AppCompatActivity(),
 
     @SuppressLint("SetTextI18n")
     private fun setupBalanceSummary(order: Order) {
-        val activeReceivables = order.receivables.filter { it.status != CANCELLED && it.status != REFUNDED }
-        val registeredAmount = activeReceivables.sumOf { it.amountOriginal }
+        val totalReceived = paidReceivables(order).sumOf(::receivedAmountForSummary)
         val balance = currentBalance()
 
-        binding.registeredAmountValueTextView.text = formatCurrency(registeredAmount)
+        binding.registeredAmountLabelTextView.setText(R.string.order_details_received_amount)
+        binding.registeredAmountValueTextView.text = formatCurrency(totalReceived)
 
         val (labelRes, colorRes, displayAmount) = when {
             balance > 0 -> Triple(
@@ -460,9 +478,16 @@ class OrderDetailsActivity : AppCompatActivity(),
         binding.balanceLabelTextView.setTextColor(ContextCompat.getColor(this, colorRes))
         binding.balanceValueTextView.text = formatCurrency(displayAmount)
         binding.balanceValueTextView.setTextColor(ContextCompat.getColor(this, colorRes))
+        binding.balanceStatusIcon.setImageResource(
+            when {
+                balance > 0 -> R.drawable.ic_status_overdue_small
+                balance < 0 -> R.drawable.ic_status_pending_small
+                else -> R.drawable.ic_status_paid_small
+            }
+        )
         binding.balanceHintTextView.text = when {
             balance > 0 -> getString(R.string.order_details_pending_message)
-            balance < 0 -> getString(R.string.order_details_registered_amount_hint)
+            balance < 0 -> getString(R.string.order_details_excess_amount_hint)
             else -> getString(R.string.order_details_settled_message)
         }
         binding.balanceHintTextView.visibility = View.VISIBLE
@@ -485,27 +510,63 @@ class OrderDetailsActivity : AppCompatActivity(),
 
     private fun validateErrorType(error: Exception?) {
         if (error is UnauthorizedException) {
-            SessionExpiredDialog.showIfNeeded(supportFragmentManager)
+            SessionExpiredDialog.showIfNeeded(supportFragmentManager, error)
         }
     }
 
     override fun onItemClick(receivable: OrderReceivableItem) {
         selectedReceivable = receivable
-        openPaymentDialog()
+        if (isManualPayment(receivable)) {
+            openManualPaymentConfig(receivable)
+        } else {
+            openPaymentDialog()
+        }
     }
 
-    override fun onRefundClick(receivable: OrderReceivableItem) {
-        val refundPaymentDialogFragment = RefundPaymentDialogFragment(listener = object : RefundPaymentDialogFragment.RefundPaymentListener {
-            override fun onResult(refundPaymentData: RefundPaymentData?) {
-                if (refundPaymentData != null) {
-                    viewModel.refundItem(receivable, refundPaymentData)
-                    Toast.makeText(this@OrderDetailsActivity, getString(R.string.order_details_refund_success_toast), Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this@OrderDetailsActivity, getString(R.string.order_details_refund_error_toast), Toast.LENGTH_SHORT).show()
-                }
-            }
-        }, receivable)
-        refundPaymentDialogFragment.show(this.supportFragmentManager, "RefundPaymentDialogFragment")
+    private fun confirmSelectedManualPayment(amountFinal: Double) {
+        val receivable = selectedReceivable ?: return
+        if (!isManualPayment(receivable)) {
+            openPaymentDialog()
+            return
+        }
+        viewModel.payOrder(receivable, buildManualPaymentData(amountFinal))
+    }
+
+    private fun buildManualPaymentData(amountFinal: Double): PaymentData {
+        val now = Date()
+        return PaymentData(
+            date = SimpleDateFormat("dd/MM/yyyy", locale).format(now),
+            time = SimpleDateFormat("HH:mm:ss", locale).format(now),
+            amountFinal = amountFinal,
+        )
+    }
+
+    private fun paidReceivables(order: Order): List<OrderReceivableItem> {
+        return order.receivables.filter { it.status == com.detrapay.data.model.OrderReceivableItemStatus.PAID }
+    }
+
+    private fun receivedAmountForSummary(receivable: OrderReceivableItem): Double {
+        return when (resolvedPaymentType(receivable)) {
+            OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CASH,
+            OrderDetailsPaymentMethodPickerBottomSheet.TYPE_STORE_CREDIT -> receivable.amountFinal
+            else -> receivable.amountOriginal
+        }
+    }
+
+    private fun isManualPayment(receivable: OrderReceivableItem): Boolean {
+        return PaymentTypeRules.isDirectNoFeePaymentType(resolvedPaymentType(receivable))
+    }
+
+    private fun resolvedPaymentType(receivable: OrderReceivableItem): String {
+        val normalizedType = normalizePaymentType(receivable.paymentMethod.paymentType)
+        if (normalizedType.isNotBlank()) {
+            return normalizedType
+        }
+        return normalizePaymentType(receivable.paymentMethod.name)
+    }
+
+    private fun normalizePaymentType(rawType: String?): String {
+        return PaymentTypeRules.normalize(rawType)
     }
 
     override fun onDeletePendingClick(receivable: OrderReceivableItem) {

@@ -16,5 +16,7 @@ data class PaymentData(
     val pixQrCodeContent: String? = null,
     val pixCopyPasteCode: String? = null,
     val pixQrCodeBase64: String? = null,
-    val pixExpiresAt: String? = null
+    val pixExpiresAt: String? = null,
+    val amountOriginal: Double? = null,
+    val amountFinal: Double? = null,
 ): Serializable

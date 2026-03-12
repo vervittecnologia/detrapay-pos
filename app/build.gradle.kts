@@ -1,3 +1,4 @@
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -6,6 +7,7 @@ plugins {
     alias(libs.plugins.room)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.compose.compiler)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -16,8 +18,8 @@ android {
         applicationId = "com.detrapay"
         minSdk = 23
         targetSdk = 35
-        versionCode = 5
-        versionName = "1.4"
+        versionCode = 6
+        versionName = "1.5"
         testInstrumentationRunner = "com.detrapay.testing.DetrapayTestRunner"
         testInstrumentationRunnerArguments["clearPackageData"] = "true"
 
@@ -73,6 +75,9 @@ hilt {
 }
 
 dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:34.10.0"))
+    implementation("com.google.firebase:firebase-analytics")
+
     implementation(libs.fragment.ktx)
     implementation(libs.shimmer)
     implementation(libs.kotlin.serialization)

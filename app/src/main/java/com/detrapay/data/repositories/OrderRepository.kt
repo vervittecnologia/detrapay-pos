@@ -31,8 +31,6 @@ import com.detrapay.data.model.remote.SplitConfigRequest
 import com.detrapay.ui.util.Logger
 import com.detrapay.ui.util.Mask
 import com.detrapay.ui.util.DebugConstants
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -453,29 +451,9 @@ class OrderRepository @Inject constructor(
             is Result.Success -> {
                 try {
                     val order = parseOrder(result.data)
-                    val finalResult = if (shouldAutoConfirmPayment(paymentMethod)) {
-                        val createdReceivable = findCreatedReceivable(order, paymentMethod, amountOriginal)
-                            ?: return Result.Error(
-                                Exception("Nao foi possivel localizar o pagamento criado para confirmacao automatica.")
-                            )
-
-                        when (
-                            val paidResult = payOrder(
-                                orderId = order.id,
-                                receivable = createdReceivable,
-                                paymentData = buildManualPaymentData()
-                            )
-                        ) {
-                            is Result.Success -> paidResult
-                            is Result.Error -> paidResult
-                        }
-                    } else {
-                        invalidateOrdersCache()
-                        orderDetailsCache[order.id] = order
-                        Result.Success(order)
-                    }
-
-                    finalResult
+                    invalidateOrdersCache()
+                    orderDetailsCache[order.id] = order
+                    Result.Success(order)
                 } catch (e: Exception) {
                     Log.e("OrderRepository", "UNABLE TO ADD ORDER RECEIVABLE: ${e.message}")
                     Result.Error(e)
@@ -573,37 +551,6 @@ class OrderRepository @Inject constructor(
                 serial = splitSerial,
                 description = splitDescription
             )
-        )
-    }
-
-    private fun shouldAutoConfirmPayment(paymentMethod: PaymentMethod): Boolean {
-        val normalizedType = paymentMethod.paymentType.orEmpty().trim().lowercase()
-        val normalizedName = paymentMethod.name.trim().lowercase()
-        return normalizedType in setOf("dinheiro", "cash", "store_credit", "credito loja", "credito_loja", "storecredit") ||
-            normalizedName.contains("dinheiro") ||
-            normalizedName.contains("credito loja") ||
-            normalizedName.contains("store credit")
-    }
-
-    private fun findCreatedReceivable(
-        order: Order,
-        paymentMethod: PaymentMethod,
-        amountOriginal: Double
-    ): OrderReceivableItem? {
-        return order.receivables
-            .asReversed()
-            .firstOrNull { receivable ->
-                receivable.paymentMethod.id == paymentMethod.id &&
-                    receivable.status == OrderReceivableItemStatus.PENDING &&
-                    kotlin.math.abs(receivable.amountOriginal - amountOriginal) < 0.01
-            }
-    }
-
-    private fun buildManualPaymentData(): PaymentData {
-        val now = Date()
-        return PaymentData(
-            date = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")).format(now),
-            time = SimpleDateFormat("HH:mm:ss", Locale("pt", "BR")).format(now)
         )
     }
 

@@ -31,6 +31,7 @@ import com.detrapay.ui.registration.payment_method.RegistrationPaymentMethodCrea
 import com.detrapay.ui.registration.payment_method.RegistrationPaymentMethodInitialState
 import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.Logger
+import com.detrapay.ui.util.PaymentTypeRules
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.Dispatchers
@@ -289,10 +290,11 @@ class RegistrationViewModel @Inject constructor(
     }
 
     fun getPaymentMethodsByType(type: String): List<PaymentMethod> {
-        val normalizedType = type.normalize()
+        val normalizedType = PaymentTypeRules.normalize(type).normalize()
         val filtered = paymentMethods.filter { 
             val methodType = it.paymentType ?: ""
-            methodType.normalize() == normalizedType || it.name.normalize().contains(normalizedType)
+            PaymentTypeRules.normalize(methodType).normalize() == normalizedType ||
+                PaymentTypeRules.normalize(it.name).normalize().contains(normalizedType)
         }
         Logger.d("Filtered methods for type $type: ${filtered.size} items found.")
         return filtered
@@ -404,6 +406,12 @@ class RegistrationViewModel @Inject constructor(
     }
 
     fun calculateFees(value: Double, paymentType: String, brand: String? = null) {
+        if (PaymentTypeRules.isDirectNoFeePaymentType(paymentType)) {
+            val response = PaymentTypeRules.zeroFeeQuote(value, brand ?: paymentType)
+            feesCache[feesCacheKey(value, paymentType, brand)] = response
+            _calculateFeesState.postValue(UIState.Success(response))
+            return
+        }
         _calculateFeesState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
             val result = registrationRepository.calculateFees(value, paymentType, brand)
@@ -425,8 +433,8 @@ class RegistrationViewModel @Inject constructor(
     private fun feesCacheKey(value: Double, paymentType: String, brand: String? = null): FeesCacheKey {
         return FeesCacheKey(
             value = value.roundTo2DecimalPlacesMath(),
-            paymentType = paymentType.trim().lowercase(),
-            brand = "",
+            paymentType = PaymentTypeRules.normalize(paymentType),
+            brand = PaymentTypeRules.normalize(brand),
         )
     }
 

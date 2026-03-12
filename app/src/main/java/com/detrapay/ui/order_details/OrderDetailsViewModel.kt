@@ -17,6 +17,7 @@ import com.detrapay.data.repositories.OrderRepository
 import com.detrapay.data.repositories.RegistrationRepository
 import com.detrapay.data.repositories.SalesmanRepository
 import com.detrapay.ui.state.UIState
+import com.detrapay.ui.util.PaymentTypeRules
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -130,7 +131,7 @@ class OrderDetailsViewModel @Inject constructor(
     fun getPaymentMethodsByType(type: String): List<PaymentMethod> {
         val normalizedType = normalizePaymentType(type)
         return paymentMethods.filter { method ->
-            normalizePaymentType(method.paymentType) == normalizedType
+            PaymentTypeRules.normalize(method.paymentType) == normalizedType
         }
     }
 
@@ -144,6 +145,11 @@ class OrderDetailsViewModel @Inject constructor(
     fun calculateFees(value: Double, paymentType: String) {
         if (value <= 0.0) {
             _calculateFeesState.postValue(UIState.Error("Informe um valor maior que zero."))
+            return
+        }
+
+        if (PaymentTypeRules.isDirectNoFeePaymentType(paymentType)) {
+            _calculateFeesState.postValue(UIState.Success(PaymentTypeRules.zeroFeeQuote(value, paymentType)))
             return
         }
 
@@ -266,13 +272,6 @@ class OrderDetailsViewModel @Inject constructor(
     }
 
     private fun normalizePaymentType(rawType: String?): String {
-        return when (rawType.orEmpty().trim().lowercase()) {
-            "credito", "credit", "cartao_credito", "cartao de credito" -> "credito"
-            "debito", "debit", "cartao_debito", "cartao de debito" -> "debito"
-            "pix" -> "pix"
-            "dinheiro", "cash" -> "dinheiro"
-            "store_credit", "credito_loja", "credito loja", "storecredit" -> "store_credit"
-            else -> rawType.orEmpty().trim().lowercase()
-        }
+        return PaymentTypeRules.normalize(rawType)
     }
 }

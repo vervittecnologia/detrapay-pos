@@ -19,6 +19,7 @@ import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
+import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
@@ -42,6 +43,11 @@ import java.util.Date
 import java.util.Locale
 
 class RegistrationResumeFragment : Fragment() {
+
+    private fun receiptTypeface(isBold: Boolean = false): Typeface {
+        val baseTypeface = ResourcesCompat.getFont(requireContext(), R.font.font) ?: Typeface.SANS_SERIF
+        return if (isBold) Typeface.create(baseTypeface, Typeface.BOLD) else baseTypeface
+    }
 
     private val registrationViewModel: RegistrationViewModel by activityViewModels()
     private lateinit var binding: FragmentRegistrationOrderResumeBinding
@@ -179,7 +185,7 @@ class RegistrationResumeFragment : Fragment() {
         brandTitle.text = getString(R.string.home_brand_name).lowercase(Locale.getDefault())
         brandTitle.setTextColor(android.graphics.Color.BLACK)
         brandTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 22f)
-        brandTitle.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
+        brandTitle.typeface = receiptTypeface(isBold = true)
         brandTitle.gravity = Gravity.CENTER_HORIZONTAL
         brandTitle.layoutParams = android.widget.LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -193,7 +199,7 @@ class RegistrationResumeFragment : Fragment() {
         slogan.text = getString(R.string.print_slogan)
         slogan.setTextColor(android.graphics.Color.BLACK)
         slogan.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13f)
-        slogan.typeface = Typeface.SANS_SERIF
+        slogan.typeface = receiptTypeface()
         slogan.gravity = Gravity.CENTER_HORIZONTAL
         slogan.layoutParams = android.widget.LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -214,9 +220,9 @@ class RegistrationResumeFragment : Fragment() {
             tv.setTextColor(android.graphics.Color.BLACK)
             tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, sizeSp)
             tv.typeface = if (isBold) {
-                Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
+                receiptTypeface(isBold = true)
             } else {
-                Typeface.SANS_SERIF
+                receiptTypeface()
             }
             tv.letterSpacing = 0.01f
             tv.layoutParams = android.widget.LinearLayout.LayoutParams(
@@ -272,7 +278,7 @@ class RegistrationResumeFragment : Fragment() {
         footer.text = "Resumo do pedido"
         footer.setTextColor(android.graphics.Color.BLACK)
         footer.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14f)
-        footer.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
+        footer.typeface = receiptTypeface(isBold = true)
         footer.gravity = Gravity.CENTER_HORIZONTAL
         footer.layoutParams = android.widget.LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,

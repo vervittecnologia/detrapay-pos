@@ -127,7 +127,7 @@ class OrderListFragment : Fragment(), OrderRecyclerViewAdapter.OnItemClickListen
 
     private fun validateErrorType(error: Exception?) {
         if (error is UnauthorizedException) {
-            SessionExpiredDialog.showIfNeeded(requireActivity().supportFragmentManager)
+            SessionExpiredDialog.showIfNeeded(requireActivity().supportFragmentManager, error)
         }
     }
 

@@ -13,15 +13,23 @@ class AuthInterceptor @Inject constructor(
     private var authRepository: AuthRepository
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val loggedInUser = runBlocking {
-            return@runBlocking authRepository.getLoggedUser()
+        val requestUrl = chain.request().url.encodedPath
+        if (requestUrl.endsWith("/auth/local") || requestUrl.endsWith("/auth/refresh")) {
+            return chain.proceed(
+                chain.request().newBuilder()
+                    .addHeader("x-device-serial", DeviceUtils.getSerialNumber())
+                    .build()
+            )
         }
 
         val request = chain.request().newBuilder()
             .addHeader("x-device-serial", DeviceUtils.getSerialNumber())
 
-        if (loggedInUser != null) {
-            request.addHeader("Authorization", "Bearer " + loggedInUser.sessionToken)
+        val accessToken = authRepository.currentAccessToken() ?: runBlocking {
+            authRepository.getLoggedUser()?.sessionToken
+        }
+        if (!accessToken.isNullOrBlank()) {
+            request.addHeader("Authorization", "${authRepository.currentTokenType()} $accessToken")
         }
         return chain.proceed(request.build())
     }

@@ -2,6 +2,8 @@
 <resources>
     <style name="HintText" parent="TextAppearance.Design.Hint">
         <item name="android:textSize">14sp</item> <!-- Set the hint text size here -->
+        <item name="fontFamily">@font/font</item>
+        <item name="android:fontFamily">@font/font</item>
     </style>
 
     <style name="ShapeAppearanceOverlay.Detrapay.TopRounded" parent="">
@@ -20,9 +22,13 @@
     <style name="TextAppearance.Detrapay.BottomNav.Active" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:textSize">13sp</item>
         <item name="android:textStyle">bold</item>
+        <item name="fontFamily">@font/font</item>
+        <item name="android:fontFamily">@font/font</item>
     </style>
 
     <style name="TextAppearance.Detrapay.BottomNav.Inactive" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:textSize">13sp</item>
+        <item name="fontFamily">@font/font</item>
+        <item name="android:fontFamily">@font/font</item>
     </style>
 </resources>
