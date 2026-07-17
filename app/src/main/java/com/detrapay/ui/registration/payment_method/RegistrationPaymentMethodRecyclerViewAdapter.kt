@@ -1,293 +1,211 @@
 package com.detrapay.ui.registration.payment_method
 
-import android.content.Context
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.Spinner
-import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.detrapay.R
-import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.SimulationPayment
-import com.detrapay.databinding.RegistrationPaymentMethodListItemBinding
-import com.detrapay.ui.util.Logger
-import com.detrapay.ui.util.Mask
+import com.detrapay.databinding.RegistrationPaymentLaunchedItemBinding
+import com.detrapay.ui.registration.RegistrationViewModel
+import java.text.NumberFormat
 import java.util.Locale
 
 interface OnItemClickListener {
     fun onAdd(item: SimulationPayment)
     fun onDelete(item: SimulationPayment)
     fun onItemUpdated(newItem: SimulationPayment)
+    fun onItemClicked(item: SimulationPayment)
 }
 
 class RegistrationPaymentMethodRecyclerViewAdapter(
-    private var values: MutableList<SimulationPayment>,
-    private val paymentMethods: List<PaymentMethod>,
+    private val viewModel: RegistrationViewModel,
     private val listener: OnItemClickListener,
-) : RecyclerView.Adapter<RegistrationPaymentMethodViewHolder>() {
+) : ListAdapter<SimulationPayment, RegistrationPaymentMethodRecyclerViewAdapter.ViewHolder>(DiffCallback()) {
 
-    override fun getItemId(position: Int): Long {
-        return values[position].id
-    }
-
-    override fun onCreateViewHolder(
-        parent: ViewGroup,
-        viewType: Int
-    ): RegistrationPaymentMethodViewHolder {
-        val itemBinding = RegistrationPaymentMethodListItemBinding.inflate(
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val binding = RegistrationPaymentLaunchedItemBinding.inflate(
             LayoutInflater.from(parent.context),
             parent,
-            false
+            false,
         )
-        return RegistrationPaymentMethodViewHolder(
-            parent.context,
-            itemBinding,
-            paymentMethods
-        )
+        return ViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: RegistrationPaymentMethodViewHolder, position: Int) {
-        val item: SimulationPayment = values[position]
-        holder.bind(
-            item = item,
-            itemPosition = position,
-            onAdd = {
-                val paymentMethod = paymentMethods.first()
-                val simulationPayment = SimulationPayment(
-                    id = values.size.toLong() + 1,
-                    paymentMethod = paymentMethod,
-                    amountOriginal = "",
-                    amountFinal = "",
-                    installment = paymentMethod.maxInstallments
-                )
-                values.add(simulationPayment)
-                notifyItemChanged(values.size)
-                listener.onAdd(simulationPayment)
-            },
-            onUpdate = { newItem ->
-                try {
-                    val itemPosition = values.indexOfFirst { it.id == newItem.id }
-                    values[itemPosition] = newItem
-                    listener.onItemUpdated(newItem)
-                } catch (e: Exception) {
-                    Logger.d(e.message ?: "")
-                }
-            },
-            onDelete = {
-                try {
-                    val itemPosition = values.indexOfFirst { it.id == item.id }
-                    values.removeAt(itemPosition)
-                    listener.onDelete(item)
-                    notifyItemRemoved(itemPosition)
-                } catch (e: Exception) {
-                    Logger.d(e.message ?: "")
-                }
-            }
-        )
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        holder.bind(getItem(position))
     }
 
-    override fun getItemCount(): Int = values.size
-}
+    inner class ViewHolder(
+        private val binding: RegistrationPaymentLaunchedItemBinding,
+    ) : RecyclerView.ViewHolder(binding.root) {
 
+        private val locale = Locale("pt", "BR")
 
-class RegistrationPaymentMethodViewHolder(
-    val context: Context,
-    val binding: RegistrationPaymentMethodListItemBinding,
-    val paymentMethods: List<PaymentMethod>
-) : RecyclerView.ViewHolder(
-    binding.root
-) {
-    private val locale = Locale("pt", "BR")
-    private val amountInputText: EditText = binding.amountInput
-    private val actionButton: ImageView = binding.actionButton
-    private val paymentMethodSpinner: Spinner = binding.paymentMethodSpinner
-    private val installmentsSelectorLayout: LinearLayout = binding.installmentSelectorLayout
-    private val installmentsAmount: TextView = binding.installmentsValue
-//    private val installmentsSelectorSpinner: Spinner = binding.installmentsSelectorSpinner
-    private val paymentMethodAdapter = ArrayAdapter(
-        context,
-        android.R.layout.simple_spinner_dropdown_item,
-        paymentMethods.map { it.name }
-    )
+        fun bind(item: SimulationPayment) {
+            val type = item.paymentMethod.paymentType.orEmpty()
+            val normalizedType = type.lowercase(locale)
 
-    fun bind(
-        item: SimulationPayment,
-        itemPosition: Int,
-        onAdd: () -> Unit,
-        onUpdate: (item: SimulationPayment) -> Unit,
-        onDelete: () -> Unit
-    ) {
+            setupBrandUI(normalizedType)
+            bindStatus()
+            bindTexts(item, normalizedType)
 
-        amountInputText.setText(item.amountOriginal)
-        val textWatcher = Mask.moneyMask(amountInputText, { value ->
-            val stringValue = amountInputText.text.toString()
-            val newPaymentMethod = paymentMethods[paymentMethodSpinner.selectedItemPosition]
-            val amountFinalValue = amountFinalValue(newPaymentMethod.interestRate, stringValue)
-            val newItem = item.copy(amountOriginal = stringValue, amountFinal = amountFinalValue, paymentMethod = newPaymentMethod)
-            onUpdate(newItem)
-            updateInstallmentView(newItem)
-        })
-        amountInputText.addTextChangedListener(textWatcher)
+            binding.btnDelete.setOnClickListener { listener.onDelete(item) }
+            binding.btnPay.setOnClickListener { listener.onItemClicked(item) }
+            binding.root.setOnClickListener { listener.onItemClicked(item) }
+        }
 
-        val buttonImage =
-            if (itemPosition == 0) R.drawable.ic_add
-            else R.drawable.ic_delete
+        private fun bindStatus() {
+            binding.statusContainer.background = ContextCompat.getDrawable(
+                binding.root.context,
+                R.drawable.registration_payment_status_pending_background,
+            )
+            binding.ivStatusIcon.setImageResource(R.drawable.ic_status_pending_small)
+            binding.tvAmountLabel.text = binding.root.context.getString(R.string.order_details_status_pending)
+            binding.tvAmountLabel.setTextColor(ContextCompat.getColor(binding.root.context, R.color.white))
+        }
 
-        actionButton.setImageResource(buttonImage)
-        actionButton.setOnClickListener {
-            if (itemPosition == 0) {
-                onAdd()
+        private fun bindTexts(item: SimulationPayment, normalizedType: String) {
+            binding.tvMethodName.text = formatMethodName(normalizedType)
+
+            val amount = parseAmount(item.amountFinal)
+            binding.tvAmount.text = formatCurrency(amount)
+
+            val detailText = buildInstallmentText(item)
+            if (detailText == null) {
+                binding.tvInstallmentDetail.visibility = View.GONE
             } else {
-                amountInputText.removeTextChangedListener(textWatcher)
-                onDelete()
+                binding.tvInstallmentDetail.visibility = View.VISIBLE
+                binding.tvInstallmentDetail.text = detailText
+            }
+
+            binding.btnPay.text = when {
+                normalizedType == "dinheiro" || normalizedType == "cash" || normalizedType == "store_credit" ->
+                    binding.root.context.getString(R.string.registration_payment_confirm_receipt_cta)
+
+                else -> binding.root.context.getString(R.string.registration_payment_pay_now_cta)
             }
         }
 
-        paymentMethodSpinner.setAdapter(paymentMethodAdapter)
-        paymentMethodSpinner.setSelection(paymentMethods.indexOf(item.paymentMethod))
-
-        paymentMethodSpinner.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    parent: AdapterView<*>, view: View?,
-                    position: Int, id: Long
-                ) {
-                    val newPaymentMethod = paymentMethods[position]
-                    val amountFinalValue = amountFinalValue(newPaymentMethod.interestRate, amountInputText.text.toString())
-
-                    val newItem = item.copy(
-                        paymentMethod = newPaymentMethod,
-                        amountOriginal = amountInputText.text.toString(),
-                        amountFinal = amountFinalValue,
-                        installment = newPaymentMethod.maxInstallments
+        private fun buildInstallmentText(item: SimulationPayment): CharSequence? {
+            val amount = parseAmount(item.amountFinal)
+            return when {
+                item.installment > 1 -> {
+                    val prefix = "${item.installment}x de "
+                    val amountText = formatCurrency(amount / item.installment)
+                    val builder = SpannableStringBuilder(prefix + amountText)
+                    builder.setSpan(
+                        ForegroundColorSpan(ContextCompat.getColor(binding.root.context, R.color.neutral_500)),
+                        0,
+                        prefix.length,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
                     )
-                    onUpdate(newItem)
-                    updateInstallmentView(newItem)
+                    builder.setSpan(
+                        ForegroundColorSpan(ContextCompat.getColor(binding.root.context, R.color.neutral_900)),
+                        prefix.length,
+                        builder.length,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+                    )
+                    builder.setSpan(
+                        StyleSpan(android.graphics.Typeface.BOLD),
+                        prefix.length,
+                        builder.length,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+                    )
+                    builder
                 }
 
-                override fun onNothingSelected(parent: AdapterView<*>?) {}
+                parseAmount(item.amountOriginal) != amount -> {
+                    val prefix = "Total final "
+                    val amountText = formatCurrency(amount)
+                    SpannableStringBuilder(prefix + amountText).apply {
+                        setSpan(
+                            ForegroundColorSpan(ContextCompat.getColor(binding.root.context, R.color.neutral_500)),
+                            0,
+                            prefix.length,
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+                        )
+                        setSpan(
+                            ForegroundColorSpan(ContextCompat.getColor(binding.root.context, R.color.neutral_900)),
+                            prefix.length,
+                            length,
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+                        )
+                        setSpan(
+                            StyleSpan(android.graphics.Typeface.BOLD),
+                            prefix.length,
+                            length,
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+                        )
+                    }
+                }
+
+                else -> null
             }
-
-        updateInstallmentView(item)
-
-//        installmentsSelectorSpinner.onItemSelectedListener =
-//            object : AdapterView.OnItemSelectedListener {
-//                override fun onItemSelected(
-//                    parent: AdapterView<*>, view: View?,
-//                    position: Int,
-//                    id: Long
-//                ) {
-//                    try {
-//                        val allowedInstallments: List<Int> =
-//                            (1..item.paymentMethod.maxInstallments).toList()
-//                        val newInstallment = allowedInstallments[position]
-//
-//                        val paymentAmountValue = amountInputText.text.toString()
-//                            .replace("R$", "")
-//                            .replace(" ", "")
-//                            .replace(".", "")
-//                            .replace(",", ".")
-//                            .replace("\\s".toRegex(), "").toDouble()
-//                        val interestRate = item.paymentMethod.interestRate ?: 0.0
-//                        val amountFinal = (paymentAmountValue + (paymentAmountValue * interestRate))
-//                        val amountFinalValue = "%,.2f".format(locale, amountFinal)
-//
-//                        onUpdate(
-//                            item.copy(
-//                                installment = newInstallment,
-//                                amountOriginal = amountInputText.text.toString(),
-//                                amountFinal = amountFinalValue
-//                            ),
-//                        )
-//                    } catch (_: Exception) {
-//                        // TODO LOG ERROR
-//                    }
-//                }
-//
-//                override fun onNothingSelected(parent: AdapterView<*>?) {}
-//            }
-    }
-
-    private fun updateInstallmentView(item: SimulationPayment) {
-        if (item.paymentMethod.maxInstallments > 0) {
-            installmentsSelectorLayout.visibility = View.VISIBLE
-            installmentsAmount.text = installmentsDescription(
-                        item.paymentMethod.maxInstallments,
-                        item.paymentMethod.interestRate,
-                        amountInputText.text.toString()
-                    )
-//            val allowedInstallments: List<Int> = (1..item.paymentMethod.maxInstallments).toList()
-//            val installmentsAdapter = ArrayAdapter(
-//                context,
-//                android.R.layout.simple_spinner_dropdown_item,
-//                allowedInstallments.map {
-//                    installmentsDescription(
-//                        it,
-//                        item.paymentMethod.interestRate,
-//                        amountInputText.text.toString()
-//                    )
-//                }
-//            )
-//            installmentsSelectorSpinner.setAdapter(installmentsAdapter)
-        } else {
-            installmentsSelectorLayout.visibility = View.GONE
         }
-    }
 
-    private fun amountFinalValue(
-        interestRate: Double?,
-        paymentAmount: String
-    ): String {
-        return try {
-            val paymentAmountValue = paymentAmount.replace("R$", "")
-                .replace(" ", "")
+        private fun formatMethodName(normalizedType: String): String {
+            return when (normalizedType) {
+                "credito", "credit" -> "CREDITO"
+                "debito", "debit" -> "DEBITO"
+                "pix" -> "PIX"
+                "dinheiro", "cash" -> "DINHEIRO"
+                "store_credit" -> "CREDITO LOJA"
+                else -> normalizedType.uppercase(locale)
+            }
+        }
+
+        private fun parseAmount(amount: String): Double {
+            return amount
                 .replace(".", "")
                 .replace(",", ".")
-                .replace("\\s".toRegex(), "").toDouble()
+                .toDoubleOrNull() ?: 0.0
+        }
 
-            if (interestRate != null && interestRate > 0.0) {
-                val paymentAmountValueWithInterestRate = paymentAmountValue + (paymentAmountValue * interestRate)
-                "%,.2f".format(locale, paymentAmountValueWithInterestRate)
-            } else {
-                paymentAmount
+        private fun formatCurrency(amount: Double): String {
+            val numberFormatter = NumberFormat.getCurrencyInstance(locale)
+            return numberFormatter.format(amount)
+        }
+
+        private fun setupBrandUI(normalizedType: String) {
+            val context = binding.root.context
+            when (normalizedType) {
+                "pix" -> {
+                    binding.iconContainer.setBackgroundResource(R.drawable.registration_payment_icon_pix_background)
+                    binding.ivIcon.setImageResource(R.drawable.ic_pix)
+                    binding.ivIcon.imageTintList = ContextCompat.getColorStateList(context, R.color.payment_pix_icon)
+                }
+
+                "dinheiro", "cash", "store_credit" -> {
+                    binding.iconContainer.setBackgroundResource(R.drawable.registration_payment_icon_cash_background)
+                    binding.ivIcon.setImageResource(R.drawable.ic_money)
+                    binding.ivIcon.imageTintList = ContextCompat.getColorStateList(context, R.color.payment_cash_icon)
+                }
+
+                "debito", "debit" -> {
+                    binding.iconContainer.setBackgroundResource(R.drawable.registration_payment_icon_debit_background)
+                    binding.ivIcon.setImageResource(R.drawable.ic_credit_card_outline)
+                    binding.ivIcon.imageTintList = ContextCompat.getColorStateList(context, R.color.payment_debit_icon)
+                }
+
+                else -> {
+                    binding.iconContainer.setBackgroundResource(R.drawable.registration_payment_icon_credit_background)
+                    binding.ivIcon.setImageResource(R.drawable.ic_credit_card_outline)
+                    binding.ivIcon.imageTintList = ContextCompat.getColorStateList(context, R.color.payment_credit_icon)
+                }
             }
-        } catch (e: Exception) {
-            paymentAmount
         }
     }
 
-    private fun installmentsDescription(
-        installment: Int,
-        interestRate: Double?,
-        paymentAmount: String
-    ): String {
-        return try {
-            val paymentAmountValue = paymentAmount.replace("R$", "")
-                .replace(" ", "")
-                .replace(".", "")
-                .replace(",", ".")
-                .replace("\\s".toRegex(), "").toDouble()
-
-            if (interestRate != null && interestRate > 0.0) {
-                val paymentAmountValueWithInterestRate = paymentAmountValue + (paymentAmountValue * interestRate)
-                val paymentAmountValueWithInterestRateFormattedValue = "%,.2f".format(locale, paymentAmountValueWithInterestRate)
-
-                val installmentAmount = paymentAmountValueWithInterestRate / installment
-                val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
-                "Em ${installment}x de R$${installmentFormattedValue} (R\$${paymentAmountValueWithInterestRateFormattedValue})"
-            } else {
-                val installmentAmount = paymentAmountValue / installment
-                val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
-                "Em ${installment}x de R$${installmentFormattedValue} sem juros"
-            }
-        } catch (e: Exception) {
-            "Em ${installment}x"
-        }
+    class DiffCallback : DiffUtil.ItemCallback<SimulationPayment>() {
+        override fun areItemsTheSame(oldItem: SimulationPayment, newItem: SimulationPayment) = oldItem.id == newItem.id
+        override fun areContentsTheSame(oldItem: SimulationPayment, newItem: SimulationPayment) = oldItem == newItem
     }
 }

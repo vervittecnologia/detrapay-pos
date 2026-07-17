@@ -8,16 +8,22 @@ import br.com.uol.pagseguro.plugpagservice.wrapper.IPlugPagWrapper
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPag
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagPrinterData
 import br.com.uol.pagseguro.plugpagservice.wrapper.exception.PlugPagException
+import com.detrapay.BuildConfig
 import com.detrapay.data.Result
 import com.detrapay.data.model.CustomerSearchData
 import com.detrapay.data.model.LoggedInUser
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.PaymentMethod
+import com.detrapay.data.model.Salesman
 import com.detrapay.data.model.Simulation
 import com.detrapay.data.model.SimulationItem
 import com.detrapay.data.model.SimulationPayment
+import com.detrapay.data.model.remote.CalculateFeesResponse
 import com.detrapay.data.repositories.AuthRepository
+import com.detrapay.data.repositories.OrderRepository
 import com.detrapay.data.repositories.RegistrationRepository
+import com.detrapay.data.repositories.SalesmanRepository
+import com.detrapay.debug.DebugOrderDefaults
 import com.detrapay.ui.registration.order_data.OrderData
 import com.detrapay.ui.registration.order_data.RegistrationOrderInitialState
 import com.detrapay.ui.registration.order_data.RegistrationOrderState
@@ -25,16 +31,36 @@ import com.detrapay.ui.registration.payment_method.RegistrationPaymentMethodCrea
 import com.detrapay.ui.registration.payment_method.RegistrationPaymentMethodInitialState
 import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.Logger
+import com.detrapay.ui.util.PaymentTypeRules
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.detrapay.ui.util.Mask
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.util.Locale
 import javax.inject.Inject
+
+private data class FeesCacheKey(
+    val value: Double,
+    val paymentType: String,
+    val brand: String,
+)
+
+data class WhatsAppSharePayload(
+    val phone: String,
+    val formattedPhone: String,
+    val message: String,
+    val waMeLink: String,
+)
 
 @HiltViewModel
 class RegistrationViewModel @Inject constructor(
     private val registrationRepository: RegistrationRepository,
+    private val orderRepository: OrderRepository,
     private val authRepository: AuthRepository,
+    private val salesmanRepository: SalesmanRepository,
     private val plugPag: IPlugPagWrapper
 ) : ViewModel() {
     private val locale = Locale("pt", "BR")
@@ -45,13 +71,29 @@ class RegistrationViewModel @Inject constructor(
 
     private var simulation: Simulation? = null
     private var loggedInUser: LoggedInUser? = null
+    private var salesmanId: Int? = null
+    private var salesmen: List<Salesman> = emptyList()
 
     private var paymentMethods: List<PaymentMethod> = emptyList()
+    private val feesCache = mutableMapOf<FeesCacheKey, CalculateFeesResponse>()
 
-    private var payments: MutableList<SimulationPayment> =
-        emptyList<SimulationPayment>().toMutableList()
+    private var payments: MutableList<SimulationPayment> = mutableListOf()
 
-    private val _registrationState = MutableLiveData<RegistrationState>()
+    private val _paymentsLiveData = MutableLiveData<List<SimulationPayment>>()
+    val paymentsLiveData: LiveData<List<SimulationPayment>> = _paymentsLiveData
+
+    private val _lastSavedPaymentId = MutableLiveData<Long?>()
+    val lastSavedPaymentId: LiveData<Long?> = _lastSavedPaymentId
+
+    private val _remainingBalanceLiveData = MutableLiveData<Double>()
+    val remainingBalanceLiveData: LiveData<Double> = _remainingBalanceLiveData
+
+    private val _calculateFeesState = MutableLiveData<UIState<CalculateFeesResponse>>()
+    val calculateFeesState: LiveData<UIState<CalculateFeesResponse>> = _calculateFeesState
+
+    private val _registrationState = MutableLiveData<RegistrationState>().apply { 
+        value = RegistrationState(currentScreen = 1) 
+    }
     val registrationState: LiveData<RegistrationState> = _registrationState
 
     private val _orderInitialState = MutableLiveData<UIState<RegistrationOrderInitialState>>()
@@ -103,15 +145,53 @@ class RegistrationViewModel @Inject constructor(
         }
     }
 
+    private var vehicleTypes: List<com.detrapay.data.model.VehicleType> = emptyList()
+
+    fun getVehicleTypeName(id: Int): String {
+        return vehicleTypes.find { it.id == id }?.name ?: "ID: $id"
+    }
+
+    fun getSalesmanName(): String {
+        return salesmen.find { it.id == salesmanId }?.name ?: "N/A"
+    }
+
+    fun getDealershipName(): String {
+        return loggedInUser?.companies?.firstOrNull()?.name ?: "N/A"
+    }
+
+    fun simulationSimulation() = simulation?.simulation
+    fun simulationCustomer() = simulation?.customer
+    fun currentOrderId(): Int? = order?.id
+
     fun loadOrderScreenContent() {
         Logger.d("RegistrationViewModel - loadScreenContent")
         _orderInitialState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
-            val result = registrationRepository.loadVehicleTypes()
+            val vehicleTypesDeferred = async { registrationRepository.loadVehicleTypes() }
+            val salesmenDeferred = async { salesmanRepository.getSalesmen() }
+
+            val result = vehicleTypesDeferred.await()
             if (result is Result.Success) {
+                vehicleTypes = result.data
+                if (loggedInUser == null) {
+                    loggedInUser = authRepository.getLoggedUser(false)
+                }
+                val salesmenResult = salesmenDeferred.await()
+                if (salesmenResult is Result.Error) {
+                    _orderInitialState.postValue(
+                        UIState.Error(
+                            message = salesmenResult.exception.message
+                                ?: "Ops! Algo deu errado ao carregar vendedores.",
+                            exception = salesmenResult.exception
+                        )
+                    )
+                    return@launch
+                }
+                salesmen = (salesmenResult as Result.Success).data
                 val initialState = if (inEditMode && firstInitialization) {
                     RegistrationOrderInitialState(
                         vehicleTypes = result.data,
+                        salesmen = salesmen,
                         orderData = OrderData(
                             cpfCnpj = order!!.customer.cpfCnpj,
                             phone = order!!.customer.phoneNumber,
@@ -121,11 +201,21 @@ class RegistrationViewModel @Inject constructor(
                             disposalVehicle = order!!.isVehicleFinanced,
                             vehicleType = order!!.vehicleType,
                             vehiclePrice = "%,.2f".format(locale, order!!.vehiclePrice),
+                            salesmanId = order!!.salesman?.id
                         )
                     )
                 } else {
                     RegistrationOrderInitialState(
-                        vehicleTypes = result.data
+                        vehicleTypes = result.data,
+                        salesmen = salesmen,
+                        orderData = if (BuildConfig.DEBUG) {
+                            DebugOrderDefaults.createOrderData(
+                                vehicleTypes = result.data,
+                                salesmen = salesmen
+                            )
+                        } else {
+                            null
+                        }
                     )
                 }
                 _orderInitialState.postValue(UIState.Success(initialState))
@@ -150,17 +240,6 @@ class RegistrationViewModel @Inject constructor(
             val result = registrationRepository.loadPaymentMethods()
             if (result is Result.Success) {
                 paymentMethods = result.data
-                if (payments.isEmpty()) {
-                    val paymentMethod = paymentMethods.first()
-                    val simulationPayment = SimulationPayment(
-                        id = 0,
-                        paymentMethod = paymentMethod,
-                        amountOriginal = "",
-                        amountFinal = "",
-                        installment = paymentMethod.maxInstallments
-                    )
-                    payments.add(simulationPayment)
-                }
                 _paymentSelectionInitialState.postValue(
                     UIState.Success(
                         RegistrationPaymentMethodInitialState(
@@ -169,6 +248,7 @@ class RegistrationViewModel @Inject constructor(
                         )
                     )
                 )
+                updatePaymentsList()
             } else {
                 val error = result as Result.Error
                 _paymentSelectionInitialState.postValue(
@@ -181,6 +261,73 @@ class RegistrationViewModel @Inject constructor(
         }
     }
 
+    private fun updatePaymentsList() {
+        _paymentsLiveData.postValue(payments.toList())
+        calculateRemainingBalance()
+    }
+
+    private fun calculateRemainingBalance() {
+        val total = totalAmount()
+        val paid = paymentsAmountFinal()
+        val balance = (total - paid).roundTo2DecimalPlacesMath()
+        Logger.d("Remaining Balance: $balance (Total: $total, Paid: $paid)")
+        _remainingBalanceLiveData.postValue(balance)
+    }
+
+    private fun paymentsAmountFinal(): Double {
+        return try {
+            payments.fold(0.0) { acc, item ->
+                acc + Mask.doubleValue(item.amountOriginal)
+            }
+        } catch (e: Exception) {
+            0.0
+        }
+    }
+
+    private fun String.normalize(): String {
+        val normalized = java.text.Normalizer.normalize(this, java.text.Normalizer.Form.NFD)
+        return normalized.replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "").lowercase()
+    }
+
+    fun getPaymentMethodsByType(type: String): List<PaymentMethod> {
+        val normalizedType = PaymentTypeRules.normalize(type).normalize()
+        val filtered = paymentMethods.filter { 
+            val methodType = it.paymentType ?: ""
+            PaymentTypeRules.normalize(methodType).normalize() == normalizedType ||
+                PaymentTypeRules.normalize(it.name).normalize().contains(normalizedType)
+        }
+        Logger.d("Filtered methods for type $type: ${filtered.size} items found.")
+        return filtered
+    }
+
+    fun addPaymentByType(type: String) {
+        Logger.d("Attempting to add payment of type: $type")
+        val methods = getPaymentMethodsByType(type)
+        if (methods.isNotEmpty()) {
+            val remaining = totalAmount() - paymentsAmount()
+            val amountToPay = if (remaining > 0) remaining else 0.0
+            
+            val method = methods.firstOrNull { it.installments == 1 } ?: methods.first()
+            
+            // Calculate final amount including tax for the initial add
+            val tax = method.interestTax ?: 0.0
+            val amountFinal = amountToPay * (1 + tax)
+
+            val simulationPayment = SimulationPayment(
+                id = System.currentTimeMillis(),
+                paymentMethod = method,
+                amountOriginal = "%,.2f".format(locale, amountToPay),
+                amountFinal = "%,.2f".format(locale, amountFinal),
+                installment = method.installments
+            )
+            payments.add(simulationPayment)
+            Logger.d("Payment added. Current payments count: ${payments.size}")
+            updatePaymentsList()
+        } else {
+            Logger.d("No payment methods found for type: $type. Available types: ${paymentMethods.map { it.paymentType }.distinct()}")
+        }
+    }
+
     fun onOrderNext(
         cpfCnpj: String,
         clientName: String,
@@ -189,11 +336,30 @@ class RegistrationViewModel @Inject constructor(
         vehicleValue: String,
         vehicleTypeId: Int,
         disposalVehicle: Boolean,
-        specialPlate: Boolean
+        specialPlate: Boolean,
+        salesmanId: Int?
     ) {
+        this.salesmanId = salesmanId
         _orderDataState.postValue(UIState.Loading())
 
         viewModelScope.launch(Dispatchers.IO) {
+            if (loggedInUser == null) {
+                loggedInUser = authRepository.getLoggedUser(false)
+            }
+
+            val companyId = loggedInUser?.companies?.firstOrNull()?.id
+            val dispatcherId = loggedInUser?.dispatchers?.firstOrNull()?.id
+
+            if (companyId == null || dispatcherId == null) {
+                _orderDataState.postValue(
+                    UIState.Error(
+                        message = "ID da empresa ou do despachante não encontrado.",
+                        exception = Exception("CompanyId or DispatcherId is null")
+                    )
+                )
+                return@launch
+            }
+
             val result = registrationRepository.simulate(
                 cpfCnpj,
                 clientName,
@@ -202,7 +368,9 @@ class RegistrationViewModel @Inject constructor(
                 vehicleValue,
                 vehicleTypeId,
                 disposalVehicle,
-                specialPlate
+                specialPlate,
+                companyId,
+                dispatcherId
             )
             if (result is Result.Success) {
                 simulation = result.data
@@ -221,8 +389,53 @@ class RegistrationViewModel @Inject constructor(
         }
     }
 
+    fun clearFeesState() {
+        _calculateFeesState.value = UIState.Idle()
+    }
+
+    fun getPaymentById(id: Long): SimulationPayment? {
+        return payments.find { it.id == id }
+    }
+
+    fun getCachedFees(value: Double, paymentType: String, brand: String? = null): CalculateFeesResponse? {
+        return feesCache[feesCacheKey(value, paymentType, brand)]
+    }
+
     fun onResumeNext() {
         _registrationState.postValue(RegistrationState(currentScreen = 3))
+    }
+
+    fun calculateFees(value: Double, paymentType: String, brand: String? = null) {
+        if (PaymentTypeRules.isDirectNoFeePaymentType(paymentType)) {
+            val response = PaymentTypeRules.zeroFeeQuote(value, brand ?: paymentType)
+            feesCache[feesCacheKey(value, paymentType, brand)] = response
+            _calculateFeesState.postValue(UIState.Success(response))
+            return
+        }
+        _calculateFeesState.postValue(UIState.Loading())
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = registrationRepository.calculateFees(value, paymentType, brand)
+            if (result is Result.Success) {
+                feesCache[feesCacheKey(value, paymentType, brand)] = result.data
+                _calculateFeesState.postValue(UIState.Success(result.data))
+            } else {
+                val error = result as Result.Error
+                _calculateFeesState.postValue(
+                    UIState.Error(
+                        message = error.exception.message ?: "Erro ao calcular parcelas.",
+                        exception = error.exception
+                    )
+                )
+            }
+        }
+    }
+
+    private fun feesCacheKey(value: Double, paymentType: String, brand: String? = null): FeesCacheKey {
+        return FeesCacheKey(
+            value = value.roundTo2DecimalPlacesMath(),
+            paymentType = PaymentTypeRules.normalize(paymentType),
+            brand = PaymentTypeRules.normalize(brand),
+        )
     }
 
     fun searchClient(cpfCnpj: String) {
@@ -258,12 +471,13 @@ class RegistrationViewModel @Inject constructor(
 
     private fun totalAmount(): Double {
         simulation?.let { simulation ->
-            return simulation.simulationItems.sumOf {
-                if (it.discount != null) {
-                    it.price - it.discount
+            return simulation.simulationItems.fold(0.0) { acc, item ->
+                val price = if (item.discount != null) {
+                    item.price - item.discount
                 } else {
-                    it.price
+                    item.price
                 }
+                acc + price
             }
         }
         return 0.0
@@ -279,33 +493,124 @@ class RegistrationViewModel @Inject constructor(
         return simulation?.simulationItems ?: emptyList()
     }
 
+    fun buildWhatsAppTargetPhone(rawPhone: String): String {
+        val digits = rawPhone.filter(Char::isDigit)
+        if (digits.isBlank()) return ""
+
+        return when {
+            digits.startsWith("55") -> digits
+            digits.length == 11 -> "55$digits"
+            else -> digits
+        }
+    }
+
+    fun formatWhatsAppTargetPhone(rawPhone: String): String {
+        val phone = buildWhatsAppTargetPhone(rawPhone)
+        if (phone.isBlank()) return ""
+
+        return when {
+            phone.length == 13 && phone.startsWith("55") -> {
+                "+${phone.substring(0, 2)} (${phone.substring(2, 4)}) ${phone.substring(4, 9)}-${phone.substring(9)}"
+            }
+            phone.length == 12 && phone.startsWith("55") -> {
+                "+${phone.substring(0, 2)} (${phone.substring(2, 4)}) ${phone.substring(4, 8)}-${phone.substring(8)}"
+            }
+            else -> phone
+        }
+    }
+
+    fun buildWhatsAppMessage(): String? {
+        val currentSimulation = simulation ?: return null
+        val simulationData = currentSimulation.simulation
+        val customer = currentSimulation.customer
+        val vehiclePrice = formatCurrency(Mask.toSafeDouble(simulationData.vehiclePrice))
+
+        return buildList {
+            add("Resumo do pedido")
+            add("Cliente: ${customer.name}")
+            add("CPF/CNPJ: ${customer.cpfCnpj}")
+            add("WhatsApp: ${customer.whatsapp}")
+            add("Concessionaria: ${getDealershipName()}")
+            add("Vendedor: ${getSalesmanName()}")
+            add("Tipo de veiculo: ${getVehicleTypeName(simulationData.vehicleTypeId)}")
+            add("Valor do veiculo: $vehiclePrice")
+            add("Data de aquisicao: ${simulationData.billingDate}")
+            add("Itens:")
+
+            currentSimulation.simulationItems.forEach { item ->
+                add("- ${item.name}: ${formatCurrency(item.price)}")
+                item.discount?.takeIf { it > 0 }?.let { discount ->
+                    add("Desconto: -${formatCurrency(discount)}")
+                }
+            }
+
+            add("Valor total final: ${simulationTotalAmount()}")
+        }.joinToString(separator = "\n")
+    }
+
+    fun buildWhatsAppWaMeLink(): String? {
+        val message = buildWhatsAppMessage() ?: return null
+        val phone = buildWhatsAppTargetPhone(simulation?.customer?.whatsapp.orEmpty())
+        if (phone.isBlank()) return null
+
+        val encodedMessage = URLEncoder.encode(
+            message,
+            StandardCharsets.UTF_8.toString()
+        ).replace("+", "%20")
+
+        return "https://wa.me/$phone?text=$encodedMessage"
+    }
+
+    fun buildWhatsAppSharePayload(): WhatsAppSharePayload? {
+        val message = buildWhatsAppMessage() ?: return null
+        val phone = buildWhatsAppTargetPhone(simulation?.customer?.whatsapp.orEmpty())
+        val waMeLink = buildWhatsAppWaMeLink() ?: return null
+        if (phone.isBlank()) return null
+
+        return WhatsAppSharePayload(
+            phone = phone,
+            formattedPhone = formatWhatsAppTargetPhone(phone),
+            message = message,
+            waMeLink = waMeLink
+        )
+    }
+
+    private fun supportsDiscount(item: SimulationItem): Boolean {
+        return item.discountAllowed && item.price > 0
+    }
+
     fun simulationItemsWhoSupportDiscount(): List<SimulationItem> {
-        return simulationItems().filter { it.discountAllowed == true && it.price > 0 }
+        return simulationItems().filter { item ->
+            supportsDiscount(item) && (item.discount ?: 0.0) <= 0.0
+        }
     }
 
     fun canAddDiscount(): Boolean {
         return simulationItemsWhoSupportDiscount().isNotEmpty()
     }
 
-    fun removePayment(item: SimulationPayment) {
-        try {
-            payments.removeIf { it.id == item.id }
-        } catch (e: Exception) {
-            Logger.d(e.message ?: "")
-        }
-    }
-
     fun addPayment(item: SimulationPayment) {
         payments.add(item)
+        updatePaymentsList()
+        _lastSavedPaymentId.value = item.id
+    }
+
+    fun removePayment(item: SimulationPayment) {
+        payments.removeIf { it.id == item.id }
+        updatePaymentsList()
     }
 
     fun updateSimulationPayment(item: SimulationPayment) {
-        try {
-            val paymentIndex = payments.indexOfFirst { it.id == item.id }
-            payments[paymentIndex] = item
-        } catch (e: Exception) {
-            Logger.d("updateSimulationPayment: ${e.message}")
+        val index = payments.indexOfFirst { it.id == item.id }
+        if (index != -1) {
+            payments[index] = item
+            updatePaymentsList()
+            _lastSavedPaymentId.value = item.id
         }
+    }
+
+    fun consumeLastSavedPaymentId() {
+        _lastSavedPaymentId.value = null
     }
 
     fun removeDiscount(item: SimulationItem): Int? {
@@ -317,14 +622,13 @@ class RegistrationViewModel @Inject constructor(
                 it
             }
         }
-        simulation =
-            simulation?.copy(simulationItems = updatedSimulationItems?.toList() ?: emptyList())
+        updateSimulationItems(updatedSimulationItems)
 
         return itemPosition
     }
 
     fun addDiscountToSimulationItem(item: SimulationItem?, discountAmount: Double): Int? {
-        if (item != null) {
+        if (item != null && supportsDiscount(item) && discountAmount > 0 && discountAmount <= item.price) {
             val itemPosition = simulation?.simulationItems?.indexOf(item)
             val updatedSimulationItems = simulation?.simulationItems?.map {
                 if (it.id == item.id) {
@@ -333,70 +637,74 @@ class RegistrationViewModel @Inject constructor(
                     it
                 }
             }
-            simulation =
-                simulation?.copy(simulationItems = updatedSimulationItems?.toList() ?: emptyList())
+            updateSimulationItems(updatedSimulationItems)
             return itemPosition
         }
         return null
+    }
+
+    private fun updateSimulationItems(updatedSimulationItems: List<SimulationItem>?) {
+        val currentSimulation = simulation ?: return
+        val newItems = updatedSimulationItems?.toList() ?: emptyList()
+        simulation = currentSimulation.copy(
+            simulation = currentSimulation.simulation.copy(
+                totalPrice = newItems.fold(0.0) { acc, item ->
+                    acc + (item.price - (item.discount ?: 0.0))
+                }.roundTo2DecimalPlacesMath()
+            ),
+            simulationItems = newItems
+        )
+        calculateRemainingBalance()
     }
 
     fun Double.roundTo2DecimalPlacesMath(): Double {
         return Math.round(this * 100.0) / 100.0
     }
 
+    private fun formatCurrency(value: Double): String {
+        return "R$ %,.2f".format(locale, value)
+    }
+
     fun createOrder() {
-        Logger.d(payments.toString())
+        submitOrder(payments.toList())
+    }
+
+    fun createOrderWithoutPayments() {
+        submitOrder(emptyList())
+    }
+
+    private fun submitOrder(paymentsToCreate: List<SimulationPayment>) {
+        Logger.d("Creating order with payments: $paymentsToCreate")
         _paymentSelectionCreateOrderState.postValue(UIState.Loading())
-
-        val totalAmount = totalAmount()
-        val roundedTotalAmount = totalAmount.roundTo2DecimalPlacesMath()
-
-        val paymentsAmount = paymentsAmount()
-        val roundedPaymentsAmount = paymentsAmount.roundTo2DecimalPlacesMath()
-
-        Logger.d("Expected: ${roundedTotalAmount}, Calculated: ${roundedPaymentsAmount}")
-        if (roundedTotalAmount != roundedPaymentsAmount) {
-            if (payments.count() > 1) {
-                _paymentSelectionCreateOrderState.postValue(UIState.Error("A soma dos pagamentos deve ser igual ao valor total do pedido."))
-            } else {
-                _paymentSelectionCreateOrderState.postValue(UIState.Error("O valor do pagamento deve ser igual ao valor total do pedido."))
-            }
-            return
-        }
-
         if (simulation != null) {
             viewModelScope.launch(Dispatchers.IO) {
-                val user = authRepository.getLoggedUser(true)
-                val result = if (inEditMode) {
-                    registrationRepository.updateOrder(
-                        orderId = order!!.id,
+                try {
+                    val result = orderRepository.createOrder(
                         simulation = simulation!!,
-                        simulationPayments = payments,
-                        userId = user?.preferredEmployeeId
+                        simulationPayments = paymentsToCreate,
+                        salesmanId = salesmanId
                     )
-                } else {
-                    registrationRepository.createOrder(
-                        simulation = simulation!!,
-                        simulationPayments = payments,
-                        createdById = user?.id,
-                        userId = user?.preferredEmployeeId
-                    )
-                }
-                if (result is Result.Success) {
-                    _paymentSelectionCreateOrderState.postValue(
-                        UIState.Success(
-                            RegistrationPaymentMethodCreateOrderState(result.data)
+                    if (result is Result.Success) {
+                        Logger.d("Order created successfully: ${result.data.id}")
+                        _paymentSelectionCreateOrderState.postValue(
+                            UIState.Success(
+                                RegistrationPaymentMethodCreateOrderState(result.data)
+                            )
                         )
-                    )
-                } else {
-                    val error = result as Result.Error
-                    _paymentSelectionCreateOrderState.postValue(
-                        UIState.Error(
-                            message = error.exception.message
-                                ?: "Ops! Algo deu errado, tente novamente.",
-                            exception = error.exception
+                    } else {
+                        val error = result as Result.Error
+                        Logger.d("Repository returned error: ${error.exception.message}")
+                        _paymentSelectionCreateOrderState.postValue(
+                            UIState.Error(
+                                message = error.exception.message
+                                    ?: "Erro ao processar pedido no servidor. Tente novamente.",
+                                exception = error.exception
+                            )
                         )
-                    )
+                    }
+                } catch (e: Exception) {
+                    Logger.d("Crash during createOrder: ${e.message}")
+                    _paymentSelectionCreateOrderState.postValue(UIState.Error("Erro inesperado: ${e.message}"))
                 }
             }
         } else {
@@ -406,13 +714,8 @@ class RegistrationViewModel @Inject constructor(
 
     private fun paymentsAmount(): Double {
         return try {
-            payments.sumOf {
-                it.amountOriginal.replace("R$", "", true)
-                    .replace(" ", "")
-                    .replace(".", "")
-                    .replace(",", ".")
-                    .replace("\\s".toRegex(), "")
-                    .toDouble()
+            payments.fold(0.0) { acc, item ->
+                acc + Mask.doubleValue(item.amountOriginal)
             }
         } catch (e: Exception) {
             0.0

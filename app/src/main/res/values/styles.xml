@@ -2,5 +2,33 @@
 <resources>
     <style name="HintText" parent="TextAppearance.Design.Hint">
         <item name="android:textSize">14sp</item> <!-- Set the hint text size here -->
+        <item name="fontFamily">@font/font</item>
+        <item name="android:fontFamily">@font/font</item>
+    </style>
+
+    <style name="ShapeAppearanceOverlay.Detrapay.TopRounded" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">@dimen/radius_large</item>
+        <item name="cornerSizeTopRight">@dimen/radius_large</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
+    <style name="ShapeAppearanceOverlay.Detrapay.Circle" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="TextAppearance.Detrapay.BottomNav.Active" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="fontFamily">@font/font</item>
+        <item name="android:fontFamily">@font/font</item>
+    </style>
+
+    <style name="TextAppearance.Detrapay.BottomNav.Inactive" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">13sp</item>
+        <item name="fontFamily">@font/font</item>
+        <item name="android:fontFamily">@font/font</item>
     </style>
 </resources>

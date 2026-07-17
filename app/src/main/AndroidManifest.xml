@@ -21,14 +21,14 @@
             android:name=".ui.order_details.OrderDetailsActivity"
             android:exported="false"/>
         <activity
+            android:name=".ui.order_details.OrderReportActivity"
+            android:exported="false" />
+        <activity
             android:name=".ui.registration.RegistrationActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustPan"/>
         <activity
             android:name=".ui.notification.NotificationActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.employee_selection.EmployeeSelectionActivity"
             android:exported="false" />
         <activity
             android:name=".ui.home.HomeActivity"

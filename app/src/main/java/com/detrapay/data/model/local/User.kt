@@ -1,5 +1,6 @@
 package com.detrapay.data.model.local
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.detrapay.data.database.DbConstant
@@ -7,11 +8,14 @@ import com.detrapay.data.database.DbConstant
 @Entity(tableName = DbConstant.USER_TABLE)
 data class User(
     @PrimaryKey
-    val id: Int,
+    val id: String,
     var token: String,
     var name: String,
     var email: String,
     var username: String,
-    var preferredEmployeeName: String? = null,
-    var preferredEmployeeId: Int? = null,
+    @ColumnInfo(defaultValue = "")
+    var cpfCnpj: String,
+    var companies: String?,
+    var dispatchers: String?,
+    var salesmen: String?
 )

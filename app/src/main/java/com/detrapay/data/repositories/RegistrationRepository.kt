@@ -7,17 +7,17 @@ import com.detrapay.data.Result
 import com.detrapay.data.model.CustomerSearchData
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.OrderCustomer
-import com.detrapay.data.model.OrderItem
-import com.detrapay.data.model.OrderReceivableItem
-import com.detrapay.data.model.OrderReceivableItemStatus
 import com.detrapay.data.model.OrderStatus
+import com.detrapay.data.model.Salesman
 import com.detrapay.data.model.Simulation
 import com.detrapay.data.model.SimulationCustomer
 import com.detrapay.data.model.SimulationItem
 import com.detrapay.data.model.SimulationPayment
 import com.detrapay.data.model.SimulationSimulation
+import com.detrapay.data.model.remote.CalculateFeesResponse
 import com.detrapay.data.model.remote.OrderCustomerRequest
 import com.detrapay.data.model.remote.OrderReceivableRequest
+import com.detrapay.data.model.remote.OrderResponse
 import com.detrapay.data.model.remote.OrderSimulationItemRequest
 import com.detrapay.data.model.remote.OrderSimulationRequest
 import com.detrapay.ui.util.Logger
@@ -30,84 +30,103 @@ class RegistrationRepository @Inject constructor(
     private val detrapayRemoteDataSource: DetrapayRemoteDataSource,
 ) {
 
-    private val locale = Locale("pt", "BR")
+    private data class CacheEntry<T>(
+        val value: T,
+        val timestampMs: Long,
+    )
 
-    suspend fun loadVehicleTypes(): Result<List<VehicleType>> {
-        when (val result = detrapayRemoteDataSource.getVehicleTypes()) {
+    private val locale = Locale("pt", "BR")
+    private val catalogTtlMs = 10 * 60 * 1000L
+    private var vehicleTypesCache: CacheEntry<List<VehicleType>>? = null
+    private var paymentMethodsCache: CacheEntry<List<PaymentMethod>>? = null
+
+    private fun <T> CacheEntry<T>.isValid(ttlMs: Long): Boolean {
+        return System.currentTimeMillis() - timestampMs <= ttlMs
+    }
+
+    suspend fun calculateFees(
+        value: Double,
+        paymentType: String,
+        brand: String? = null
+    ): Result<CalculateFeesResponse> {
+        return detrapayRemoteDataSource.calculateFees(value, paymentType, brand)
+    }
+
+    suspend fun loadVehicleTypes(forceRefresh: Boolean = false): Result<List<VehicleType>> {
+        vehicleTypesCache
+            ?.takeIf { !forceRefresh && it.isValid(catalogTtlMs) }
+            ?.let { return Result.Success(it.value) }
+
+        return when (val result = detrapayRemoteDataSource.getVehicleTypes()) {
             is Result.Success -> {
                 try {
                     val vehicleTypes = result.data.map {
-                        VehicleType(it.id, it.name)
+                        VehicleType(it.id, it.name ?: it.attributes?.name.orEmpty())
                     }
+                    vehicleTypesCache = CacheEntry(
+                        value = vehicleTypes,
+                        timestampMs = System.currentTimeMillis()
+                    )
                     Logger.d(vehicleTypes.toString())
-                    return Result.Success(vehicleTypes)
+                    Result.Success(vehicleTypes)
                 } catch (e: Exception) {
                     Logger.d("UNABLE TO LOAD VEHICLE TYPES: ${e.message}")
-                    return Result.Error(e)
+                    Result.Error(e)
                 }
             }
 
-            is Result.Error -> {
-                return result
-            }
-
-            else -> {
-                return Result.Error(Exception())
-            }
+            is Result.Error -> result
         }
     }
 
-    suspend fun loadPaymentMethods(): Result<List<PaymentMethod>> {
-        when (val result = detrapayRemoteDataSource.getPaymentMethods()) {
+    suspend fun loadPaymentMethods(forceRefresh: Boolean = false): Result<List<PaymentMethod>> {
+        paymentMethodsCache
+            ?.takeIf { !forceRefresh && it.isValid(catalogTtlMs) }
+            ?.let { return Result.Success(it.value) }
+
+        return when (val result = detrapayRemoteDataSource.getPaymentMethods()) {
             is Result.Success -> {
                 try {
                     val paymentMethods = result.data.map {
                         PaymentMethod(
                             id = it.id,
                             name = it.name,
-                            maxInstallments = it.maxInstallments,
-                            interestRate = it.interestRate)
+                            installments = it.installments ?: 0,
+                            interestTax = it.interestTax,
+                            paymentType = it.paymentType)
                     }
+                    paymentMethodsCache = CacheEntry(
+                        value = paymentMethods,
+                        timestampMs = System.currentTimeMillis()
+                    )
                     Logger.d(paymentMethods.toString())
-                    return Result.Success(paymentMethods)
+                    Result.Success(paymentMethods)
                 } catch (e: Exception) {
                     Logger.d("UNABLE TO LOAD PAYMENT METHODS: ${e.message}")
-                    return Result.Error(e)
+                    Result.Error(e)
                 }
             }
 
-            is Result.Error -> {
-                return result
-            }
-
-            else -> {
-                return Result.Error(Exception())
-            }
+            is Result.Error -> result
         }
     }
 
     suspend fun searchCustomer(cpfCnpj: String): Result<CustomerSearchData> {
-        when (val result = detrapayRemoteDataSource.searchCustomer(cpfCnpj)) {
+        return when (val result = detrapayRemoteDataSource.searchCustomer(cpfCnpj)) {
             is Result.Success -> {
                 try {
                     result.data.let {
                         val customerSearchData = CustomerSearchData(it.id, it.name, it.whatsapp)
                         Logger.d(customerSearchData.toString())
-                        return Result.Success(customerSearchData)
+                        Result.Success(customerSearchData)
                     }
                 } catch (e: Exception) {
                     Logger.d("UNABLE TO LOAD PAYMENT METHODS: ${e.message}")
-                    return Result.Error(e)
+                    Result.Error(e)
                 }
             }
 
-            is Result.Error -> {
-                return result
-            }
-
-            else -> {
-                return Result.Error(Exception())
-            }
+            is Result.Error -> result
         }
     }
 
@@ -119,16 +138,17 @@ class RegistrationRepository @Inject constructor(
         vehicleValue: String,
         vehicleTypeId: Int,
         disposalVehicle: Boolean,
-        specialPlate: Boolean
+        specialPlate: Boolean,
+        companyId: Int,
+        dispatcherId: Int
     ): Result<Simulation> {
 
         val vehicleValueAmount = vehicleValue.replace("R$", "")
-            .replace(" ", "")
             .replace(".", "")
             .replace(",", ".")
             .replace("\\s".toRegex(), "")
 
-        when (val result = detrapayRemoteDataSource.simulate(
+        return when (val result = detrapayRemoteDataSource.simulate(
             cpfCnpj,
             clientName,
             whatsapp,
@@ -136,38 +156,40 @@ class RegistrationRepository @Inject constructor(
             vehicleValueAmount,
             vehicleTypeId,
             disposalVehicle,
-            specialPlate
+            specialPlate,
+            companyId,
+            dispatcherId
         )) {
             is Result.Success -> {
                 try {
                     result.data.let { data ->
                         Logger.d(result.data.toString())
                         val simulationCustomer = SimulationCustomer(
-                            data.customer.cpfCnpj,
-                            data.customer.name,
-                            data.customer.whatsapp
+                            data.data.attributes.cpfCnpj,
+                            data.data.attributes.name,
+                            data.data.attributes.whatsapp
                         )
 
                         val simulationSimulation = SimulationSimulation(
-                            data.simulation.billingDate,
-                            data.simulation.vehiclePrice,
-                            data.simulation.vehicleDisposal,
-                            data.simulation.vehicleSpecialPlate,
-                            data.simulation.totalPrice,
-                            data.simulation.vehicleTypeId
+                            data.data.attributes.billingDate,
+                            data.data.attributes.vehiclePrice,
+                            data.data.attributes.vehicleDisposal,
+                            data.data.attributes.vehicleSpecialPlate,
+                            data.data.attributes.totalPrice,
+                            data.data.attributes.vehicleTypeId
                         )
 
-                        val simulationItems = data.items.map {
+                        val simulationItems = data.data.attributes.items.map {
                             SimulationItem(
                                 id = it.id,
-                                name = it.name,
-                                discountAllowed = it.discountAllowed,
-                                price = it.price,
+                                name = it.attributes.name,
+                                discountAllowed = it.attributes.discountAllowed,
+                                price = it.attributes.price,
                                 discount = null
                             )
                         }
 
-                        return Result.Success(
+                        Result.Success(
                             Simulation(
                                 customer = simulationCustomer,
                                 simulation = simulationSimulation,
@@ -177,159 +199,11 @@ class RegistrationRepository @Inject constructor(
                     }
                 } catch (e: Exception) {
                     Logger.d("UNABLE TO SIMULATE: ${e.message}")
-                    return Result.Error(e)
+                    Result.Error(e)
                 }
             }
 
-            is Result.Error -> {
-                return result
-            }
-
-            else -> {
-                return Result.Error(Exception())
-            }
-        }
-    }
-
-    suspend fun createOrder(
-        simulation: Simulation,
-        simulationPayments: List<SimulationPayment>,
-        createdById: Int? = null,
-        userId: Int? = null
-    ): Result<Order> {
-        val clientCpfCnpj = simulation.customer.cpfCnpj.replace(".", "")
-            .replace("/", "")
-            .replace("-", "")
-            
-        val customerRequest = OrderCustomerRequest(
-            name = simulation.customer.name,
-            cpfCnpj = clientCpfCnpj,
-            phoneNumber = simulation.customer.whatsapp.replace("(", "")
-                .replace(")", "")
-                .replace("-", "")
-        )
-        val simulationRequest = OrderSimulationRequest(
-            billingDate = formatDate(simulation.simulation.billingDate),
-            vehiclePrice = simulation.simulation.vehiclePrice,
-            vehicleFinanced = simulation.simulation.vehicleDisposal,
-            vehicleSpecialPlate = simulation.simulation.vehicleSpecialPlate,
-            totalPrice = simulation.simulation.totalPrice.toString(),
-            vehicleTypeId = simulation.simulation.vehicleTypeId,
-        )
-        val simulationItemsRequest = simulation.simulationItems.map { simulationItem ->
-            OrderSimulationItemRequest(
-                id = simulationItem.id,
-                price = calculateItemPrice(simulationItem.price, simulationItem.discount)
-            )
-        }
-
-        val receivablesRequest = simulationPayments.map { simulationPayment ->
-            OrderReceivableRequest(
-                paymentMethodId = simulationPayment.paymentMethod.id,
-                amountOriginal = simulationPayment.amountOriginal
-                    .replace("R$", "")
-                    .replace(" ", "")
-                    .replace(".", "")
-                    .replace(",", ".")
-                    .replace("\\s".toRegex(), ""),
-                amountFinal = simulationPayment.amountFinal
-                    .replace("R$", "")
-                    .replace(" ", "")
-                    .replace(".", "")
-                    .replace(",", ".")
-                    .replace("\\s".toRegex(), ""),
-                tax = simulationPayment.paymentMethod.interestRate,
-                installments = simulationPayment.installment,
-                paymentDate = "",
-                cpfCnpjCliente = clientCpfCnpj
-            )
-        }
-
-        when (val result = detrapayRemoteDataSource.createOrder(
-            customer = customerRequest,
-            simulation = simulationRequest,
-            simulationItems = simulationItemsRequest,
-            receivables = receivablesRequest,
-            createdById = createdById,
-            userId = userId
-        )) {
-            is Result.Success -> {
-                try {
-                    result.data.let {
-                        val order = Order(
-                            id = it.id,
-                            customer = OrderCustomer(
-                                id = it.customer.id,
-                                name = it.customer.name,
-                                cpfCnpj = it.customer.cpfCnpj,
-                                phoneNumber = it.customer.phoneNumber,
-                                email = it.customer.email
-                            ),
-                            serviceName = "Primeiro emplacamento", // TODO RECEIVE NAME
-                            creationDate = it.createdAt,
-                            status = OrderStatus.PENDING, // TODO CREATE PARSER
-                            vehiclePrice = it.vehiclePrice,
-                            billingDate = it.billingDate,
-                            originalAmount = it.originalAmount,
-                            currentAmount = it.currentAmount,
-                            isVehicleFinanced = it.isVehicleFinanced,
-                            isVehicleSpecialPlate = it.isVehicleSpecialPlate,
-                            vehicleType = VehicleType(
-                                it.vehicleType?.id ?: 0,
-                                it.vehicleType?.name ?: ""
-                            ),
-                            items = it.items.map { item ->
-                                OrderItem(
-                                    id = item.id,
-                                    totalPrice = item.totalPrice,
-                                    discount = item.discount,
-                                    salesItemId = item.salesItem?.id,
-                                    name = item.salesItem?.name,
-                                    price = item.salesItem?.price,
-                                )
-                            }.toList(),
-                            receivables = it.receivables.map { receivable ->
-                                OrderReceivableItem(
-                                    id = receivable.id,
-                                    documentId = receivable.documentId,
-                                    amountFinal = receivable.amountFinal,
-                                    amountOriginal = receivable.amountOriginal,
-                                    tax = receivable.tax,
-                                    status = OrderReceivableItemStatus.PENDING, // TODO CREATE PARSER
-                                    paymentDate = receivable.paymentDate,
-                                    cardHolder = receivable.cardHolder,
-                                    cardBrand = receivable.cardBrand,
-                                    cardLast4 = receivable.cardLast4,
-                                    authorizationCode = receivable.authorizationCode,
-                                    authorizationId = receivable.authorizationId,
-                                    pixTxIdCode = receivable.pixTxIdCode,
-                                    refundDate = receivable.refundDate,
-                                    installments = receivable.installments,
-                                    paymentMethod = PaymentMethod(
-                                        id = receivable.paymentMethod.id,
-                                        name = receivable.paymentMethod.name,
-                                        maxInstallments = receivable.paymentMethod.maxInstallments,
-                                        interestRate = receivable.paymentMethod.interestRate
-                                    ),
-                                )
-
-                            }
-                        )
-                        return Result.Success(order)
-                    }
-                } catch (e: Exception) {
-                    Logger.d("UNABLE TO CREATE ORDER: ${e.message}")
-                    return Result.Error(e)
-                }
-            }
-
-            is Result.Error -> {
-                return result
-            }
-
-            else -> {
-                return Result.Error(Exception())
-            }
+            is Result.Error -> result
         }
     }
 
@@ -337,7 +211,7 @@ class RegistrationRepository @Inject constructor(
         orderId: Int,
         simulation: Simulation,
         simulationPayments: List<SimulationPayment>,
-        userId: Int? = null
+        createdById: String? = null
     ): Result<Order> {
         val clientCpfCnpj = simulation.customer.cpfCnpj.replace(".", "")
             .replace("/", "")
@@ -361,7 +235,8 @@ class RegistrationRepository @Inject constructor(
         val simulationItemsRequest = simulation.simulationItems.map { simulationItem ->
             OrderSimulationItemRequest(
                 id = simulationItem.id,
-                price = calculateItemPrice(simulationItem.price, simulationItem.discount)
+                price = formatDecimal(simulationItem.price),
+                discount = simulationItem.discount?.let(::formatDecimal)
             )
         }
 
@@ -370,139 +245,100 @@ class RegistrationRepository @Inject constructor(
                 paymentMethodId = simulationPayment.paymentMethod.id,
                 amountOriginal = simulationPayment.amountOriginal
                     .replace("R$", "")
-                    .replace(" ", "")
                     .replace(".", "")
                     .replace(",", ".")
                     .replace("\\s".toRegex(), ""),
                 amountFinal = simulationPayment.amountFinal
                     .replace("R$", "")
-                    .replace(" ", "")
                     .replace(".", "")
                     .replace(",", ".")
                     .replace("\\s".toRegex(), ""),
-                tax = simulationPayment.paymentMethod.interestRate,
+                tax = simulationPayment.paymentMethod.interestTax,
                 installments = simulationPayment.installment,
-                paymentDate = "",
-                cpfCnpjCliente = clientCpfCnpj
+                paymentDate = ""
             )
         }
 
-        when (val result = detrapayRemoteDataSource.updateOrder(
+        return when (val result = detrapayRemoteDataSource.updateOrder(
             orderId = orderId,
             customer = customerRequest,
             simulation = simulationRequest,
-            simulationItems = simulationItemsRequest,
+            items = simulationItemsRequest,
             receivables = receivablesRequest,
-            userId = userId
+            createdById = createdById
         )) {
             is Result.Success -> {
                 try {
                     result.data.let {
-                        val order = Order(
-                            id = it.id,
-                            customer = OrderCustomer(
-                                id = it.customer.id,
-                                name = it.customer.name,
-                                cpfCnpj = it.customer.cpfCnpj,
-                                phoneNumber = it.customer.phoneNumber,
-                                email = it.customer.email
-                            ),
-                            serviceName = "Primeiro emplacamento", // TODO RECEIVE NAME
-                            creationDate = it.createdAt,
-                            status = OrderStatus.PENDING, // TODO CREATE PARSER
-                            vehiclePrice = it.vehiclePrice,
-                            billingDate = it.billingDate,
-                            originalAmount = it.originalAmount,
-                            currentAmount = it.currentAmount,
-                            isVehicleFinanced = it.isVehicleFinanced,
-                            isVehicleSpecialPlate = it.isVehicleSpecialPlate,
-                            vehicleType = VehicleType(
-                                it.vehicleType?.id ?: 0,
-                                it.vehicleType?.name ?: ""
-                            ),
-                            items = it.items.map { item ->
-                                OrderItem(
-                                    id = item.id,
-                                    totalPrice = item.totalPrice,
-                                    discount = item.discount,
-                                    salesItemId = item.salesItem?.id,
-                                    name = item.salesItem?.name,
-                                    price = item.salesItem?.price,
-                                )
-                            }.toList(),
-                            receivables = it.receivables.map { receivable ->
-                                OrderReceivableItem(
-                                    id = receivable.id,
-                                    documentId = receivable.documentId,
-                                    amountFinal = receivable.amountFinal,
-                                    amountOriginal = receivable.amountOriginal,
-                                    tax = receivable.tax,
-                                    status = OrderReceivableItemStatus.PENDING, // TODO CREATE PARSER
-                                    paymentDate = receivable.paymentDate,
-                                    cardHolder = receivable.cardHolder,
-                                    cardBrand = receivable.cardBrand,
-                                    cardLast4 = receivable.cardLast4,
-                                    authorizationCode = receivable.authorizationCode,
-                                    authorizationId = receivable.authorizationId,
-                                    pixTxIdCode = receivable.pixTxIdCode,
-                                    refundDate = receivable.refundDate,
-                                    installments = receivable.installments,
-                                    paymentMethod = PaymentMethod(
-                                        id = receivable.paymentMethod.id,
-                                        name = receivable.paymentMethod.name,
-                                        maxInstallments = receivable.paymentMethod.maxInstallments,
-                                        interestRate = receivable.paymentMethod.interestRate
-                                    ),
-                                )
-                            }
-                        )
-                        return Result.Success(order)
+                        val order = parseOrder(it)
+                        Result.Success(order)
                     }
                 } catch (e: Exception) {
                     Logger.d("UNABLE TO CREATE ORDER: ${e.message}")
-                    return Result.Error(e)
+                    Result.Error(e)
                 }
             }
 
-            is Result.Error -> {
-                return result
-            }
-
-            else -> {
-                return Result.Error(Exception())
-            }
+            is Result.Error -> result
         }
     }
 
-    private fun calculateFinalAmount(finalAmount: String, interestRate: Double?): String {
-        val amountFinalStr = finalAmount
-            .replace("R$", "")
-            .replace(" ", "")
-            .replace(".", "")
-            .replace(",", ".")
-            .replace("\\s".toRegex(), "")
-
-        return try {
-            if (interestRate != null && interestRate > 0.0) {
-                val amountFinalValue = amountFinalStr.toDouble()
-                val bla = amountFinalValue + (amountFinalValue * interestRate)
-                "%,.2f".format(locale, bla)
-            } else {
-                amountFinalStr
-            }
-        } catch (e:Exception) {
-            return amountFinalStr
+    private fun parseOrder(orderResponse: OrderResponse): Order {
+        val attributes = orderResponse.attributes
+        val customer = orderResponse.customer ?: attributes?.customers?.data?.let {
+            com.detrapay.data.model.remote.FlatCustomerResponse(
+                id = it.id,
+                name = it.attributes.name,
+                cpfCnpj = it.attributes.cpfCnpj,
+                phoneNumber = it.attributes.phoneNumber,
+                email = it.attributes.email
+            )
         }
+        val salesman = orderResponse.salesman?.let {
+            Salesman(id = it.id, name = it.name)
+        } ?: attributes?.salesman?.data?.let {
+            Salesman(id = it.id, name = it.attributes.name)
+        } ?: orderResponse.salesmanName?.takeIf { it.isNotBlank() }?.let {
+            Salesman(id = 0, name = it)
+        }
+
+        return Order(
+            id = orderResponse.id,
+            customer = OrderCustomer(
+                id = customer?.id ?: 0,
+                name = customer?.name ?: orderResponse.customerName.orEmpty(),
+                cpfCnpj = customer?.cpfCnpj.orEmpty(),
+                phoneNumber = customer?.phoneNumber.orEmpty(),
+                email = customer?.email
+            ),
+            serviceName = orderResponse.company?.tradeName
+                ?: attributes?.companies?.data?.attributes?.tradeName
+                ?: "",
+            creationDate = orderResponse.createdAt ?: attributes?.createdAt.orEmpty(),
+            status = runCatching {
+                OrderStatus.valueOf((orderResponse.status ?: attributes?.status).orEmpty().uppercase())
+            }.getOrDefault(OrderStatus.PENDING),
+            vehiclePrice = 0.0,
+            billingDate = orderResponse.billingDate ?: attributes?.billingDate.orEmpty(),
+            originalAmount = orderResponse.originalAmount ?: attributes?.originalAmount ?: 0.0,
+            currentAmount = orderResponse.currentAmount ?: attributes?.currentAmount ?: 0.0,
+            isVehicleFinanced = false,
+            isVehicleSpecialPlate = false,
+            vehicleType = VehicleType(
+                orderResponse.vehicleType?.id ?: attributes?.vehicle_types?.data?.id ?: 0,
+                orderResponse.vehicleType?.name
+                    ?: attributes?.vehicle_types?.data?.attributes?.name
+                    ?: orderResponse.vehicleTypeName
+                    ?: ""
+            ),
+            items = emptyList(),
+            receivables = emptyList(),
+            salesman = salesman
+        )
     }
 
-    private fun calculateItemPrice(itemPrice: Double, discount: Double?): String {
-        val price = if (discount != null) {
-            itemPrice - discount
-        } else {
-            itemPrice
-        }
-
-        return price.toString()
+    private fun formatDecimal(value: Double): String {
+        return String.format(Locale.US, "%.2f", value)
     }
 
     private fun formatDate(date: String): String {

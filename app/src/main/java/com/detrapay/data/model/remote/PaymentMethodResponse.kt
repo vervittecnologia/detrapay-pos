@@ -1,16 +1,31 @@
 package com.detrapay.data.model.remote
 
 import com.google.gson.annotations.SerializedName
-import kotlinx.serialization.Serializable
 
-@Serializable
+data class PaymentMethodListResponse(
+    val data: List<PaymentMethodResponse>
+)
+
 data class PaymentMethodResponse(
-    @SerializedName("id")
     val id: Int,
-    @SerializedName("name")
+    val documentId: String? = null,
     val name: String,
-    @SerializedName("max_installments")
-    val maxInstallments: Int,
-    @SerializedName("interest_tax")
-    val interestRate: Double?,
+    @SerializedName("is_online_payment")
+    val isOnlinePayment: Boolean? = null,
+    @SerializedName(value = "installments", alternate = ["max_installments", "maxInstallments"])
+    val installments: Int? = null,
+    @SerializedName(value = "interest_tax", alternate = ["interestTax"])
+    val interestTax: Double? = null,
+    @SerializedName("is_active")
+    val isActive: Boolean? = null,
+    @SerializedName("transaction_fee_rate")
+    val transactionFeeRate: Double? = null,
+    @SerializedName("transaction_fixed_fee")
+    val transactionFixedFee: Double? = null,
+    @SerializedName(value = "paymentType", alternate = ["payment_type"])
+    val paymentType: String? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
+    val publishedAt: String? = null,
+    val locale: String? = null
 )

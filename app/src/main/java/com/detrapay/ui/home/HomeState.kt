@@ -1,3 +1,12 @@
 package com.detrapay.ui.home
 
-data class HomeState(val employeeName: String, val companyName: String)
+import com.detrapay.data.model.Salesman
+
+data class HomeState(
+    val companyName: String,
+    val companyDocument: String,
+    val dispatcherName: String,
+    val companyLogoKey: String?,
+    val salesmen: List<Salesman>,
+    val isSimplifiedMode: Boolean
+)

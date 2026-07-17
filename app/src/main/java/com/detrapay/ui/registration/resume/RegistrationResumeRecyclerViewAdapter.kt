@@ -33,19 +33,14 @@ class RegistrationResumeRecyclerViewAdapter(
         notifyItemChanged(itemPosition)
     }
 
-    override fun getItemId(position: Int): Long {
-        return values[position].id.toLong()
-    }
+    override fun getItemId(position: Int): Long = values[position].id.toLong()
 
     override fun onCreateViewHolder(
         parent: ViewGroup,
         viewType: Int
     ): RegistrationResumeViewHolder {
-        val itemBinding = RegistrationResumeListItemBinding.inflate(
-            LayoutInflater.from(parent.context),
-            parent,
-            false
-        )
+        val inflater = LayoutInflater.from(parent.context)
+        val itemBinding = RegistrationResumeListItemBinding.inflate(inflater, parent, false)
         return RegistrationResumeViewHolder(itemBinding)
     }
 
@@ -65,16 +60,17 @@ class RegistrationResumeRecyclerViewAdapter(
 
         @SuppressLint("SetTextI18n")
         fun bind(item: SimulationItem, locale: Locale, position: Int) {
-            val price = "%,.2f".format(locale, item.price)
             itemName.text = item.name
+            val discount = item.discount ?: 0.0
+            val price = "%,.2f".format(locale, item.price)
             itemValue.text = "R$ $price"
 
-            if (item.discount != null) {
+            if (discount > 0) {
                 itemDiscount.visibility = View.VISIBLE
                 btnDiscount.visibility = View.VISIBLE
 
-                val discount = "%,.2f".format(locale, item.discount)
-                itemDiscount.text = "- R$ $discount"
+                val formattedDiscount = "%,.2f".format(locale, discount)
+                itemDiscount.text = "-R$ $formattedDiscount"
 
                 btnDiscount.setOnClickListener {
                     listener.onRemoveDiscount(item, position)
@@ -82,6 +78,7 @@ class RegistrationResumeRecyclerViewAdapter(
             } else {
                 itemDiscount.visibility = View.GONE
                 btnDiscount.visibility = View.GONE
+                btnDiscount.setOnClickListener(null)
             }
         }
     }

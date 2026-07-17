@@ -24,11 +24,13 @@
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/closeDialog"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
+        android:padding="8dp"
         android:src="@drawable/ic_close"
+        android:contentDescription="Fechar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/black" />
@@ -96,14 +98,16 @@
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/discountInput"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
+            android:layout_height="56dp"
             android:inputType="numberDecimal"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"
             android:selectAllOnFocus="true" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/cancelBtn"
-        style="@style/Widget.Material3.Button.TextButton"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"

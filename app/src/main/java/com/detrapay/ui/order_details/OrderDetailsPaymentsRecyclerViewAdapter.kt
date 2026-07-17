@@ -2,21 +2,25 @@ package com.detrapay.ui.order_details
 
 import android.annotation.SuppressLint
 import android.content.Context
-import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.PopupMenu
 import android.widget.TextView
-import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.RecyclerView
 import com.detrapay.R
 import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.OrderReceivableItemStatus.CANCELLED
 import com.detrapay.data.model.OrderReceivableItemStatus.PAID
 import com.detrapay.data.model.OrderReceivableItemStatus.PENDING
 import com.detrapay.data.model.OrderReceivableItemStatus.REFUNDED
+import com.detrapay.data.model.canBeDeleted
 import com.detrapay.databinding.OrderPaymentListItemBinding
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import java.util.Locale
 
 class OrderDetailsPaymentsRecyclerViewAdapter(
@@ -26,10 +30,7 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
 
     private val locale = Locale("pt", "BR")
 
-    override fun onCreateViewHolder(
-        parent: ViewGroup,
-        viewType: Int
-    ): OrderDetailsPaymentsViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OrderDetailsPaymentsViewHolder {
         val itemBinding =
             OrderPaymentListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return OrderDetailsPaymentsViewHolder(parent.context, itemBinding)
@@ -37,125 +38,290 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
 
     interface OnItemClickListener {
         fun onItemClick(receivable: OrderReceivableItem)
-        fun onRefundClick(receivable: OrderReceivableItem)
+        fun onDeletePendingClick(receivable: OrderReceivableItem)
     }
 
-    @SuppressLint("UseCompatLoadingForDrawables")
     override fun onBindViewHolder(holder: OrderDetailsPaymentsViewHolder, position: Int) {
-        val item = values[position]
-        holder.bind(item, listener)
+        holder.bind(values[position], listener)
     }
 
     override fun getItemCount(): Int = values.size
 
     inner class OrderDetailsPaymentsViewHolder(
-        val context: Context,
-        val binding: OrderPaymentListItemBinding
+        private val context: Context,
+        private val binding: OrderPaymentListItemBinding
     ) : RecyclerView.ViewHolder(binding.root) {
 
         private val paymentMethodImage: ImageView = binding.paymentMethodImage
         private val paymentMethodName: TextView = binding.paymentMethodName
         private val paymentMethodAmount: TextView = binding.paymentMethodAmount
         private val paymentMethodInstallmentAmount: TextView = binding.paymentMethodInstallmentAmount
-
+        private val paymentMethodSecondaryInfo: TextView = binding.paymentMethodSecondaryInfo
         private val paymentMethodStatusView: LinearLayout = binding.paymentMethodStatusView
         private val statusTextView: TextView = binding.status
-
-        private val paymentMethodCard: CardView = binding.paymentMethodCard
+        private val statusIcon: ImageView = binding.statusIcon
+        private val paymentMethodCard: MaterialCardView = binding.paymentMethodCard
+        private val paymentPayButton: MaterialButton = binding.paymentPayButton
         private val paymentDetails: LinearLayout = binding.paymentDetails
-        private val paymentRefund: TextView = binding.paymentRefund
-        private val paymentRefundDate: TextView = binding.paymentRefundDate
-        private val paymentDate: TextView = binding.paymentDate
-        private val paymentInfo: TextView = binding.paymentInfo
+        private val paymentActionRow: LinearLayout = binding.paymentActionRow
         private val cardArrow: ImageView = binding.cardArrow
+        private val paymentActionLabel: TextView = binding.paymentActionLabel
+        private val paymentDeletePending: ImageView = binding.paymentDeletePending
 
-        @SuppressLint("UseCompatLoadingForDrawables", "SetTextI18n")
-        fun bind(
-            item: OrderReceivableItem,
-            listener: OnItemClickListener
-        ) {
-            val isCreditCard =  item.paymentMethod.name.contains("Crédito", true) ||
-                    item.paymentMethod.name.contains("Débito", true) ||
-                    item.paymentMethod.name.contains("Cartão de crédito", true) ||
-                    item.paymentMethod.name.contains("VISA", true) ||
-                    item.paymentMethod.name.contains("Mastercard", true)
-            val imageDrawable = if (isCreditCard) {
-                R.drawable.ic_credit_card_outline
-            } else if (item.paymentMethod.name.contains("Pix", true)) {
-                R.drawable.ic_pix
-            } else {
-                R.drawable.ic_money
-            }
+        @SuppressLint("SetTextI18n")
+        fun bind(item: OrderReceivableItem, listener: OnItemClickListener) {
+            val paymentMethod = item.paymentMethod
+            val brand = paymentMethod.name
+            val type = paymentMethod.paymentType.orEmpty()
+            val isManualPayment = isManualPayment(type, brand)
+            val isCardSummaryPayment = isCardSummaryPayment(type, brand)
+            val isPending = item.status == PENDING
+            val canDelete = item.canBeDeleted()
 
-            paymentMethodImage.setImageDrawable(context.getDrawable(imageDrawable))
+            setupBrandUI(type, brand, paymentMethodImage)
+            paymentMethodName.text = formatPaymentMethodName(item)
 
-            paymentMethodName.text = item.paymentMethod.name
+            val (mainAmount, detailAmount, secondaryInfo) = formatAmount(item, isCardSummaryPayment, isManualPayment)
+            paymentMethodAmount.text = mainAmount
+            paymentMethodInstallmentAmount.text = detailAmount
+            paymentMethodInstallmentAmount.visibility = if (detailAmount.isBlank()) View.GONE else View.VISIBLE
+            paymentMethodSecondaryInfo.text = secondaryInfo
+            paymentMethodSecondaryInfo.visibility = if (secondaryInfo.isBlank()) View.GONE else View.VISIBLE
 
-            if (isCreditCard) {
-                paymentMethodInstallmentAmount.visibility = View.VISIBLE
-                
-                val amountOriginalFormatted = "%,.2f".format(locale, item.amountOriginal)
-                val amountFinalFormatted = "%,.2f".format(locale, item.amountFinal)
-                val installmentAmount = item.amountFinal / item.installments
-                val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
-                
-                paymentMethodAmount.text = "R$ $amountOriginalFormatted em ${item.installments}x de R$ $installmentFormattedValue (R$ $amountFinalFormatted)"
-            } else {
-                paymentMethodInstallmentAmount.visibility = View.GONE
-                val amount = "%,.2f".format(locale, item.amountOriginal)
-                paymentMethodAmount.text = "R$ $amount"
-            }
+            val (statusLabel, statusBackground, statusTextColor) = getStatusUi(item)
+            statusTextView.text = statusLabel.uppercase(locale)
+            paymentMethodStatusView.background = ContextCompat.getDrawable(context, statusBackground)
+            statusTextView.setTextColor(ContextCompat.getColor(context, statusTextColor))
+            statusIcon.setImageResource(getStatusIcon(item))
 
-            statusTextView.text = item.status.toString()
+            paymentDeletePending.visibility = View.GONE
+            paymentDeletePending.setOnClickListener(null)
+            paymentDetails.visibility = View.GONE
 
-            val cardBackground = when (item.status) {
-                PENDING -> R.drawable.pending_status_background
-                PAID -> R.drawable.paid_status_background
-                CANCELLED -> R.drawable.cancelled_status_background
-                REFUNDED -> R.drawable.refunded_status_background
-            }
-
-            if (item.status == PAID ) {
-                cardArrow.visibility = View.GONE
-                paymentDetails.visibility = View.VISIBLE
-                paymentDate.text = "Pagamento realizado em ${item.paymentDate}"
-
-                if (isCreditCard) {
-                    paymentRefund.visibility = View.VISIBLE
-                    paymentInfo.visibility = View.VISIBLE
-                    paymentRefundDate.visibility = View.GONE
-                    paymentInfo.text = "Com cartão com final ${item.cardLast4} do titular ${item.cardHolder}"
-                } else {
-                    paymentRefundDate.visibility = View.GONE
-                    paymentRefund.visibility = View.GONE
-                    paymentInfo.visibility = View.GONE
-                }
-            } else if (item.status == REFUNDED) {
-                cardArrow.visibility = View.GONE
-                paymentDetails.visibility = View.VISIBLE
-                paymentRefundDate.visibility = View.VISIBLE
-                paymentInfo.visibility = View.VISIBLE
-                paymentRefund.visibility = View.GONE
-                paymentDate.text = "Pagamento realizado em ${item.paymentDate}"
-                paymentInfo.text = "Com cartão com final ${item.cardLast4} do titular ${item.cardHolder}"
-                paymentRefundDate.text = "Pagamento estornado em ${item.refundDate}"
-            } else {
-                cardArrow.visibility = View.VISIBLE
-                paymentDetails.visibility = View.GONE
-            }
-
-            paymentMethodStatusView.background = context.getDrawable(cardBackground)
-
-            paymentMethodCard.setOnClickListener {
-                if (item.status != PAID && item.status != REFUNDED && item.status != CANCELLED) listener.onItemClick(item)
-            }
-
-            paymentRefund.setOnClickListener{
-                listener.onRefundClick(item)
-            }
-
+            setupActionArea(item, isPending, canDelete, listener)
+            setupCardClick(item, isPending, listener)
         }
 
+        private fun setupActionArea(
+            item: OrderReceivableItem,
+            isPending: Boolean,
+            canDelete: Boolean,
+            listener: OnItemClickListener
+        ) {
+            paymentPayButton.visibility = if (isPending) View.VISIBLE else View.GONE
+            if (isPending) {
+                paymentPayButton.text = if (isManualPayment(item.paymentMethod.paymentType.orEmpty(), item.paymentMethod.name)) {
+                    context.getString(R.string.registration_payment_confirm_receipt_cta)
+                } else {
+                    context.getString(R.string.registration_payment_pay_now_cta)
+                }
+                paymentPayButton.setOnClickListener { listener.onItemClick(item) }
+            } else {
+                paymentPayButton.setOnClickListener(null)
+            }
+
+            paymentActionRow.visibility = View.VISIBLE
+            paymentActionLabel.visibility = View.GONE
+            cardArrow.visibility = View.VISIBLE
+            cardArrow.alpha = if (canDelete) 1f else 0.45f
+
+            if (canDelete) {
+                setupOverflowMenu(item, listener)
+            } else {
+                paymentActionRow.setOnClickListener(null)
+                cardArrow.setOnClickListener(null)
+            }
+        }
+
+        private fun setupOverflowMenu(item: OrderReceivableItem, listener: OnItemClickListener) {
+            val clickListener = View.OnClickListener { anchor ->
+                PopupMenu(context, anchor).apply {
+                    menu.add(0, MENU_DELETE_ID, 0, context.getString(R.string.order_details_delete_pending_payment))
+                    setOnMenuItemClickListener { menuItem ->
+                        when (menuItem.itemId) {
+                            MENU_DELETE_ID -> {
+                                listener.onDeletePendingClick(item)
+                                true
+                            }
+
+                            else -> false
+                        }
+                    }
+                    show()
+                }
+            }
+            paymentActionRow.setOnClickListener(clickListener)
+            cardArrow.setOnClickListener(clickListener)
+        }
+
+        private fun setupCardClick(item: OrderReceivableItem, isPending: Boolean, listener: OnItemClickListener) {
+            if (isPending) {
+                paymentMethodCard.setOnClickListener { listener.onItemClick(item) }
+            } else {
+                paymentMethodCard.setOnClickListener(null)
+            }
+        }
+
+        private fun formatAmount(
+            item: OrderReceivableItem,
+            isCardSummaryPayment: Boolean,
+            isManualPayment: Boolean
+        ): Triple<String, String, String> {
+            val amountOriginalFormatted = "%,.2f".format(locale, item.amountOriginal)
+            val amountFinalFormatted = "%,.2f".format(locale, item.amountFinal)
+            val installments = item.installments.coerceAtLeast(1)
+            val installmentBase = if (isCardSummaryPayment) item.amountOriginal else item.amountFinal
+            val installmentAmount = installmentBase / installments
+            val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
+
+            return if (isCardSummaryPayment) {
+                if (installments > 1) {
+                    Triple("R$ $amountOriginalFormatted", "${installments}x de R$ $installmentFormattedValue", "")
+                } else {
+                    Triple("R$ $amountOriginalFormatted", "", "")
+                }
+            } else if (isManualPayment) {
+                val receivedInfo = if (item.status == PAID) "Recebido: R$ $amountFinalFormatted" else ""
+                val difference = item.amountFinal - item.amountOriginal
+                val secondaryInfo = when {
+                    item.status != PAID -> ""
+                    difference > 0.0 -> "Troco: R$ %,.2f".format(locale, difference)
+                    difference < 0.0 -> "Faltante: R$ %,.2f".format(locale, -difference)
+                    else -> "Valor exato ✓"
+                }
+                Triple("R$ $amountOriginalFormatted", receivedInfo, secondaryInfo)
+            } else if (item.amountOriginal != item.amountFinal) {
+                Triple("R$ $amountOriginalFormatted", "Total recebido: R$ $amountFinalFormatted", "")
+            } else {
+                Triple("R$ $amountOriginalFormatted", "", "")
+            }
+        }
+
+        private fun isManualPayment(type: String, brand: String): Boolean {
+            val normalizedType = type.lowercase()
+            val normalizedBrand = brand.lowercase()
+            val isCash = normalizedType.contains("dinheiro") ||
+                normalizedType.contains("cash") ||
+                normalizedBrand.contains("dinheiro")
+            val isStoreCredit = normalizedType.contains("credito loja") ||
+                normalizedType.contains("store credit") ||
+                normalizedType.contains("store_credit") ||
+                normalizedBrand.contains("credito loja") ||
+                normalizedBrand.contains("store credit")
+            return isCash || isStoreCredit
+        }
+
+        private fun getStatusUi(item: OrderReceivableItem): Triple<String, Int, Int> {
+            return when (item.status) {
+                PENDING -> Triple(
+                    context.getString(R.string.order_details_status_pending),
+                    R.drawable.registration_payment_status_pending_background,
+                    R.color.white
+                )
+
+                PAID -> Triple(
+                    context.getString(R.string.order_details_status_paid),
+                    R.drawable.registration_payment_status_paid_background,
+                    R.color.white
+                )
+
+                CANCELLED -> Triple(
+                    context.getString(R.string.order_details_status_cancelled),
+                    R.drawable.registration_payment_status_overdue_background,
+                    R.color.white
+                )
+
+                REFUNDED -> Triple(
+                    context.getString(R.string.order_details_status_refunded),
+                    R.drawable.registration_payment_status_overdue_background,
+                    R.color.white
+                )
+            }
+        }
+
+        private fun getStatusIcon(item: OrderReceivableItem): Int {
+            return when (item.status) {
+                PENDING -> R.drawable.ic_status_pending_small
+                PAID -> R.drawable.ic_status_paid_small
+                CANCELLED, REFUNDED -> R.drawable.ic_status_overdue_small
+            }
+        }
+
+        private fun isCardSummaryPayment(type: String, brand: String): Boolean {
+            val normalizedType = type.lowercase()
+            val normalizedBrand = brand.lowercase()
+            return normalizedType.contains("credit") ||
+                normalizedType.contains("credito") ||
+                normalizedType.contains("debit") ||
+                normalizedType.contains("debito") ||
+                normalizedBrand.contains("credit") ||
+                normalizedBrand.contains("credito") ||
+                normalizedBrand.contains("debit") ||
+                normalizedBrand.contains("debito")
+        }
+
+        private fun setupBrandUI(type: String, brand: String, imageView: ImageView) {
+            val normalizedType = type.lowercase()
+            val normalizedBrand = brand.lowercase()
+
+            val iconResId = when {
+                normalizedBrand.contains("visa") -> R.drawable.ic_visa
+                normalizedBrand.contains("mastercard") || normalizedBrand.contains("master") -> R.drawable.ic_mastercard
+                normalizedBrand.contains("elo") -> R.drawable.ic_elo
+                else -> 0
+            }
+
+            if (iconResId != 0) {
+                binding.paymentIconContainer.setBackgroundResource(R.drawable.registration_payment_icon_credit_background)
+                imageView.setImageResource(iconResId)
+                imageView.imageTintList = null
+                return
+            }
+
+            when {
+                normalizedType.contains("pix") || normalizedBrand.contains("pix") -> {
+                    binding.paymentIconContainer.setBackgroundResource(R.drawable.registration_payment_icon_pix_background)
+                    imageView.setImageResource(R.drawable.ic_pix)
+                    imageView.imageTintList = ContextCompat.getColorStateList(context, R.color.payment_pix_icon)
+                }
+
+                normalizedType.contains("dinheiro") || normalizedType.contains("cash") || normalizedBrand.contains("dinheiro") -> {
+                    binding.paymentIconContainer.setBackgroundResource(R.drawable.registration_payment_icon_cash_background)
+                    imageView.setImageResource(R.drawable.ic_money)
+                    imageView.imageTintList = ContextCompat.getColorStateList(context, R.color.payment_cash_icon)
+                }
+
+                normalizedType.contains("debit") || normalizedType.contains("debito") || normalizedBrand.contains("debito") -> {
+                    binding.paymentIconContainer.setBackgroundResource(R.drawable.registration_payment_icon_debit_background)
+                    imageView.setImageResource(R.drawable.ic_credit_card_outline)
+                    imageView.imageTintList = ContextCompat.getColorStateList(context, R.color.payment_debit_icon)
+                }
+
+                else -> {
+                    binding.paymentIconContainer.setBackgroundResource(R.drawable.registration_payment_icon_credit_background)
+                    imageView.setImageResource(R.drawable.ic_credit_card_outline)
+                    imageView.imageTintList = ContextCompat.getColorStateList(context, R.color.payment_credit_icon)
+                }
+            }
+        }
+
+        private fun formatPaymentMethodName(item: OrderReceivableItem): String {
+            val type = item.paymentMethod.paymentType.orEmpty().lowercase()
+            val brand = item.paymentMethod.name.lowercase()
+
+            return when {
+                type.contains("pix") || brand.contains("pix") -> "PIX"
+                type.contains("dinheiro") || type.contains("cash") || brand.contains("dinheiro") -> "DINHEIRO"
+                type.contains("debit") || type.contains("debito") || brand.contains("debito") -> "DÉBITO"
+                type.contains("credit") || type.contains("credito") || brand.contains("credito") -> "CRÉDITO"
+                else -> item.paymentMethod.name.replaceFirstChar {
+                    if (it.isLowerCase()) it.titlecase(locale) else it.toString()
+                }.uppercase(locale)
+            }
+        }
     }
 
+    companion object {
+        private const val MENU_DELETE_ID = 1
+    }
 }

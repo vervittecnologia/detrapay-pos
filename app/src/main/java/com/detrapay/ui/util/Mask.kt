@@ -21,16 +21,31 @@ class Mask {
         }
 
         fun doubleValue(str: String): Double {
-            if (str.isEmpty()) {
-                return 0.0
+            return toSafeDouble(str)
+        }
+
+        /**
+         * Safely converts a monetary string to Double.
+         * Handles both standard decimal (10.44) and BRL format (10,44 or 1.010,44).
+         */
+        fun toSafeDouble(str: String): Double {
+            if (str.isEmpty()) return 0.0
+            
+            val clean = str.replace("R$", "").replace("\\s".toRegex(), "").trim()
+            if (clean.isEmpty()) return 0.0
+
+            return try {
+                if (clean.contains(",")) {
+                    // Brazilian format: 1.250,50 -> 1250.50
+                    clean.replace(".", "").replace(",", ".").toDouble()
+                } else {
+                    // Standard decimal: 1250.50 -> 1250.50
+                    // We assume that if there's no comma, the dot is the decimal separator.
+                    clean.toDouble()
+                }
+            } catch (e: Exception) {
+                0.0
             }
-            return str.replace(".", "").replace("-", "")
-                .replace("(", "").replace(")", "")
-                .replace("/", "").replace("*", "")
-                .replace(" ", "").replace("\\s".toRegex(), "")
-                .replace(",", ".")
-                .replace("R$", "")
-                .format("%.2f").toDouble()
         }
 
         fun cpfCnpjMask(edTxt: EditText): TextWatcher {
@@ -101,53 +116,43 @@ class Mask {
         }
 
         fun moneyMask(edTxt: EditText, afterChanged: (value: String) -> Unit): TextWatcher {
-            val textWatcher: TextWatcher = object : TextWatcher {
-                var isUpdating: Boolean = false
+            return object : TextWatcher {
+                private var current = ""
 
-                override fun beforeTextChanged(
-                    charSequence: CharSequence,
-                    i: Int,
-                    i1: Int,
-                    i2: Int
-                ) {
+                override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
 
-                }
+                override fun afterTextChanged(s: Editable) {
+                    if (s.toString() != current) {
+                        edTxt.removeTextChangedListener(this)
 
-                override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                    val str =
-                        s.toString().trim()
-                            .replace(".", "")
-                            .replace(",", "")
-                            .replace("R$", "")
-                            .replace("\\s".toRegex(), "")
+                        val cleanString = s.toString().replace("[R$,.\\s]".toRegex(), "")
+                        
+                        val formatted = if (cleanString.isNotEmpty()) {
+                            try {
+                                val parsed = BigDecimal(cleanString).setScale(2, BigDecimal.ROUND_FLOOR)
+                                    .divide(BigDecimal(100), BigDecimal.ROUND_FLOOR)
+                                
+                                val numberFormat = NumberFormat.getNumberInstance(locale)
+                                numberFormat.minimumFractionDigits = 2
+                                numberFormat.maximumFractionDigits = 2
+                                numberFormat.format(parsed)
+                            } catch (e: Exception) {
+                                ""
+                            }
+                        } else {
+                            ""
+                        }
 
-                    //is deleting
-                    if (count == 0) isUpdating = true
+                        current = formatted
+                        edTxt.setText(formatted)
+                        edTxt.setSelection(formatted.length)
 
-                    if (isUpdating) {
-                        isUpdating = false
-                        return
+                        edTxt.addTextChangedListener(this)
+                        afterChanged(formatted)
                     }
-
-                    val parsed: BigDecimal =
-                        BigDecimal(str).setScale(2, BigDecimal.ROUND_FLOOR)
-                            .divide(BigDecimal(100), BigDecimal.ROUND_FLOOR)
-
-                    val fieldWithMask: String =
-                        NumberFormat.getCurrencyInstance(locale).format(parsed)
-
-                    isUpdating = true
-                    edTxt.setText(fieldWithMask)
-                    edTxt.setSelection(fieldWithMask.length)
-                }
-
-                override fun afterTextChanged(editable: Editable) {
-                    afterChanged(editable.toString())
                 }
             }
-
-            return textWatcher
-
         }
 
 

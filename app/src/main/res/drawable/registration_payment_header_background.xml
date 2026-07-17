@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <corners
+        android:topLeftRadius="10dp"
+        android:topRightRadius="10dp" />
+    <stroke
+        android:width="1dp"
+        android:color="@color/payment_header_stroke" />
+    <gradient
+        android:angle="270"
+        android:endColor="@color/payment_header_gradient_end"
+        android:startColor="@color/payment_header_gradient_start" />
+</shape>

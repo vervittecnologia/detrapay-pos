@@ -5,18 +5,22 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class OrderRequest(
+    @SerializedName("sales_company_id")
+    val salesCompanyId: Int? = null,
+    @SerializedName("dispatcher_id")
+    val dispatcherId: Int? = null,
     @SerializedName("customer")
     val customer: OrderCustomerRequest,
     @SerializedName("simulation")
     val simulation: OrderSimulationRequest,
     @SerializedName("items")
-    val simulationItems: List<OrderSimulationItemRequest>,
+    val items: List<OrderSimulationItemRequest>,
     @SerializedName("receivables")
     val receivables: List<OrderReceivableRequest>,
     @SerializedName("created_by_id")
-    val createdById: Int? = null,
-    @SerializedName("user_id")
-    val userId: Int? = null,
+    val createdById: String? = null,
+    @SerializedName("salesman_id")
+    val salesmanId: Int? = null
 )
 
 @Serializable
@@ -50,7 +54,9 @@ data class OrderSimulationItemRequest(
     @SerializedName("id")
     val id: Int,
     @SerializedName("price")
-    val price: String
+    val price: String,
+    @SerializedName("discount")
+    val discount: String? = null
 )
 
 @Serializable
@@ -66,7 +72,5 @@ data class OrderReceivableRequest(
     @SerializedName("payment_date")
     val paymentDate: String,
     @SerializedName("installments")
-    val installments: Int,
-    @SerializedName("cpf_cnpj_cliente")
-    val cpfCnpjCliente: String? = null
+    val installments: Int
 )

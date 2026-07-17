@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "906bc1e24c8e52b6480ef2d5591339d5",
+    "identityHash": "966f9e7abfaf4d3022cd09d35224556a",
     "entities": [
       {
         "tableName": "users",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `token` TEXT NOT NULL, `name` TEXT NOT NULL, `email` TEXT NOT NULL, `username` TEXT NOT NULL, `preferredEmployeeName` TEXT, `preferredEmployeeId` INTEGER, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `token` TEXT NOT NULL, `name` TEXT NOT NULL, `email` TEXT NOT NULL, `username` TEXT NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -37,18 +37,6 @@
             "columnName": "username",
             "affinity": "TEXT",
             "notNull": true
-          },
-          {
-            "fieldPath": "preferredEmployeeName",
-            "columnName": "preferredEmployeeName",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "preferredEmployeeId",
-            "columnName": "preferredEmployeeId",
-            "affinity": "INTEGER",
-            "notNull": false
           }
         ],
         "primaryKey": {
@@ -168,7 +156,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '906bc1e24c8e52b6480ef2d5591339d5')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '966f9e7abfaf4d3022cd09d35224556a')"
     ]
   }
 }

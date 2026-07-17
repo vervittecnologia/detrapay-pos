@@ -8,7 +8,6 @@ import androidx.activity.addCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Observer
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
@@ -16,7 +15,6 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupWithNavController
 import com.detrapay.R
 import com.detrapay.databinding.ActivityHomeBinding
-import com.detrapay.ui.employee_selection.EmployeeSelectionActivity
 import com.detrapay.ui.login.LoginActivity
 import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.Logger
@@ -30,6 +28,7 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var navController: NavController
     private lateinit var navHostFragment: NavHostFragment
     private lateinit var appBarConfiguration: AppBarConfiguration
+    private var simplifiedModeApplied = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,8 +37,7 @@ class HomeActivity : AppCompatActivity() {
         viewModel.loadScreenContent()
         addOnBackPressedCallback()
         setupNavigation()
-        setupObservers()
-        setupToolbar()
+        observeHomeMode()
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -60,41 +58,6 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupToolbar() {
-        binding.homeToolbar.toolbarLogout.setOnClickListener {
-            showLogoutDialog()
-        }
-//        binding.homeToolbar.toolbarNotifications.setOnClickListener {
-//            findNavController().navigate(R.id.notificationsActivity)
-//        }
-        binding.homeToolbar.employeeLayout.setOnClickListener {
-            val intent = Intent(this, EmployeeSelectionActivity::class.java)
-            val dataBundle = Bundle()
-            dataBundle.putBoolean("FROM_HOME", true)
-            intent.putExtras(dataBundle)
-            startActivity(intent)
-            this.finish()
-        }
-    }
-
-    private fun setupObservers() {
-        viewModel.homeState.observe(this, Observer { status ->
-            when (status) {
-                is UIState.Loading -> {}
-                is UIState.Success -> {
-                    status.data?.let {
-                        binding.homeToolbar.circularAvatar.avatarTxtView.text =
-                            it.employeeName.first().toString()
-                        binding.homeToolbar.employeeName.text = it.employeeName
-                        binding.homeToolbar.companyName.text = it.companyName
-                    }
-                }
-
-                is UIState.Error -> {}
-            }
-        })
-    }
-
     private fun setupNavigation() {
         navHostFragment =
             supportFragmentManager.findFragmentById(R.id.home_activity_nav_host) as NavHostFragment
@@ -105,14 +68,31 @@ class HomeActivity : AppCompatActivity() {
         bottomNavView.setupWithNavController(navController)
     }
 
+    private fun observeHomeMode() {
+        viewModel.homeState.observe(this) { state ->
+            val homeState = (state as? UIState.Success)?.data ?: return@observe
+            if (homeState.isSimplifiedMode) {
+                showSimplifiedMode()
+            }
+        }
+    }
+
+    private fun showSimplifiedMode() {
+        if (simplifiedModeApplied) return
+
+        simplifiedModeApplied = true
+        binding.bottomAppBar.visibility = android.view.View.GONE
+        navController.navigate(R.id.simplifiedReceivableListFragment)
+    }
+
     private fun showLogoutDialog() {
         Logger.d("Loggout button pressed on HomeActivity")
         AlertDialog.Builder(this)
-            .setTitle("Deseja sair?")
-            .setMessage("Você deseja sair do aplicativo? \nvocê terá que efetuar login novamente.")
+            .setTitle(R.string.logout_dialog_title)
+            .setMessage(R.string.logout_dialog_message)
             .setPositiveButton(
                 android.R.string.ok
-            ) { dialog, which ->
+            ) { _, _ ->
                 viewModel.logout()
                 val intent = Intent(this, LoginActivity::class.java)
                 startActivity(intent)
@@ -123,4 +103,3 @@ class HomeActivity : AppCompatActivity() {
             .show()
     }
 }
-

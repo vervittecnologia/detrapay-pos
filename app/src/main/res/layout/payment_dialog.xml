@@ -5,213 +5,361 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/dialog_background"
-    tools:context=".ui.payment.RefundPaymentDialogFragment">
+    tools:context=".ui.payment.PaymentDialogFragment">
 
-    <TextView
-        android:id="@+id/dialogTitle"
+    <LinearLayout
+        android:id="@+id/topBar"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        android:text="Pagamento"
-        android:textColor="@color/neutral_700"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:layout_constraintEnd_toStartOf="@+id/closeDialog"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/closeDialog"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        android:src="@drawable/ic_close"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:tint="@color/black" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-    <com.google.android.material.divider.MaterialDivider
-        android:id="@+id/materialDivider2"
-        android:layout_width="match_parent"
-        android:layout_height="2dp"
-        android:layout_marginTop="16dp"
-        app:dividerColor="@color/neutral_200"
-        app:layout_constraintTop_toBottomOf="@+id/dialogTitle"
-        tools:layout_editor_absoluteX="0dp" />
+        <ImageView
+            android:id="@+id/closeDialog"
+            style="@style/Widget.DS.IconButton"
+            android:src="@drawable/ic_arrow_left"
+            app:tint="@color/neutral_900" />
+
+        <TextView
+            android:id="@+id/dialogTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/payment_dialog_title_processing"
+            android:textColor="@color/neutral_900"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="40dp"
+            android:layout_height="40dp" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/topDivider"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:background="@color/neutral_300"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/topBar" />
 
     <LinearLayout
         android:id="@+id/infoSection"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
+        android:layout_marginStart="22dp"
         android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginEnd="22dp"
+        android:gravity="center"
         android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/materialDivider2">
-
-        <TextView
-            android:id="@+id/paymentAmount"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Valor: R$5,00"
-            android:textColor="@color/neutral_700"
-            android:textSize="18sp" />
+        app:layout_constraintTop_toBottomOf="@id/topDivider">
 
         <TextView
             android:id="@+id/paymentMethod"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Pagamento via: PIX"
-            android:textColor="@color/neutral_700"
-            android:textSize="18sp"
+            android:background="@drawable/payment_method_chip_background"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp"
+            android:textColor="@color/primary_500"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            tools:text="CARTAO DE CREDITO" />
+
+        <TextView
+            android:id="@+id/paymentAmount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:visibility="visible"/>
+            android:textColor="@color/neutral_900"
+            android:textSize="34sp"
+            android:textStyle="bold"
+            tools:text="R$ 3.469,18" />
 
-        <com.google.android.material.divider.MaterialDivider
-            android:id="@+id/infoDivider"
-            android:layout_width="match_parent"
-            android:layout_height="2dp"
-            android:layout_marginTop="16dp"
-            app:dividerColor="@color/neutral_200"
-            app:layout_constraintTop_toBottomOf="@+id/dialogTitle"
-            tools:layout_editor_absoluteX="0dp" />
-
+        <TextView
+            android:id="@+id/paymentInstallments"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/neutral_600"
+            android:textSize="14sp"
+            tools:text="em 10x de R$ 346,92" />
     </LinearLayout>
-
 
     <LinearLayout
         android:id="@+id/contentView"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginStart="22dp"
+        android:layout_marginTop="18dp"
+        android:layout_marginEnd="22dp"
+        android:layout_marginBottom="22dp"
         android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/infoSection">
+        app:layout_constraintTop_toBottomOf="@id/infoSection">
 
         <LinearLayout
             android:id="@+id/loadingView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center"
             android:orientation="vertical"
-            android:padding="16dp"
-            android:visibility="gone">
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:visibility="visible">
 
-            <ProgressBar
-                android:id="@+id/progressIndicator"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:indeterminateTint="@color/primary_500" />
+            <FrameLayout
+                android:layout_width="180dp"
+                android:layout_height="180dp"
+                android:background="@drawable/registration_payment_empty_icon_background">
+
+                <ProgressBar
+                    android:id="@+id/progressIndicator"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:layout_gravity="center"
+                    android:indeterminateTint="@color/primary_500" />
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/transactionMessage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAllCaps="true"
+                android:layout_marginTop="22dp"
+                android:gravity="center"
+                android:text="@string/payment_dialog_loading_default"
+                android:textColor="@color/neutral_900"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/loadingSupportMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:visibility="gone"
                 android:textColor="@color/neutral_700"
-                tools:text="Processando"
-                android:textAlignment="center"
-                android:textSize="20sp"
-                android:layout_marginTop="12dp"/>
-
+                android:textSize="16sp" />
         </LinearLayout>
-
 
         <LinearLayout
             android:id="@+id/errorView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center"
             android:orientation="vertical"
-            android:padding="16dp"
+            android:paddingVertical="8dp"
             android:visibility="gone">
 
             <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="80dp"
-                android:src= "@drawable/close_circle_outline" />
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:src="@drawable/close_circle_outline" />
 
             <TextView
                 android:id="@+id/errorMessage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Ops, algo deu errado"
-                android:textAllCaps="true"
-                android:textAlignment="center"
-                android:textSize="20sp"
-                android:visibility="visible"
-                android:layout_marginTop="12dp"/>
+                android:layout_marginTop="14dp"
+                android:gravity="center"
+                android:text="@string/payment_dialog_error_title"
+                android:textColor="@color/neutral_900"
+                android:textSize="24sp"
+                android:textStyle="bold" />
 
-            <com.google.android.material.divider.MaterialDivider
-                android:id="@+id/transactionDivider"
+            <TextView
+                android:id="@+id/errorSupportMessage"
                 android:layout_width="match_parent"
-                android:layout_height="2dp"
-                android:layout_marginTop="16dp"
-                app:dividerColor="@color/neutral_200"
-                app:layout_constraintTop_toBottomOf="@+id/dialogTitle"
-                tools:layout_editor_absoluteX="0dp" />
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="@string/payment_dialog_support_error"
+                android:textColor="@color/neutral_600"
+                android:textSize="16sp" />
 
             <Button
                 android:id="@+id/retryAction"
                 android:layout_width="match_parent"
-                android:layout_height="46dp"
-                android:layout_marginTop="16dp"
+                android:layout_height="52dp"
+                android:layout_marginTop="20dp"
                 android:background="@drawable/default_button_background"
-                android:text="Tentar novamente"
+                android:text="@string/payment_dialog_retry_action"
                 android:textAllCaps="false"
                 android:textColor="@color/white"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/infoSection" />
+                android:textSize="18sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/successView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center"
             android:orientation="vertical"
-            android:padding="16dp"
+            android:paddingVertical="8dp"
             android:visibility="gone">
 
-<!--            TODO ADICIONAR INFORMACOES DA TRANSACAO-->
-            <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="80dp"
-                android:src= "@drawable/check_circle_outline" />
+            <FrameLayout
+                android:layout_width="170dp"
+                android:layout_height="170dp"
+                android:background="@drawable/registration_payment_empty_icon_background">
+
+                <ImageView
+                    android:layout_width="70dp"
+                    android:layout_height="70dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/check_circle_outline" />
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/successMessage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Pagamento realizado com sucesso!"
-                android:textAllCaps="true"
-                android:textAlignment="center"
-                android:textSize="20sp"
-                android:layout_marginTop="12dp"/>
+                android:layout_marginTop="18dp"
+                android:gravity="center"
+                android:text="@string/payment_dialog_success_title"
+                android:textColor="@color/neutral_900"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/successSupportMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                android:visibility="gone"
+                android:textColor="@color/neutral_600"
+                android:textSize="16sp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/neutral_300"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Valor"
+                            android:textColor="@color/neutral_500"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/neutral_900"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            tools:text="R$ 3.469,18" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="10dp"
+                        android:background="@color/neutral_300" />
+
+                    <TextView
+                        android:id="@+id/pixMetaInfo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:textColor="@color/neutral_600"
+                        android:textSize="13sp"
+                        tools:text="Data: 24/05/2024 - 14:35\nID da transacao: #TRX-98214-BK" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <ImageView
+                android:id="@+id/pixQrCodeImage"
+                android:layout_width="220dp"
+                android:layout_height="220dp"
+                android:layout_marginTop="16dp"
+                android:contentDescription="@string/payment_dialog_pix_qr_content_description"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/pixCopyPasteLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:gravity="center"
+                android:text="@string/payment_dialog_pix_copy_label"
+                android:textColor="@color/neutral_700"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/pixCopyPasteValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:textColor="@color/neutral_500"
+                android:textIsSelectable="true"
+                android:textSize="12sp"
+                android:visibility="gone"
+                tools:text="00020101021226880014br.gov.bcb.pix"
+                tools:visibility="visible" />
+
+            <Button
+                android:id="@+id/copyPixCodeBtn"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/default_button_background"
+                android:text="@string/payment_dialog_pix_copy_action"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:visibility="visible" />
 
             <Button
                 android:id="@+id/backSuccessBtn"
                 android:layout_width="match_parent"
-                android:layout_height="46dp"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/secondary_button_background"
-                android:text="Voltar ao pedido"
+                android:layout_height="52dp"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/default_button_background"
+                android:text="@string/payment_dialog_success_continue"
                 android:textAllCaps="false"
-                android:textColor="@color/primary_500"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/infoSection" />
-
+                android:textColor="@color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

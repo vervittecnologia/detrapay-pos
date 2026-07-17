@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="ds_spacing_xs">4dp</dimen>
+    <dimen name="ds_spacing_sm">8dp</dimen>
+    <dimen name="ds_spacing_md">16dp</dimen>
+    <dimen name="ds_spacing_lg">24dp</dimen>
+    <dimen name="ds_spacing_xl">32dp</dimen>
+    <dimen name="ds_spacing_xxl">40dp</dimen>
+
+    <dimen name="ds_radius_sm">8dp</dimen>
+    <dimen name="ds_radius_md">12dp</dimen>
+    <dimen name="ds_radius_lg">16dp</dimen>
+    <dimen name="ds_radius_xl">20dp</dimen>
+
+    <dimen name="ds_toolbar_height">56dp</dimen>
+    <dimen name="ds_footer_min_height">88dp</dimen>
+    <dimen name="ds_touch_target">48dp</dimen>
+
+    <dimen name="ds_text_label">12sp</dimen>
+    <dimen name="ds_text_body">16sp</dimen>
+    <dimen name="ds_text_subtitle">16sp</dimen>
+    <dimen name="ds_text_title">22sp</dimen>
+</resources>

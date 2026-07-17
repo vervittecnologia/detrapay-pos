@@ -20,10 +20,12 @@ class OrderListViewModel @Inject constructor(private val orderRepository: OrderR
     private val _orderListState = MutableLiveData<UIState<List<Order>>>()
     val orderListState: LiveData<UIState<List<Order>>> = _orderListState
 
-    fun loadScreenContent() {
-        _orderListState.postValue(UIState.Loading())
+    fun loadScreenContent(forceRefresh: Boolean = false) {
+        if (!forceRefresh) {
+            _orderListState.postValue(UIState.Loading())
+        }
         viewModelScope.launch(Dispatchers.IO) {
-            val result = orderRepository.getOrders()
+            val result = orderRepository.getOrders(forceRefresh)
             if (result is Result.Success) {
                 _orderListState.postValue(UIState.Success(result.data))
             } else {

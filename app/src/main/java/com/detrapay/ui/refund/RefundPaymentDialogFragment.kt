@@ -52,22 +52,26 @@ class RefundPaymentDialogFragment(
         viewModel.paymentState.observe(this, Observer { status ->
             when (status) {
                 is UIState.Loading -> {
-                    status.message.let {
-                        binding.refundMessage.text = it
-                    }
+                    binding.dialogTitle.text = getString(R.string.refund_dialog_title_processing)
+                    binding.refundMessage.text =
+                        status.message ?: getString(R.string.refund_dialog_loading_default)
                 }
 
                 is UIState.Success -> {
                     status.data?.let {
                         result = it
                         binding.loadingView.visibility = View.GONE
+                        binding.dialogTitle.text = getString(R.string.refund_dialog_title_success)
+                        binding.refundMessage.text = getString(R.string.refund_dialog_success_message)
                     }
                 }
 
                 is UIState.Error -> {
+                    binding.dialogTitle.text = getString(R.string.refund_dialog_title_error)
                     binding.loadingView.visibility = View.GONE
-                    binding.refundMessage.text = status.message ?: getString(R.string.employees_default_error_message)
+                    binding.refundMessage.text = status.message ?: getString(R.string.refund_dialog_error_message)
                 }
+                is UIState.Idle -> {}
             }
         })
     }

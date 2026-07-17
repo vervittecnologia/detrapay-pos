@@ -2,16 +2,16 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "906bc1e24c8e52b6480ef2d5591339d5",
+    "identityHash": "8c0eb02464ec07f353d4f8fd592258c9",
     "entities": [
       {
         "tableName": "users",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `token` TEXT NOT NULL, `name` TEXT NOT NULL, `email` TEXT NOT NULL, `username` TEXT NOT NULL, `preferredEmployeeName` TEXT, `preferredEmployeeId` INTEGER, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `token` TEXT NOT NULL, `name` TEXT NOT NULL, `email` TEXT NOT NULL, `username` TEXT NOT NULL, `companies` TEXT, `dispatchers` TEXT, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
             "columnName": "id",
-            "affinity": "INTEGER",
+            "affinity": "TEXT",
             "notNull": true
           },
           {
@@ -39,15 +39,15 @@
             "notNull": true
           },
           {
-            "fieldPath": "preferredEmployeeName",
-            "columnName": "preferredEmployeeName",
+            "fieldPath": "companies",
+            "columnName": "companies",
             "affinity": "TEXT",
             "notNull": false
           },
           {
-            "fieldPath": "preferredEmployeeId",
-            "columnName": "preferredEmployeeId",
-            "affinity": "INTEGER",
+            "fieldPath": "dispatchers",
+            "columnName": "dispatchers",
+            "affinity": "TEXT",
             "notNull": false
           }
         ],
@@ -168,7 +168,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '906bc1e24c8e52b6480ef2d5591339d5')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8c0eb02464ec07f353d4f8fd592258c9')"
     ]
   }
 }

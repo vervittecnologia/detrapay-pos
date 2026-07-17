@@ -1,129 +1,302 @@
 package com.detrapay.data.model.remote
 
+import com.detrapay.data.model.Salesman
 import com.google.gson.annotations.SerializedName
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class PaginatedOrderResponse(
+    val data: List<OrderResponse>,
+    val meta: MetaResponse? = null
+)
+
+@Serializable
+data class CreateOrderResponse(
+    val data: OrderResponse
+)
+
+@Serializable
 data class OrderResponse(
-    @SerializedName("id")
     val id: Int,
-    @SerializedName("status_in")
-    val status: OrderStatusResponse,
-    @SerializedName("vehicle_price")
-    val vehiclePrice: Double,
-    @SerializedName("billing_date")
-    val billingDate: String,
-    @SerializedName("original_amount")
-    val originalAmount: Double,
-    @SerializedName("current_amount")
-    val currentAmount: Double,
-    @SerializedName("is_vehicle_financed")
-    val isVehicleFinanced: Boolean,
-    @SerializedName("is_vehicle_special_plate")
-    val isVehicleSpecialPlate: Boolean,
-    @SerializedName("customer_id")
-    val customer: OrderCustomerResponse,
-    @SerializedName("vehicle_type_id")
-    val vehicleType: VehicleTypItemResponse?,
-    @SerializedName("items")
-    val items: List<OrderItemResponse>,
-    @SerializedName("receivables")
-    val receivables: List<OrderReceivableItemResponse>,
-    @SerializedName("createdAt")
-    val createdAt: String,
-    @SerializedName("created_by_id")
-    val createdById: Int? = null,
+    val attributes: OrderAttributesResponse? = null,
+    val status: String? = null,
+    @SerializedName(value = "originalAmount", alternate = ["original_amount"])
+    val originalAmount: Double? = null,
+    @SerializedName(value = "currentAmount", alternate = ["current_amount"])
+    val currentAmount: Double? = null,
+    @SerializedName(value = "billingDate", alternate = ["billing_date"])
+    val billingDate: String? = null,
+    @SerializedName(value = "createdAt", alternate = ["created_at"])
+    val createdAt: String? = null,
+    @SerializedName(value = "vehiclePrice", alternate = ["vehicle_price"])
+    val vehiclePrice: Double? = null,
+    @SerializedName(value = "isVehicleFinanced", alternate = ["is_vehicle_financed"])
+    val isVehicleFinanced: Boolean? = null,
+    @SerializedName(value = "isSpecialPlate", alternate = ["is_vehicle_special_plate"])
+    val isSpecialPlate: Boolean? = null,
+    val customer: FlatCustomerResponse? = null,
+    val company: FlatCompanyResponse? = null,
+    val vehicleType: FlatVehicleTypeResponse? = null,
+    val items: List<FlatOrderItemResponse>? = null,
+    val receivables: List<FlatOrderReceivableResponse>? = null,
+    val salesman: FlatSalesmanResponse? = null,
+    val customerName: String? = null,
+    @SerializedName(value = "customerCpfCnpj", alternate = ["customer_cpf_cnpj", "cpfCnpj"])
+    val customerCpfCnpj: String? = null,
+    @SerializedName(value = "vehicleTypeName", alternate = ["vehicle_type_name"])
+    val vehicleTypeName: String? = null,
+    @SerializedName(value = "salesmanName", alternate = ["salesman_name"])
+    val salesmanName: String? = null,
+    @SerializedName(value = "paymentStatusSummary", alternate = ["payment_status_summary"])
+    val paymentStatusSummary: String? = null
 )
 
 @Serializable
-enum class OrderStatusResponse {
-    @SerializedName("pending") PENDING,
-    @SerializedName("paid") PAID,
-    @SerializedName("authorized") AUTHORIZED,
-    @SerializedName("completed") COMPLETED,
-    @SerializedName("cancelled") CANCELLED
-}
+data class OrderAttributesResponse(
+    val status: String? = null,
+    @SerializedName(value = "originalAmount", alternate = ["original_amount"])
+    val originalAmount: Double? = null,
+    @SerializedName(value = "currentAmount", alternate = ["current_amount"])
+    val currentAmount: Double? = null,
+    @SerializedName(value = "billingDate", alternate = ["billing_date"])
+    val billingDate: String? = null,
+    @SerializedName(value = "createdAt", alternate = ["created_at"])
+    val createdAt: String? = null,
+    val customers: CustomerDataWrapper? = null,
+    val companies: CompanyDataWrapper? = null,
+    val receivables: OrderReceivableDataWrapper? = null,
+    @SerializedName(value = "vehiclePrice", alternate = ["vehicle_price"])
+    val vehiclePrice: Double? = null,
+    val isVehicleFinanced: Boolean? = null,
+    val isSpecialPlate: Boolean? = null,
+    val vehicle_types: VehicleTypeDataWrapper? = null,
+    val sales_order_items: SalesOrderItemsDataWrapper? = null,
+    val salesman: SalesmanDataWrapper? = null
+)
 
 @Serializable
-data class OrderCustomerResponse(
-    @SerializedName("id")
+data class CustomerDataWrapper(
+    val data: CustomerResponseData
+)
+
+@Serializable
+data class CustomerResponseData(
     val id: Int,
-    @SerializedName("name")
+    val attributes: CustomerAttributesResponse
+)
+
+@Serializable
+data class CustomerAttributesResponse(
     val name: String,
-    @SerializedName("cpf_cnpj")
+    @SerializedName("cpfCnpj")
     val cpfCnpj: String,
-    @SerializedName("phone_number")
-    val phoneNumber: String,
-    @SerializedName("email")
-    val email: String?
+    val phoneNumber: String? = null,
+    val email: String? = null
 )
 
 @Serializable
-data class OrderItemResponse(
-    @SerializedName("id")
-    val id: Int,
-    @SerializedName("total_price")
-    val totalPrice: Double,
-    @SerializedName("discount")
-    val discount: Double,
-    @SerializedName("sales_item_id")
-    val salesItem: OrderSalesItemResponse?
+data class CompanyDataWrapper(
+    val data: CompanyResponse
 )
 
 @Serializable
-data class OrderReceivableItemResponse(
-    @SerializedName("id")
+data class CompanyResponse(
     val id: Int,
-    @SerializedName("documentId")
+    val attributes: CompanyAttributesResponse
+)
+
+@Serializable
+data class CompanyAttributesResponse(
+    @SerializedName("trade_name")
+    val tradeName: String
+)
+
+@Serializable
+data class OrderReceivableDataWrapper(
+    val data: List<OrderReceivableResponse>
+)
+
+@Serializable
+data class OrderReceivableResponse(
+    val id: Int,
     val documentId: String,
-    @SerializedName("amount_final")
-    val amountFinal: Double,
-    @SerializedName("amount_original")
-    val amountOriginal: Double,
-    @SerializedName("tax")
-    val tax: Double?,
-    @SerializedName("status_in")
-    val status: OrderReceivableItemStatusResponse,
-    @SerializedName("payment_date")
-    val paymentDate: String,
-    @SerializedName("refund_date")
-    val refundDate: String?,
-    @SerializedName("card_brand")
-    val cardBrand: String?,
-    @SerializedName("card_last4")
-    val cardLast4: String?,
-    @SerializedName("card_holder")
-    val cardHolder: String?,
-    @SerializedName("authorization_code")
-    val authorizationCode: String?,
-    @SerializedName("authorization_id")
-    val authorizationId: String?,
-    @SerializedName("installments")
-    val installments: Int,
-    @SerializedName("pix_tx_id_code")
-    val pixTxIdCode: String?,
-    @SerializedName("payment_method_id")
-    val paymentMethod: PaymentMethodResponse,
-    @SerializedName("cpf_cnpj_cliente")
-    val cpfCnpjCliente: String? = null,
+    val attributes: OrderReceivableAttributesResponse
 )
 
 @Serializable
-enum class OrderReceivableItemStatusResponse {
-    @SerializedName("pending") PENDING,
-    @SerializedName("paid") PAID,
-    @SerializedName("cancelled") CANCELLED,
-    @SerializedName("refunded") REFUNDED,
-}
+data class OrderReceivableAttributesResponse(
+    val status: String,
+    val installments: Int,
+    val paymentDate: String?,
+    val payment_methods: PaymentMethodDataWrapper,
+    val amountOriginal: Double,
+    val amountFinal: Double,
+    val card_last4: String?,
+    val cardHolder: String?,
+    val tax: Double?,
+    val cardBrand: String?,
+    val authorizationCode: String?,
+    @SerializedName(value = "pixTxIdCode", alternate = ["pix_tx_id_code", "txid"])
+    val pixTxIdCode: String? = null
+)
 
 @Serializable
-data class OrderSalesItemResponse(
-    @SerializedName("id")
+data class PaymentMethodDataWrapper(
+    val data: PaymentMethodResponseData
+)
+
+@Serializable
+data class PaymentMethodResponseData(
     val id: Int,
-    @SerializedName("name")
+    val attributes: PaymentMethodAttributesResponse
+)
+
+@Serializable
+data class PaymentMethodAttributesResponse(
     val name: String,
-    @SerializedName("is_discount_allowed")
-    val isDiscountAllowed: Boolean,
-    @SerializedName("price")
-    val price: Double
+    @SerializedName(value = "installments", alternate = ["max_installments"])
+    val installments: Int,
+    @SerializedName(value = "interestTax", alternate = ["interest_tax", "tax"])
+    val interestTax: Double? = null,
+    @SerializedName(value = "paymentType", alternate = ["payment_type"])
+    val paymentType: String? = null
+)
+
+@Serializable
+data class VehicleTypeDataWrapper(
+    val data: VehicleTypeResponse
+)
+
+@Serializable
+data class VehicleTypeResponse(
+    val id: Int,
+    val attributes: VehicleTypeAttributesResponse
+)
+
+@Serializable
+data class VehicleTypeAttributesResponse(
+    val name: String
+)
+
+@Serializable
+data class SalesOrderItemsDataWrapper(
+    val data: List<SalesOrderItemResponse>
+)
+
+@Serializable
+data class SalesOrderItemResponse(
+    val id: Int,
+    val attributes: SalesOrderItemAttributesResponse
+)
+
+@Serializable
+data class SalesOrderItemAttributesResponse(
+    val total_price: Double,
+    val discount: Double,
+    val sales_item_id: Int,
+    val unit_price: Double,
+    val sales_items: SalesItemsDataWrapper
+)
+
+@Serializable
+data class SalesItemsDataWrapper(
+    val data: SalesItemResponse
+)
+
+@Serializable
+data class SalesItemResponse(
+    val id: Int,
+    val attributes: SalesItemAttributesResponse
+)
+
+@Serializable
+data class SalesItemAttributesResponse(
+    val name: String
+)
+
+@Serializable
+data class SalesmanDataWrapper(
+    val data: SalesmanResponse
+)
+
+@Serializable
+data class SalesmanResponse(
+    val id: Int,
+    val attributes: SalesmanAttributesResponse
+)
+
+@Serializable
+data class SalesmanAttributesResponse(
+    val name: String
+)
+
+@Serializable
+data class FlatCustomerResponse(
+    val id: Int,
+    val name: String,
+    @SerializedName("cpfCnpj")
+    val cpfCnpj: String,
+    val phoneNumber: String? = null,
+    val email: String? = null
+)
+
+@Serializable
+data class FlatCompanyResponse(
+    val id: Int,
+    @SerializedName(value = "tradeName", alternate = ["trade_name"])
+    val tradeName: String
+)
+
+@Serializable
+data class FlatVehicleTypeResponse(
+    val id: Int,
+    val name: String
+)
+
+@Serializable
+data class FlatSalesmanResponse(
+    val id: Int,
+    val name: String
+)
+
+@Serializable
+data class FlatOrderItemResponse(
+    val id: Int,
+    val salesItemId: Int? = null,
+    val name: String? = null,
+    val unitPrice: Double? = null,
+    val discount: Double? = null,
+    val totalPrice: Double? = null
+)
+
+@Serializable
+data class FlatOrderReceivableResponse(
+    val id: Int,
+    val documentId: String,
+    val status: String,
+    val installments: Int,
+    val paymentDate: String? = null,
+    val amountOriginal: Double,
+    val amountFinal: Double,
+    val tax: Double? = null,
+    @SerializedName(value = "cardLast4", alternate = ["card_last4"])
+    val cardLast4: String? = null,
+    val cardHolder: String? = null,
+    val cardBrand: String? = null,
+    val authorizationCode: String? = null,
+    @SerializedName(value = "pixTxIdCode", alternate = ["pix_tx_id_code", "txid"])
+    val pixTxIdCode: String? = null,
+    val paymentMethod: FlatPaymentMethodResponse? = null
+)
+
+@Serializable
+data class FlatPaymentMethodResponse(
+    val id: Int,
+    val name: String,
+    @SerializedName(value = "installments", alternate = ["maxInstallments", "max_installments"])
+    val installments: Int? = null,
+    @SerializedName(value = "interestTax", alternate = ["interest_tax"])
+    val interestTax: Double? = null,
+    @SerializedName(value = "paymentType", alternate = ["payment_type"])
+    val paymentType: String? = null
 )

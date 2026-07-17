@@ -2,18 +2,18 @@
     <item
         android:id="@+id/registrationFragment"
         android:enabled="true"
-        android:icon="@drawable/ic_car"
-        android:title="Emplacamento" />
+        android:icon="@drawable/ic_home"
+        android:title="@string/home_tab_home" />
 
     <item
         android:id="@+id/orderListFragment"
         android:enabled="true"
-        android:icon="@drawable/ic_article"
-        android:title="Pedidos" />
+        android:icon="@drawable/ic_tag"
+        android:title="@string/home_tab_sales" />
 
     <item
-        android:id="@+id/paymentHistoryFragment"
+        android:id="@+id/profileFragment"
         android:enabled="true"
-        android:icon="@drawable/ic_calendar_white"
-        android:title="Pagamentos" />
+        android:icon="@drawable/ic_profile"
+        android:title="@string/home_tab_profile" />
 </menu>
