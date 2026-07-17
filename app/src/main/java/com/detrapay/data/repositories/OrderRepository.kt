@@ -7,6 +7,7 @@ import com.detrapay.data.datasources.remote.DetrapayRemoteDataSource
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.OrderCustomer
 import com.detrapay.data.model.OrderItem
+import com.detrapay.data.model.OrderReceivable
 import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.OrderReceivableItemStatus
 import com.detrapay.data.model.OrderStatus
@@ -130,6 +131,32 @@ class OrderRepository @Inject constructor(
             else -> {
                 return Result.Error(Exception())
             }
+        }
+    }
+
+    suspend fun getReceivables(forceRefresh: Boolean = false): Result<List<OrderReceivable>> {
+        return when (val ordersResult = getOrders(forceRefresh)) {
+            is Result.Success -> {
+                val receivables = mutableListOf<OrderReceivable>()
+
+                for (orderSummary in ordersResult.data) {
+                    val order = when (val orderResult = getOrder(orderSummary.id, forceRefresh)) {
+                        is Result.Success -> orderResult.data
+                        is Result.Error -> return Result.Error(orderResult.exception)
+                    }
+                    receivables += order.receivables.map { receivable ->
+                        OrderReceivable(order = order, receivable = receivable)
+                    }
+                }
+
+                Result.Success(
+                    receivables.sortedWith(
+                        compareByDescending<OrderReceivable> { it.receivable.status == OrderReceivableItemStatus.PENDING }
+                            .thenByDescending { it.order.id }
+                    )
+                )
+            }
+            is Result.Error -> ordersResult
         }
     }
 

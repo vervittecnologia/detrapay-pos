@@ -215,6 +215,69 @@ class OrderRepositoryTest {
     }
 
     @Test
+    fun `getReceivables returns receivables with their order context`() = runTest {
+        coEvery { authRepository.getLoggedUser(false) } returns loggedUser()
+        coEvery { remoteDataSource.getOrders(37, 35) } returns Result.Success(
+            listOf(
+                OrderResponse(
+                    id = 286,
+                    status = "pending",
+                    createdAt = "2026-03-10T16:48:03.281768+00:00",
+                    billingDate = "2026-03-09",
+                    currentAmount = 1734.43,
+                    customerName = "jose airtin",
+                    salesmanName = "Jose Ray Da Silva"
+                )
+            )
+        )
+        coEvery { remoteDataSource.getOrder(286) } returns Result.Success(
+            OrderResponse(
+                id = 286,
+                status = "pending",
+                createdAt = "2026-03-10T16:48:03.281768+00:00",
+                billingDate = "2026-03-09",
+                originalAmount = 1734.43,
+                currentAmount = 1734.43,
+                customer = FlatCustomerResponse(
+                    id = 99,
+                    name = "jose airtin",
+                    cpfCnpj = "12345678901",
+                    phoneNumber = "85999999999"
+                ),
+                salesman = FlatSalesmanResponse(id = 54, name = "Jose Ray Da Silva"),
+                vehicleType = FlatVehicleTypeResponse(id = 3, name = "Moto"),
+                receivables = listOf(
+                    FlatOrderReceivableResponse(
+                        id = 1,
+                        documentId = "rec-1",
+                        status = "pending",
+                        installments = 1,
+                        amountOriginal = 1734.43,
+                        amountFinal = 1734.43,
+                        paymentMethod = FlatPaymentMethodResponse(
+                            id = 10,
+                            name = "Credito",
+                            installments = 1,
+                            interestTax = 0.0,
+                            paymentType = "credit"
+                        )
+                    )
+                )
+            )
+        )
+
+        val result = repository.getReceivables(forceRefresh = true)
+
+        assertTrue(result is Result.Success)
+        val item = (result as Result.Success).data.single()
+        assertEquals(286, item.order.id)
+        assertEquals("jose airtin", item.order.customer.name)
+        assertEquals(1, item.receivable.id)
+        assertEquals(OrderReceivableItemStatus.PENDING, item.receivable.status)
+        coVerify(exactly = 1) { remoteDataSource.getOrder(286) }
+    }
+
+    @Test
     fun `payOrder uses updated order returned by backend without extra fetch`() = runTest {
         val receivable = receivable()
         val paymentData = mockk<com.detrapay.data.model.PaymentData>(relaxed = true) {

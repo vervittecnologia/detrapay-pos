@@ -17,6 +17,8 @@ data class AuthResponse(
     var expiresAt: Long? = null,
     @SerializedName("token_type")
     var tokenType: String? = null,
+    @SerializedName("appMode")
+    var appMode: String? = null,
     @SerializedName("user")
     var user: UserResponse,
     @SerializedName("companies")

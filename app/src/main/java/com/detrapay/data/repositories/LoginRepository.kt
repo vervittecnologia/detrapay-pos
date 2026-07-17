@@ -80,6 +80,9 @@ class LoginRepository @Inject constructor(
                         dispatchers = Gson().toJson(dispatchers),
                         salesmen = Gson().toJson(salesmen)
                     )
+                    val appMode = result.data.appMode
+                        ?.takeIf { it.isNotBlank() }
+                        ?: LoggedInUser.APP_MODE_COMPLETE
 
                     userLocalDataSource.insertUser(user)
                     authRepository.saveLoginSession(result.data, user)
@@ -94,7 +97,8 @@ class LoginRepository @Inject constructor(
                         cpfCnpj = user.cpfCnpj,
                         companies = companies,
                         dispatchers = dispatchers,
-                        salesmen = salesmen
+                        salesmen = salesmen,
+                        appMode = appMode
                     )
                     Result.Success(loggedInUser)
                 } catch (e: Exception) {

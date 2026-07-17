@@ -18,8 +18,8 @@ android {
         applicationId = "com.detrapay"
         minSdk = 23
         targetSdk = 35
-        versionCode = 6
-        versionName = "1.5"
+        versionCode = 7
+        versionName = "1.5.1"
         testInstrumentationRunner = "com.detrapay.testing.DetrapayTestRunner"
         testInstrumentationRunnerArguments["clearPackageData"] = "true"
 

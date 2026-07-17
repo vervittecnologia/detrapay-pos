@@ -12,5 +12,14 @@ data class LoggedInUser(
     val email: String,
     val companies: List<Company>,
     val dispatchers: List<Dispatcher>,
-    val salesmen: List<Salesman>
-)
+    val salesmen: List<Salesman>,
+    val appMode: String = APP_MODE_COMPLETE
+) {
+    val isSimplifiedMode: Boolean
+        get() = appMode.equals(APP_MODE_SIMPLIFIED, ignoreCase = true)
+
+    companion object {
+        const val APP_MODE_COMPLETE = "complete"
+        const val APP_MODE_SIMPLIFIED = "simplified"
+    }
+}

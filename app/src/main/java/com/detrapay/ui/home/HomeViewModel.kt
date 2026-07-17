@@ -43,7 +43,8 @@ class HomeViewModel @Inject constructor(
                             companyDocument = result.cpfCnpj,
                             dispatcherName = dispatcherName,
                             companyLogoKey = company?.logoKey,
-                            salesmen = salesmen
+                            salesmen = salesmen,
+                            isSimplifiedMode = result.isSimplifiedMode
                         )
                     )
                 )

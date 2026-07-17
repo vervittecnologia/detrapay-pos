@@ -7,5 +7,6 @@ data class HomeState(
     val companyDocument: String,
     val dispatcherName: String,
     val companyLogoKey: String?,
-    val salesmen: List<Salesman>
+    val salesmen: List<Salesman>,
+    val isSimplifiedMode: Boolean
 )

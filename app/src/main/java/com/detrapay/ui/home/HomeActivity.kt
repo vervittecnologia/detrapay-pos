@@ -16,6 +16,7 @@ import androidx.navigation.ui.setupWithNavController
 import com.detrapay.R
 import com.detrapay.databinding.ActivityHomeBinding
 import com.detrapay.ui.login.LoginActivity
+import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.Logger
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import dagger.hilt.android.AndroidEntryPoint
@@ -27,6 +28,7 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var navController: NavController
     private lateinit var navHostFragment: NavHostFragment
     private lateinit var appBarConfiguration: AppBarConfiguration
+    private var simplifiedModeApplied = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +37,7 @@ class HomeActivity : AppCompatActivity() {
         viewModel.loadScreenContent()
         addOnBackPressedCallback()
         setupNavigation()
+        observeHomeMode()
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -63,6 +66,23 @@ class HomeActivity : AppCompatActivity() {
         val bottomNavView: BottomNavigationView = binding.bottomAppBar
 
         bottomNavView.setupWithNavController(navController)
+    }
+
+    private fun observeHomeMode() {
+        viewModel.homeState.observe(this) { state ->
+            val homeState = (state as? UIState.Success)?.data ?: return@observe
+            if (homeState.isSimplifiedMode) {
+                showSimplifiedMode()
+            }
+        }
+    }
+
+    private fun showSimplifiedMode() {
+        if (simplifiedModeApplied) return
+
+        simplifiedModeApplied = true
+        binding.bottomAppBar.visibility = android.view.View.GONE
+        navController.navigate(R.id.simplifiedReceivableListFragment)
     }
 
     private fun showLogoutDialog() {
