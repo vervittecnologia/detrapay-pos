@@ -16,9 +16,7 @@ data class LoggedInUser(
     val appMode: String = APP_MODE_COMPLETE
 ) {
     val activeSellerAppMode: SellerAppMode
-        get() = SellerAppMode.mostSpecific(
-            companies.map { it.normalizedSellerAppMode } + SellerAppMode.from(appMode)
-        )
+        get() = SellerAppMode.mostSpecific(companies.map { it.normalizedSellerAppMode })
 
     val isSimplifiedMode: Boolean
         get() = activeSellerAppMode.usesSimplifiedHome

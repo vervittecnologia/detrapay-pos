@@ -83,8 +83,7 @@ class LoginRepository @Inject constructor(
                         salesmen = Gson().toJson(salesmen)
                     )
                     val appMode = SellerAppMode.mostSpecific(
-                        companies.map { it.normalizedSellerAppMode } +
-                            SellerAppMode.from(result.data.appMode)
+                        companies.map { it.normalizedSellerAppMode }
                     ).apiValue
 
                     userLocalDataSource.insertUser(user)

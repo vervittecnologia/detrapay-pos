@@ -55,8 +55,7 @@ class AuthRepository @Inject constructor(
             expiresAt = authResponse.expiresAt,
             tokenType = authResponse.tokenType,
             appMode = SellerAppMode.mostSpecific(
-                authResponse.companies.map { SellerAppMode.from(it.sellerAppMode) } +
-                    SellerAppMode.from(authResponse.appMode)
+                authResponse.companies.map { SellerAppMode.from(it.sellerAppMode) }
             ).apiValue,
         )
         updateCachedUser(localUser)

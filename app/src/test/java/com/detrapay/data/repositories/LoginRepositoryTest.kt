@@ -48,9 +48,25 @@ class LoginRepositoryTest {
     }
 
     @Test
-    fun `login exposes simplified app mode returned by backend`() = runTest {
+    fun `login ignores legacy simplified profile mode when dealership uses complete mode`() = runTest {
         coEvery { remoteDataSource.login("04685620000162", "crasa04685620") } returns Result.Success(
             authResponse(appMode = "simplified")
+        )
+        coEvery { usersDao.insertUser(any()) } returns 1L
+        coEvery { authRepository.saveLoginSession(any(), any()) } just Runs
+
+        val result = repository.login("04685620000162", "crasa04685620")
+
+        assertTrue(result is Result.Success)
+        val user = (result as Result.Success).data
+        assertEquals("complete", user.appMode)
+        assertTrue(!user.isSimplifiedMode)
+    }
+
+    @Test
+    fun `login uses simplified mode from company configuration`() = runTest {
+        coEvery { remoteDataSource.login("04685620000162", "crasa04685620") } returns Result.Success(
+            authResponse(appMode = "complete", companySellerAppMode = "simplified")
         )
         coEvery { usersDao.insertUser(any()) } returns 1L
         coEvery { authRepository.saveLoginSession(any(), any()) } just Runs
