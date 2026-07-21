@@ -42,6 +42,12 @@ class OrderDetailsPaymentMethodPickerBottomSheet : BottomSheetDialogFragment() {
 
         val availableTypes = (arguments?.getStringArrayList(ARG_AVAILABLE_TYPES) ?: arrayListOf())
             .toSet()
+        arguments?.getString(ARG_TITLE)?.takeIf { it.isNotBlank() }?.let {
+            binding.paymentPickerTitle.text = it
+        }
+        arguments?.getString(ARG_SUBTITLE)?.takeIf { it.isNotBlank() }?.let {
+            binding.paymentPickerSubtitle.text = it
+        }
 
         binding.optionCredit.visibility = if (availableTypes.contains(TYPE_CREDIT)) View.VISIBLE else View.GONE
         binding.optionDebit.visibility = if (availableTypes.contains(TYPE_DEBIT)) View.VISIBLE else View.GONE
@@ -76,10 +82,20 @@ class OrderDetailsPaymentMethodPickerBottomSheet : BottomSheetDialogFragment() {
         const val TYPE_STORE_CREDIT = "store_credit"
 
         private const val ARG_AVAILABLE_TYPES = "available_types"
+        private const val ARG_TITLE = "title"
+        private const val ARG_SUBTITLE = "subtitle"
 
-        fun newInstance(availableTypes: List<String>): OrderDetailsPaymentMethodPickerBottomSheet {
+        fun newInstance(
+            availableTypes: List<String>,
+            title: String? = null,
+            subtitle: String? = null,
+        ): OrderDetailsPaymentMethodPickerBottomSheet {
             return OrderDetailsPaymentMethodPickerBottomSheet().apply {
-                arguments = bundleOf(ARG_AVAILABLE_TYPES to ArrayList(availableTypes))
+                arguments = bundleOf(
+                    ARG_AVAILABLE_TYPES to ArrayList(availableTypes),
+                    ARG_TITLE to title,
+                    ARG_SUBTITLE to subtitle,
+                )
             }
         }
     }

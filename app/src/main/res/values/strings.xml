@@ -277,6 +277,25 @@
     <string name="simplified_receivables_empty_title">Nenhum pagamento pendente</string>
     <string name="simplified_receivables_empty_subtitle">Os pagamentos disponiveis para receber aparecerao aqui.</string>
     <string name="simplified_receivables_error">Nao foi possivel carregar os pagamentos.</string>
+    <string name="direct_checkout_title">Pedidos Aguardando Pagamento</string>
+    <string name="direct_checkout_subtitle">Pedidos pendentes para receber por Pix, credito ou debito.</string>
+    <string name="direct_checkout_pending_orders">Pedidos pendentes</string>
+    <string name="direct_checkout_empty_title">Nenhum pedido pendente</string>
+    <string name="direct_checkout_empty_subtitle">Pedidos com saldo a receber aparecerao aqui.</string>
+    <string name="direct_checkout_error">Nao foi possivel carregar os pedidos.</string>
+    <string name="direct_checkout_receive_order_title">Receber pedido #%1$d</string>
+    <string name="direct_checkout_pending_balance">Saldo pendente: %1$s</string>
+    <string name="direct_checkout_order_number_label">Numero do pedido</string>
+    <string name="direct_checkout_client_label">Nome do cliente</string>
+    <string name="direct_checkout_pending_amount_label">Valor pendente</string>
+    <string name="direct_checkout_payment_methods_title">Escolha o meio de pagamento</string>
+    <string name="direct_checkout_view_installments">Ver parcelas</string>
+    <string name="direct_checkout_installments_error">Nao foi possivel obter as parcelas para esse pagamento.</string>
+    <string name="direct_checkout_select_installment">Selecione uma parcela para continuar.</string>
+    <plurals name="direct_checkout_order_count">
+        <item quantity="one">%1$d pedido</item>
+        <item quantity="other">%1$d pedidos</item>
+    </plurals>
 
     <string name="payment_dialog_title_processing">Pagamento em andamento</string>
     <string name="payment_dialog_title_success">Pagamento concluido</string>

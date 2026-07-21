@@ -9,10 +9,8 @@ import androidx.appcompat.app.AppCompatActivity
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import androidx.activity.viewModels
-import com.detrapay.BuildConfig
 import com.detrapay.R
 import com.detrapay.databinding.ActivityLoginBinding
-import com.detrapay.debug.DebugOrderDefaults
 import com.detrapay.ui.home.HomeActivity
 import com.detrapay.ui.util.Mask
 import com.detrapay.ui.util.afterTextChanged
@@ -76,20 +74,6 @@ class LoginActivity : AppCompatActivity() {
 
         cnpj.addTextChangedListener(Mask.mask("##.###.###/####-##", cnpj))
         restoreLastLoggedCnpj()
-
-        if (BuildConfig.DEBUG) {
-            cnpj.setText(DebugOrderDefaults.loginCnpjMasked())
-            password.setText(DebugOrderDefaults.loginPassword())
-            loginViewModel.loginDataChanged(
-                cnpj.text.toString(),
-                password.text.toString()
-            )
-            setLoadingState(true)
-            loginViewModel.login(
-                cnpj.text.toString(),
-                password.text.toString()
-            )
-        }
 
         cnpj.afterTextChanged {
             binding.errorTextView.visibility = View.GONE

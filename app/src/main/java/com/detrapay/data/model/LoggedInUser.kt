@@ -15,11 +15,17 @@ data class LoggedInUser(
     val salesmen: List<Salesman>,
     val appMode: String = APP_MODE_COMPLETE
 ) {
+    val activeSellerAppMode: SellerAppMode
+        get() = SellerAppMode.mostSpecific(
+            companies.map { it.normalizedSellerAppMode } + SellerAppMode.from(appMode)
+        )
+
     val isSimplifiedMode: Boolean
-        get() = appMode.equals(APP_MODE_SIMPLIFIED, ignoreCase = true)
+        get() = activeSellerAppMode.usesSimplifiedHome
 
     companion object {
         const val APP_MODE_COMPLETE = "complete"
         const val APP_MODE_SIMPLIFIED = "simplified"
+        const val APP_MODE_DIRECT_CHECKOUT = "direct_checkout"
     }
 }

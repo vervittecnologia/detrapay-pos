@@ -14,6 +14,7 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupWithNavController
 import com.detrapay.R
+import com.detrapay.data.model.SellerAppMode
 import com.detrapay.databinding.ActivityHomeBinding
 import com.detrapay.ui.login.LoginActivity
 import com.detrapay.ui.state.UIState
@@ -71,17 +72,23 @@ class HomeActivity : AppCompatActivity() {
     private fun observeHomeMode() {
         viewModel.homeState.observe(this) { state ->
             val homeState = (state as? UIState.Success)?.data ?: return@observe
-            if (homeState.isSimplifiedMode) {
-                showSimplifiedMode()
+            when (homeState.sellerAppMode) {
+                SellerAppMode.SIMPLIFIED -> showSimplifiedMode(hideBottomNavigation = true)
+                SellerAppMode.DIRECT_CHECKOUT -> showSimplifiedMode(hideBottomNavigation = false)
+                SellerAppMode.COMPLETE -> Unit
             }
         }
     }
 
-    private fun showSimplifiedMode() {
+    private fun showSimplifiedMode(hideBottomNavigation: Boolean) {
         if (simplifiedModeApplied) return
 
         simplifiedModeApplied = true
-        binding.bottomAppBar.visibility = android.view.View.GONE
+        binding.bottomAppBar.visibility = if (hideBottomNavigation) {
+            android.view.View.GONE
+        } else {
+            android.view.View.VISIBLE
+        }
         navController.navigate(R.id.simplifiedReceivableListFragment)
     }
 

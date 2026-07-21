@@ -44,7 +44,7 @@ class HomeViewModel @Inject constructor(
                             dispatcherName = dispatcherName,
                             companyLogoKey = company?.logoKey,
                             salesmen = salesmen,
-                            isSimplifiedMode = result.isSimplifiedMode
+                            sellerAppMode = result.activeSellerAppMode
                         )
                     )
                 )
