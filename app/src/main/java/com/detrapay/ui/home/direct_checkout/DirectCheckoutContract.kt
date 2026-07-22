@@ -36,10 +36,8 @@ data class DirectCheckoutLocalState(
     val simulatorLoading: Boolean = false,
     val simulatorError: String? = null,
     val feeRequestTarget: DirectCheckoutFeeRequestTarget? = null,
-) {
-    val hasActiveFeeRequest: Boolean
-        get() = feeRequestTarget != null
-}
+    val feeRequestInFlight: Boolean = false,
+)
 
 data class DirectCheckoutUiState(
     val companyName: String,

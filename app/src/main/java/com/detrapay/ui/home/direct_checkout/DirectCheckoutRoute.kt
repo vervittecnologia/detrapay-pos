@@ -116,7 +116,7 @@ fun DirectCheckoutRoute(
                     DirectCheckoutFeeRequestTarget.Simulator -> {
                         DirectCheckoutReducer.simulatorLoaded(localState, installments, installmentErrorMessage)
                     }
-                    null -> localState
+                    null -> DirectCheckoutReducer.discardFeeResponse(localState)
                 }
             }
             is UIState.Error -> {
@@ -130,7 +130,12 @@ fun DirectCheckoutRoute(
                         localState = DirectCheckoutReducer.simulatorFailed(localState, message)
                         state.exception?.let { onEffect(DirectCheckoutEffect.ShowSessionExpired(it)) }
                     }
-                    null -> Unit
+                    null -> {
+                        if (DirectCheckoutReducer.isStaleFeeResponse(localState)) {
+                            state.exception?.let { onEffect(DirectCheckoutEffect.ShowSessionExpired(it)) }
+                        }
+                        localState = DirectCheckoutReducer.discardFeeResponse(localState)
+                    }
                 }
             }
             is UIState.Idle,
@@ -234,7 +239,7 @@ fun DirectCheckoutRoute(
                     localState = next
                     when (PaymentTypeRules.normalize(action.paymentType)) {
                         OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CREDIT -> {
-                            if (!previous.hasActiveFeeRequest &&
+                            if (!previous.feeRequestInFlight &&
                                 next.feeRequestTarget == DirectCheckoutFeeRequestTarget.CheckoutCredit
                             ) {
                                 viewModel.calculateFees(currentPaymentAmount(next), action.paymentType)
@@ -301,7 +306,7 @@ fun DirectCheckoutRoute(
                         val previous = localState
                         val next = DirectCheckoutReducer.startSimulatorLoading(localState)
                         localState = next
-                        if (!previous.hasActiveFeeRequest &&
+                        if (!previous.feeRequestInFlight &&
                             next.feeRequestTarget == DirectCheckoutFeeRequestTarget.Simulator
                         ) {
                             viewModel.calculateFees(amount, OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CREDIT)

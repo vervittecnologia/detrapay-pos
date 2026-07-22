@@ -46,13 +46,17 @@ object DirectCheckoutReducer {
         val normalized = PaymentTypeRules.normalize(paymentType)
         return when (normalized) {
             OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CREDIT -> {
-                if (state.feeRequestTarget == DirectCheckoutFeeRequestTarget.Simulator) {
+                if (state.feeRequestInFlight) {
                     state.copy(
                         selectedPaymentType = paymentType,
                         selectedInstallment = 1,
                         creditInstallments = emptyList(),
-                        feesLoading = false,
-                        feesError = state.feesError ?: CHECKOUT_REQUEST_BLOCKED_MESSAGE,
+                        feesLoading = state.feeRequestTarget == DirectCheckoutFeeRequestTarget.CheckoutCredit,
+                        feesError = if (state.feeRequestTarget == DirectCheckoutFeeRequestTarget.CheckoutCredit) {
+                            state.feesError
+                        } else {
+                            state.feesError ?: CHECKOUT_REQUEST_BLOCKED_MESSAGE
+                        },
                         step = DirectCheckoutStep.Credit,
                     )
                 } else {
@@ -63,6 +67,7 @@ object DirectCheckoutReducer {
                         feesLoading = true,
                         feesError = null,
                         feeRequestTarget = DirectCheckoutFeeRequestTarget.CheckoutCredit,
+                        feeRequestInFlight = true,
                         step = DirectCheckoutStep.Credit,
                     )
                 }
@@ -146,16 +151,16 @@ object DirectCheckoutReducer {
     }
 
     fun startSimulatorLoading(state: DirectCheckoutLocalState): DirectCheckoutLocalState {
-        if (state.feeRequestTarget == DirectCheckoutFeeRequestTarget.CheckoutCredit) {
+        if (state.feeRequestInFlight) {
             return state.copy(
                 simulatorLoading = false,
                 simulatorError = SIMULATOR_REQUEST_BLOCKED_MESSAGE,
             )
         }
-        if (state.feeRequestTarget == DirectCheckoutFeeRequestTarget.Simulator) return state
 
         return state.copy(
             feeRequestTarget = DirectCheckoutFeeRequestTarget.Simulator,
+            feeRequestInFlight = true,
             simulatorLoading = true,
             simulatorError = null,
             simulatorInstallments = emptyList(),
@@ -168,11 +173,13 @@ object DirectCheckoutReducer {
         installments: List<InstallmentFee>,
         emptyMessage: String,
     ): DirectCheckoutLocalState {
+        if (state.feeRequestTarget == null) return discardFeeResponse(state)
         if (state.feeRequestTarget != DirectCheckoutFeeRequestTarget.Simulator) return state
 
         return state.copy(
             simulatorLoading = false,
             feeRequestTarget = null,
+            feeRequestInFlight = false,
             simulatorInstallments = installments,
             simulatorSelectedInstallment = installments.lastOrNull()?.installmentNumber,
             simulatorError = if (installments.isEmpty()) emptyMessage else null,
@@ -180,11 +187,13 @@ object DirectCheckoutReducer {
     }
 
     fun simulatorFailed(state: DirectCheckoutLocalState, message: String): DirectCheckoutLocalState {
+        if (state.feeRequestTarget == null) return discardFeeResponse(state)
         if (state.feeRequestTarget != DirectCheckoutFeeRequestTarget.Simulator) return state
 
         return state.copy(
             simulatorLoading = false,
             feeRequestTarget = null,
+            feeRequestInFlight = false,
             simulatorInstallments = emptyList(),
             simulatorSelectedInstallment = null,
             simulatorError = message,
@@ -196,11 +205,13 @@ object DirectCheckoutReducer {
         installments: List<InstallmentFee>,
         emptyMessage: String,
     ): DirectCheckoutLocalState {
+        if (state.feeRequestTarget == null) return discardFeeResponse(state)
         if (state.feeRequestTarget != DirectCheckoutFeeRequestTarget.CheckoutCredit) return state
 
         return state.copy(
             feesLoading = false,
             feeRequestTarget = null,
+            feeRequestInFlight = false,
             creditInstallments = installments,
             selectedInstallment = installments.firstOrNull()?.installmentNumber ?: 1,
             feesError = if (installments.isEmpty()) emptyMessage else null,
@@ -208,13 +219,23 @@ object DirectCheckoutReducer {
     }
 
     fun feesFailed(state: DirectCheckoutLocalState, message: String): DirectCheckoutLocalState {
+        if (state.feeRequestTarget == null) return discardFeeResponse(state)
         if (state.feeRequestTarget != DirectCheckoutFeeRequestTarget.CheckoutCredit) return state
 
         return state.copy(
             feesLoading = false,
             feeRequestTarget = null,
+            feeRequestInFlight = false,
             creditInstallments = emptyList(),
             feesError = message,
         )
+    }
+
+    fun isStaleFeeResponse(state: DirectCheckoutLocalState): Boolean {
+        return state.feeRequestTarget == null
+    }
+
+    fun discardFeeResponse(state: DirectCheckoutLocalState): DirectCheckoutLocalState {
+        return state.copy(feeRequestInFlight = false)
     }
 }

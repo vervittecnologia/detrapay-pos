@@ -9,6 +9,7 @@ import com.detrapay.data.model.OrderStatus
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.Salesman
 import com.detrapay.data.model.VehicleType
+import com.detrapay.data.model.remote.InstallmentFee
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -171,7 +172,8 @@ class DirectCheckoutReducerTest {
         assertFalse(staleResponse.showSimulator)
         assertFalse(staleResponse.simulatorLoading)
         assertNull(staleResponse.feeRequestTarget)
-        assertEquals(closed, staleResponse)
+        assertTrue(closed.feeRequestInFlight)
+        assertFalse(staleResponse.feeRequestInFlight)
     }
 
     @Test
@@ -185,7 +187,8 @@ class DirectCheckoutReducerTest {
         assertFalse(staleResponse.simulatorLoading)
         assertNull(staleResponse.feeRequestTarget)
         assertNull(staleResponse.simulatorError)
-        assertEquals(changed, staleResponse)
+        assertTrue(changed.feeRequestInFlight)
+        assertFalse(staleResponse.feeRequestInFlight)
     }
 
     @Test
@@ -220,6 +223,58 @@ class DirectCheckoutReducerTest {
             blocked.feesError,
         )
     }
+
+    @Test
+    fun `cancelling checkout fee request keeps it in flight and blocks simulator request`() {
+        val requested = DirectCheckoutReducer.selectPaymentType(DirectCheckoutLocalState(), "credito")
+        val cancelled = DirectCheckoutReducer.back(requested)
+
+        assertTrue(cancelled.feeRequestInFlight)
+        assertNull(cancelled.feeRequestTarget)
+        assertFalse(cancelled.feesLoading)
+
+        val blocked = DirectCheckoutReducer.startSimulatorLoading(cancelled)
+
+        assertTrue(blocked.feeRequestInFlight)
+        assertNull(blocked.feeRequestTarget)
+        assertFalse(blocked.simulatorLoading)
+        assertEquals(DirectCheckoutReducer.SIMULATOR_REQUEST_BLOCKED_MESSAGE, blocked.simulatorError)
+    }
+
+    @Test
+    fun `stale checkout fee success clears in flight without applying installments`() {
+        val cancelled = DirectCheckoutReducer.back(
+            DirectCheckoutReducer.selectPaymentType(DirectCheckoutLocalState(), "credito"),
+        )
+
+        val consumed = DirectCheckoutReducer.feesLoaded(
+            cancelled,
+            installments = listOf(installmentFee()),
+            emptyMessage = "No installments",
+        )
+
+        assertFalse(consumed.feeRequestInFlight)
+        assertNull(consumed.feeRequestTarget)
+        assertTrue(consumed.creditInstallments.isEmpty())
+        assertEquals(1, consumed.selectedInstallment)
+    }
+
+    @Test
+    fun `stale fee error without target is detected for session expiration routing`() {
+        val cancelled = DirectCheckoutReducer.back(
+            DirectCheckoutReducer.selectPaymentType(DirectCheckoutLocalState(), "credito"),
+        )
+
+        assertTrue(DirectCheckoutReducer.isStaleFeeResponse(cancelled))
+    }
+
+    private fun installmentFee() = InstallmentFee(
+        installmentNumber = 2,
+        installmentValue = "50.00",
+        totalValue = "100.00",
+        interestValue = "0.00",
+        noInterest = true,
+    )
 
     private fun order(
         total: Double = 100.0,

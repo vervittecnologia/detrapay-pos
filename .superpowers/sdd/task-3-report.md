@@ -98,3 +98,38 @@ Result: `BUILD SUCCESSFUL`.
 ### Concerns
 
 - None.
+
+## Reviewer Finding To Fix - Round 3
+
+Important:
+- Fee response routing remains unsafe after cancel/reissue because target has no request identity. Since ViewModel responses do not carry IDs, fix by true serialization: keep an in-flight flag after visual cancellation until terminal Success/Error arrives; block new fee requests while any fee request is in flight; discard terminal stale responses when target is null; still emit session-expired for stale Unauthorized errors.
+
+## Round 3 Fix Report
+
+### What changed
+
+- Added `feeRequestInFlight` to route-local state. Fee requests now set both the visible target and the in-flight lock.
+- Preserved the in-flight lock when checkout credit is visually cancelled, the simulator is closed, or its amount changes. Those actions still clear only the target-specific loading UI and target.
+- Blocked checkout-credit and simulator fee starts while the lock is held, including after a visual cancellation.
+- Terminal fee results now clear the lock. Results without a target are discarded without applying installments or errors; a stale error with an exception emits `ShowSessionExpired` before the discard.
+- Added reducer coverage for cancel-and-block, stale success discard, and stale error detection for session-expiration routing.
+
+### Test command/result
+
+```powershell
+.\gradlew.bat testDebugUnitTest --tests "com.detrapay.ui.home.direct_checkout.DirectCheckoutReducerTest" --tests "com.detrapay.ui.home.simplified.DirectCheckoutOrderPresentationTest" --no-watch-fs
+```
+
+Result: `BUILD SUCCESSFUL`.
+
+### Files changed
+
+- `app/src/main/java/com/detrapay/ui/home/direct_checkout/DirectCheckoutContract.kt`
+- `app/src/main/java/com/detrapay/ui/home/direct_checkout/DirectCheckoutReducer.kt`
+- `app/src/main/java/com/detrapay/ui/home/direct_checkout/DirectCheckoutRoute.kt`
+- `app/src/test/java/com/detrapay/ui/home/direct_checkout/DirectCheckoutReducerTest.kt`
+- `.superpowers/sdd/task-3-report.md`
+
+### Concerns
+
+- None.
