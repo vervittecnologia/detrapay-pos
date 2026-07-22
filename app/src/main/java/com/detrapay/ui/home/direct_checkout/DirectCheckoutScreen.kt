@@ -35,9 +35,12 @@ fun DirectCheckoutScreen(
             Box(modifier = Modifier.fillMaxSize()) {
                 when (local.step) {
                     DirectCheckoutStep.Orders -> OrdersScreen(
+                        companyName = state.companyName,
+                        companyDocument = state.companyDocument,
                         orders = state.orders,
                         isLoading = state.isLoading,
                         errorMessage = state.errorMessage,
+                        onLogout = { onAction(DirectCheckoutAction.Logout) },
                         onReload = { onAction(DirectCheckoutAction.Reload) },
                         onNewOrder = { onAction(DirectCheckoutAction.NewOrder) },
                         onOpenSimulator = { onAction(DirectCheckoutAction.OpenSimulator) },

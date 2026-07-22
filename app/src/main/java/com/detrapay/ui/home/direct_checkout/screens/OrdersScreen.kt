@@ -63,9 +63,12 @@ import com.detrapay.ui.home.simplified.DirectCheckoutOrderPresentation
 
 @Composable
 fun OrdersScreen(
+    companyName: String,
+    companyDocument: String,
     orders: List<Order>,
     isLoading: Boolean,
     errorMessage: String?,
+    onLogout: () -> Unit,
     onReload: () -> Unit,
     onNewOrder: () -> Unit,
     onOpenSimulator: () -> Unit,
@@ -104,13 +107,48 @@ fun OrdersScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
+                        Column(
                             modifier = Modifier.weight(1f),
-                            text = "Pedidos",
-                            color = DirectCheckoutColors.Ink,
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.Black,
-                        )
+                        ) {
+                            Text(
+                                text = "Pedidos",
+                                color = DirectCheckoutColors.Ink,
+                                fontSize = 26.sp,
+                                fontWeight = FontWeight.Black,
+                            )
+                            Text(
+                                text = companyName,
+                                color = DirectCheckoutColors.Muted,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            if (companyDocument.isNotBlank()) {
+                                Text(
+                                    text = companyDocument,
+                                    color = DirectCheckoutColors.Faint,
+                                    fontSize = 12.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                        IconButton(
+                            onClick = onLogout,
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(DirectCheckoutColors.MutedSurface),
+                        ) {
+                            Icon(
+                                Icons.Default.Logout,
+                                contentDescription = "Sair",
+                                tint = DirectCheckoutColors.Ink,
+                                modifier = Modifier.size(22.dp),
+                            )
+                        }
                         IconButton(
                             onClick = {
                                 showSearch = !showSearch

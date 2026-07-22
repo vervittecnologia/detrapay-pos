@@ -60,6 +60,38 @@ private fun DirectCheckoutSimulatorPreview() = PreviewContent(
     ),
 )
 
+@Preview(name = "Direct checkout - Simulator empty", showBackground = true, widthDp = 390, heightDp = 844)
+@Composable
+private fun DirectCheckoutSimulatorEmptyPreview() = PreviewContent(
+    local = DirectCheckoutLocalState(
+        step = DirectCheckoutStep.Orders,
+        showSimulator = true,
+        simulatorAmountDigits = "50000",
+    ),
+)
+
+@Preview(name = "Direct checkout - Simulator loading", showBackground = true, widthDp = 390, heightDp = 844)
+@Composable
+private fun DirectCheckoutSimulatorLoadingPreview() = PreviewContent(
+    local = DirectCheckoutLocalState(
+        step = DirectCheckoutStep.Orders,
+        showSimulator = true,
+        simulatorAmountDigits = "50000",
+        simulatorLoading = true,
+    ),
+)
+
+@Preview(name = "Direct checkout - Simulator error", showBackground = true, widthDp = 390, heightDp = 844)
+@Composable
+private fun DirectCheckoutSimulatorErrorPreview() = PreviewContent(
+    local = DirectCheckoutLocalState(
+        step = DirectCheckoutStep.Orders,
+        showSimulator = true,
+        simulatorAmountDigits = "50000",
+        simulatorError = "Nao foi possivel consultar parcelas.",
+    ),
+)
+
 @Composable
 private fun PreviewForOrder(
     step: DirectCheckoutStep,

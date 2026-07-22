@@ -9,8 +9,8 @@ object PaymentTypeRules {
 
     fun normalize(rawType: String?): String {
         return when (rawType.orEmpty().trim().lowercase()) {
-            "credito", "credit", "cartao_credito", "cartao de credito" -> "credito"
-            "debito", "debit", "cartao_debito", "cartao de debito" -> "debito"
+            "credito", "crédito", "credit", "cartao_credito", "cartão_credito", "cartao de credito", "cartão de crédito" -> "credito"
+            "debito", "débito", "debit", "cartao_debito", "cartão_debito", "cartao de debito", "cartão de débito" -> "debito"
             "pix" -> "pix"
             "dinheiro", "cash" -> "dinheiro"
             "store_credit", "credito_loja", "credito loja", "storecredit" -> "store_credit"
@@ -21,6 +21,13 @@ object PaymentTypeRules {
     fun isDirectNoFeePaymentType(rawType: String?): Boolean {
         return when (normalize(rawType)) {
             "dinheiro", "store_credit" -> true
+            else -> false
+        }
+    }
+
+    fun requiresTerminalApproval(rawType: String?): Boolean {
+        return when (normalize(rawType)) {
+            "pix", "credito", "debito" -> true
             else -> false
         }
     }
