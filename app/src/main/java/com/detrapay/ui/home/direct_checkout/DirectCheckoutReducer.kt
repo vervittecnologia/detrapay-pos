@@ -9,6 +9,9 @@ import kotlin.math.roundToLong
 
 object DirectCheckoutReducer {
 
+    const val SIMULATOR_REQUEST_BLOCKED_MESSAGE = "Aguarde o carregamento das taxas do checkout."
+    const val CHECKOUT_REQUEST_BLOCKED_MESSAGE = "Aguarde o carregamento das taxas do simulador."
+
     fun showDetail(state: DirectCheckoutLocalState, order: Order): DirectCheckoutLocalState {
         return state.copy(selectedOrder = order, step = DirectCheckoutStep.Detail)
     }
@@ -42,15 +45,28 @@ object DirectCheckoutReducer {
     fun selectPaymentType(state: DirectCheckoutLocalState, paymentType: String): DirectCheckoutLocalState {
         val normalized = PaymentTypeRules.normalize(paymentType)
         return when (normalized) {
-            OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CREDIT -> state.copy(
-                selectedPaymentType = paymentType,
-                selectedInstallment = 1,
-                creditInstallments = emptyList(),
-                feesLoading = true,
-                feesError = null,
-                feeRequestTarget = DirectCheckoutFeeRequestTarget.CheckoutCredit,
-                step = DirectCheckoutStep.Credit,
-            )
+            OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CREDIT -> {
+                if (state.feeRequestTarget == DirectCheckoutFeeRequestTarget.Simulator) {
+                    state.copy(
+                        selectedPaymentType = paymentType,
+                        selectedInstallment = 1,
+                        creditInstallments = emptyList(),
+                        feesLoading = false,
+                        feesError = state.feesError ?: CHECKOUT_REQUEST_BLOCKED_MESSAGE,
+                        step = DirectCheckoutStep.Credit,
+                    )
+                } else {
+                    state.copy(
+                        selectedPaymentType = paymentType,
+                        selectedInstallment = 1,
+                        creditInstallments = emptyList(),
+                        feesLoading = true,
+                        feesError = null,
+                        feeRequestTarget = DirectCheckoutFeeRequestTarget.CheckoutCredit,
+                        step = DirectCheckoutStep.Credit,
+                    )
+                }
+            }
             OrderDetailsPaymentMethodPickerBottomSheet.TYPE_DEBIT -> state.copy(
                 selectedPaymentType = paymentType,
                 selectedInstallment = 1,
@@ -86,17 +102,19 @@ object DirectCheckoutReducer {
             DirectCheckoutStep.Debit -> DirectCheckoutStep.Method
             DirectCheckoutStep.Waiting -> DirectCheckoutStep.Method
         }
+        val cancelCheckoutFeeRequest =
+            state.step == DirectCheckoutStep.Credit &&
+                state.feeRequestTarget == DirectCheckoutFeeRequestTarget.CheckoutCredit
         return state.copy(
             step = nextStep,
-            feesLoading = if (state.step == DirectCheckoutStep.Credit) false else state.feesLoading,
-            feeRequestTarget = if (state.step == DirectCheckoutStep.Credit) null else state.feeRequestTarget,
+            feesLoading = if (cancelCheckoutFeeRequest) false else state.feesLoading,
+            feeRequestTarget = if (cancelCheckoutFeeRequest) null else state.feeRequestTarget,
         )
     }
 
     fun openSimulator(state: DirectCheckoutLocalState): DirectCheckoutLocalState {
         return state.copy(
             showSimulator = true,
-            feeRequestTarget = null,
             simulatorAmountDigits = "",
             simulatorInstallments = emptyList(),
             simulatorSelectedInstallment = null,
@@ -106,25 +124,36 @@ object DirectCheckoutReducer {
     }
 
     fun closeSimulator(state: DirectCheckoutLocalState): DirectCheckoutLocalState {
+        val cancelSimulatorFeeRequest = state.feeRequestTarget == DirectCheckoutFeeRequestTarget.Simulator
         return state.copy(
             showSimulator = false,
-            feeRequestTarget = null,
+            feeRequestTarget = if (cancelSimulatorFeeRequest) null else state.feeRequestTarget,
             simulatorLoading = false,
             simulatorError = null,
         )
     }
 
     fun updateSimulatorAmount(state: DirectCheckoutLocalState, raw: String): DirectCheckoutLocalState {
+        val cancelSimulatorFeeRequest = state.feeRequestTarget == DirectCheckoutFeeRequestTarget.Simulator
         return state.copy(
             simulatorAmountDigits = raw.filter(Char::isDigit),
             simulatorInstallments = emptyList(),
             simulatorSelectedInstallment = null,
             simulatorError = null,
-            feeRequestTarget = null,
+            simulatorLoading = false,
+            feeRequestTarget = if (cancelSimulatorFeeRequest) null else state.feeRequestTarget,
         )
     }
 
     fun startSimulatorLoading(state: DirectCheckoutLocalState): DirectCheckoutLocalState {
+        if (state.feeRequestTarget == DirectCheckoutFeeRequestTarget.CheckoutCredit) {
+            return state.copy(
+                simulatorLoading = false,
+                simulatorError = SIMULATOR_REQUEST_BLOCKED_MESSAGE,
+            )
+        }
+        if (state.feeRequestTarget == DirectCheckoutFeeRequestTarget.Simulator) return state
+
         return state.copy(
             feeRequestTarget = DirectCheckoutFeeRequestTarget.Simulator,
             simulatorLoading = true,
@@ -139,6 +168,8 @@ object DirectCheckoutReducer {
         installments: List<InstallmentFee>,
         emptyMessage: String,
     ): DirectCheckoutLocalState {
+        if (state.feeRequestTarget != DirectCheckoutFeeRequestTarget.Simulator) return state
+
         return state.copy(
             simulatorLoading = false,
             feeRequestTarget = null,
@@ -149,6 +180,8 @@ object DirectCheckoutReducer {
     }
 
     fun simulatorFailed(state: DirectCheckoutLocalState, message: String): DirectCheckoutLocalState {
+        if (state.feeRequestTarget != DirectCheckoutFeeRequestTarget.Simulator) return state
+
         return state.copy(
             simulatorLoading = false,
             feeRequestTarget = null,
@@ -163,6 +196,8 @@ object DirectCheckoutReducer {
         installments: List<InstallmentFee>,
         emptyMessage: String,
     ): DirectCheckoutLocalState {
+        if (state.feeRequestTarget != DirectCheckoutFeeRequestTarget.CheckoutCredit) return state
+
         return state.copy(
             feesLoading = false,
             feeRequestTarget = null,
@@ -173,6 +208,8 @@ object DirectCheckoutReducer {
     }
 
     fun feesFailed(state: DirectCheckoutLocalState, message: String): DirectCheckoutLocalState {
+        if (state.feeRequestTarget != DirectCheckoutFeeRequestTarget.CheckoutCredit) return state
+
         return state.copy(
             feesLoading = false,
             feeRequestTarget = null,

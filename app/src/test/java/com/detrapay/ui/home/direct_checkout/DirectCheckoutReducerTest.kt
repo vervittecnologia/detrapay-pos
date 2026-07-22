@@ -12,6 +12,7 @@ import com.detrapay.data.model.VehicleType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DirectCheckoutReducerTest {
@@ -158,6 +159,66 @@ class DirectCheckoutReducerTest {
         val failed = DirectCheckoutReducer.feesFailed(requested, "Unable to load installments")
 
         assertNull(failed.feeRequestTarget)
+    }
+
+    @Test
+    fun `closing simulator discards its late fee response`() {
+        val loading = DirectCheckoutReducer.startSimulatorLoading(DirectCheckoutLocalState(showSimulator = true))
+        val closed = DirectCheckoutReducer.closeSimulator(loading)
+
+        val staleResponse = DirectCheckoutReducer.simulatorLoaded(closed, emptyList(), "No installments")
+
+        assertFalse(staleResponse.showSimulator)
+        assertFalse(staleResponse.simulatorLoading)
+        assertNull(staleResponse.feeRequestTarget)
+        assertEquals(closed, staleResponse)
+    }
+
+    @Test
+    fun `changing simulator amount discards its late fee error`() {
+        val loading = DirectCheckoutReducer.startSimulatorLoading(DirectCheckoutLocalState(showSimulator = true))
+        val changed = DirectCheckoutReducer.updateSimulatorAmount(loading, "R$ 45,67")
+
+        val staleResponse = DirectCheckoutReducer.simulatorFailed(changed, "Unable to load installments")
+
+        assertEquals("4567", staleResponse.simulatorAmountDigits)
+        assertFalse(staleResponse.simulatorLoading)
+        assertNull(staleResponse.feeRequestTarget)
+        assertNull(staleResponse.simulatorError)
+        assertEquals(changed, staleResponse)
+    }
+
+    @Test
+    fun `simulator request is blocked while checkout credit fees are loading`() {
+        val checkoutLoading = DirectCheckoutReducer.selectPaymentType(
+            DirectCheckoutLocalState(),
+            "credito",
+        )
+
+        val blocked = DirectCheckoutReducer.startSimulatorLoading(checkoutLoading)
+
+        assertEquals(DirectCheckoutFeeRequestTarget.CheckoutCredit, blocked.feeRequestTarget)
+        assertTrue(blocked.feesLoading)
+        assertFalse(blocked.simulatorLoading)
+        assertEquals(
+            DirectCheckoutReducer.SIMULATOR_REQUEST_BLOCKED_MESSAGE,
+            blocked.simulatorError,
+        )
+    }
+
+    @Test
+    fun `checkout credit request is blocked while simulator fees are loading`() {
+        val simulatorLoading = DirectCheckoutReducer.startSimulatorLoading(DirectCheckoutLocalState())
+
+        val blocked = DirectCheckoutReducer.selectPaymentType(simulatorLoading, "credito")
+
+        assertEquals(DirectCheckoutFeeRequestTarget.Simulator, blocked.feeRequestTarget)
+        assertTrue(blocked.simulatorLoading)
+        assertFalse(blocked.feesLoading)
+        assertEquals(
+            DirectCheckoutReducer.CHECKOUT_REQUEST_BLOCKED_MESSAGE,
+            blocked.feesError,
+        )
     }
 
     private fun order(

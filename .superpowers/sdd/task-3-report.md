@@ -63,3 +63,38 @@ Result: `BUILD SUCCESSFUL`.
 ### Concerns
 
 - None.
+
+## Reviewer Finding To Fix - Round 2
+
+Important:
+- Fee responses are still classified using current `feeRequestTarget`, not true request identity. A checkout-credit request followed by a simulator request can misroute the first response. Fix by serializing fee requests and safely discarding stale responses, and add an interleaving/stale-response test.
+
+## Round 2 Fix Report
+
+### What changed
+
+- Serialized checkout-credit and simulator fee requests through `feeRequestTarget`; the route only calls `calculateFees` when no fee request is already active.
+- Blocked simulator consultation while checkout fees are loading with a simulator error, and blocked checkout credit calculation while simulator fees are loading with a checkout error.
+- Closing the simulator or changing its amount now cancels only an active simulator request and clears its loading state, so late simulator responses are discarded.
+- Ignored stale fee Loading, Success, and Error states when there is no request target; reducer response handlers also reject a mismatched target.
+- Added reducer coverage for stale simulator responses and both blocked interleaving directions.
+
+### Test command/result
+
+```powershell
+.\gradlew.bat testDebugUnitTest --tests "com.detrapay.ui.home.direct_checkout.DirectCheckoutReducerTest" --tests "com.detrapay.ui.home.simplified.DirectCheckoutOrderPresentationTest" --no-watch-fs
+```
+
+Result: `BUILD SUCCESSFUL`.
+
+### Files changed
+
+- `app/src/main/java/com/detrapay/ui/home/direct_checkout/DirectCheckoutContract.kt`
+- `app/src/main/java/com/detrapay/ui/home/direct_checkout/DirectCheckoutReducer.kt`
+- `app/src/main/java/com/detrapay/ui/home/direct_checkout/DirectCheckoutRoute.kt`
+- `app/src/test/java/com/detrapay/ui/home/direct_checkout/DirectCheckoutReducerTest.kt`
+- `.superpowers/sdd/task-3-report.md`
+
+### Concerns
+
+- None.

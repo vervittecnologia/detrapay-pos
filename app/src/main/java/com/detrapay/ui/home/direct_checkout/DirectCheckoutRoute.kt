@@ -121,19 +121,20 @@ fun DirectCheckoutRoute(
             }
             is UIState.Error -> {
                 val message = state.message ?: installmentErrorMessage
-                localState = when (localState.feeRequestTarget) {
+                when (localState.feeRequestTarget) {
                     DirectCheckoutFeeRequestTarget.CheckoutCredit -> {
-                        DirectCheckoutReducer.feesFailed(localState, message)
+                        localState = DirectCheckoutReducer.feesFailed(localState, message)
+                        state.exception?.let { onEffect(DirectCheckoutEffect.ShowSessionExpired(it)) }
                     }
                     DirectCheckoutFeeRequestTarget.Simulator -> {
-                        DirectCheckoutReducer.simulatorFailed(localState, message)
+                        localState = DirectCheckoutReducer.simulatorFailed(localState, message)
+                        state.exception?.let { onEffect(DirectCheckoutEffect.ShowSessionExpired(it)) }
                     }
-                    null -> localState
+                    null -> Unit
                 }
-                state.exception?.let { onEffect(DirectCheckoutEffect.ShowSessionExpired(it)) }
             }
             is UIState.Idle,
-            null -> localState = localState.copy(feesLoading = false, simulatorLoading = false)
+            null -> Unit
         }
     }
 
@@ -233,7 +234,11 @@ fun DirectCheckoutRoute(
                     localState = next
                     when (PaymentTypeRules.normalize(action.paymentType)) {
                         OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CREDIT -> {
-                            viewModel.calculateFees(currentPaymentAmount(next), action.paymentType)
+                            if (!previous.hasActiveFeeRequest &&
+                                next.feeRequestTarget == DirectCheckoutFeeRequestTarget.CheckoutCredit
+                            ) {
+                                viewModel.calculateFees(currentPaymentAmount(next), action.paymentType)
+                            }
                         }
                         OrderDetailsPaymentMethodPickerBottomSheet.TYPE_DEBIT -> {
                             viewModel.clearFeesState()
@@ -293,8 +298,14 @@ fun DirectCheckoutRoute(
                     if (amount <= 0.0) {
                         localState = localState.copy(simulatorError = invalidSimulatorAmountMessage)
                     } else {
-                        localState = DirectCheckoutReducer.startSimulatorLoading(localState)
-                        viewModel.calculateFees(amount, OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CREDIT)
+                        val previous = localState
+                        val next = DirectCheckoutReducer.startSimulatorLoading(localState)
+                        localState = next
+                        if (!previous.hasActiveFeeRequest &&
+                            next.feeRequestTarget == DirectCheckoutFeeRequestTarget.Simulator
+                        ) {
+                            viewModel.calculateFees(amount, OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CREDIT)
+                        }
                     }
                 }
                 is DirectCheckoutAction.SelectSimulatorInstallment -> {
