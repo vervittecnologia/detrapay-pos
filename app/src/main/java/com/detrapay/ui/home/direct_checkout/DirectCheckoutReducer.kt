@@ -24,6 +24,7 @@ object DirectCheckoutReducer {
             feesLoading = false,
             feesError = null,
             showSimulator = false,
+            feeRequestTarget = null,
             step = DirectCheckoutStep.Keypad,
         )
     }
@@ -47,7 +48,7 @@ object DirectCheckoutReducer {
                 creditInstallments = emptyList(),
                 feesLoading = true,
                 feesError = null,
-                simulatorRequestActive = false,
+                feeRequestTarget = DirectCheckoutFeeRequestTarget.CheckoutCredit,
                 step = DirectCheckoutStep.Credit,
             )
             OrderDetailsPaymentMethodPickerBottomSheet.TYPE_DEBIT -> state.copy(
@@ -56,6 +57,7 @@ object DirectCheckoutReducer {
                 creditInstallments = emptyList(),
                 feesLoading = false,
                 feesError = null,
+                feeRequestTarget = null,
                 step = DirectCheckoutStep.Debit,
             )
             else -> state.copy(
@@ -64,6 +66,7 @@ object DirectCheckoutReducer {
                 creditInstallments = emptyList(),
                 feesLoading = false,
                 feesError = null,
+                feeRequestTarget = null,
                 step = DirectCheckoutStep.Waiting,
             )
         }
@@ -83,13 +86,17 @@ object DirectCheckoutReducer {
             DirectCheckoutStep.Debit -> DirectCheckoutStep.Method
             DirectCheckoutStep.Waiting -> DirectCheckoutStep.Method
         }
-        return state.copy(step = nextStep)
+        return state.copy(
+            step = nextStep,
+            feesLoading = if (state.step == DirectCheckoutStep.Credit) false else state.feesLoading,
+            feeRequestTarget = if (state.step == DirectCheckoutStep.Credit) null else state.feeRequestTarget,
+        )
     }
 
     fun openSimulator(state: DirectCheckoutLocalState): DirectCheckoutLocalState {
         return state.copy(
             showSimulator = true,
-            simulatorRequestActive = false,
+            feeRequestTarget = null,
             simulatorAmountDigits = "",
             simulatorInstallments = emptyList(),
             simulatorSelectedInstallment = null,
@@ -101,7 +108,7 @@ object DirectCheckoutReducer {
     fun closeSimulator(state: DirectCheckoutLocalState): DirectCheckoutLocalState {
         return state.copy(
             showSimulator = false,
-            simulatorRequestActive = false,
+            feeRequestTarget = null,
             simulatorLoading = false,
             simulatorError = null,
         )
@@ -113,13 +120,13 @@ object DirectCheckoutReducer {
             simulatorInstallments = emptyList(),
             simulatorSelectedInstallment = null,
             simulatorError = null,
-            simulatorRequestActive = false,
+            feeRequestTarget = null,
         )
     }
 
     fun startSimulatorLoading(state: DirectCheckoutLocalState): DirectCheckoutLocalState {
         return state.copy(
-            simulatorRequestActive = true,
+            feeRequestTarget = DirectCheckoutFeeRequestTarget.Simulator,
             simulatorLoading = true,
             simulatorError = null,
             simulatorInstallments = emptyList(),
@@ -134,7 +141,7 @@ object DirectCheckoutReducer {
     ): DirectCheckoutLocalState {
         return state.copy(
             simulatorLoading = false,
-            simulatorRequestActive = false,
+            feeRequestTarget = null,
             simulatorInstallments = installments,
             simulatorSelectedInstallment = installments.lastOrNull()?.installmentNumber,
             simulatorError = if (installments.isEmpty()) emptyMessage else null,
@@ -144,7 +151,7 @@ object DirectCheckoutReducer {
     fun simulatorFailed(state: DirectCheckoutLocalState, message: String): DirectCheckoutLocalState {
         return state.copy(
             simulatorLoading = false,
-            simulatorRequestActive = false,
+            feeRequestTarget = null,
             simulatorInstallments = emptyList(),
             simulatorSelectedInstallment = null,
             simulatorError = message,
@@ -158,6 +165,7 @@ object DirectCheckoutReducer {
     ): DirectCheckoutLocalState {
         return state.copy(
             feesLoading = false,
+            feeRequestTarget = null,
             creditInstallments = installments,
             selectedInstallment = installments.firstOrNull()?.installmentNumber ?: 1,
             feesError = if (installments.isEmpty()) emptyMessage else null,
@@ -167,6 +175,7 @@ object DirectCheckoutReducer {
     fun feesFailed(state: DirectCheckoutLocalState, message: String): DirectCheckoutLocalState {
         return state.copy(
             feesLoading = false,
+            feeRequestTarget = null,
             creditInstallments = emptyList(),
             feesError = message,
         )

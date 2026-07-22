@@ -15,6 +15,11 @@ enum class DirectCheckoutStep {
     Waiting,
 }
 
+enum class DirectCheckoutFeeRequestTarget {
+    CheckoutCredit,
+    Simulator,
+}
+
 data class DirectCheckoutLocalState(
     val step: DirectCheckoutStep = DirectCheckoutStep.Orders,
     val selectedOrder: Order? = null,
@@ -30,7 +35,7 @@ data class DirectCheckoutLocalState(
     val simulatorSelectedInstallment: Int? = null,
     val simulatorLoading: Boolean = false,
     val simulatorError: String? = null,
-    val simulatorRequestActive: Boolean = false,
+    val feeRequestTarget: DirectCheckoutFeeRequestTarget? = null,
 )
 
 data class DirectCheckoutUiState(
@@ -68,7 +73,10 @@ sealed interface DirectCheckoutAction {
 sealed interface DirectCheckoutEffect {
     data object ShowLogoutConfirmation : DirectCheckoutEffect
     data object NavigateToRegistration : DirectCheckoutEffect
-    data class OpenPaymentDialog(val pendingPayment: DirectCheckoutPendingPayment) : DirectCheckoutEffect
+    data class OpenPaymentDialog(
+        val pendingPayment: DirectCheckoutPendingPayment,
+        val onResult: (PaymentData?) -> Unit,
+    ) : DirectCheckoutEffect
     data class ConfirmManualPayment(
         val pendingPayment: DirectCheckoutPendingPayment,
         val paymentData: PaymentData,

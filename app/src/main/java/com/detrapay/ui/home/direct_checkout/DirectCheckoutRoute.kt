@@ -82,9 +82,12 @@ fun DirectCheckoutRoute(
     LaunchedEffect(paymentMethodsState) {
         when (val state = paymentMethodsState) {
             is UIState.Success -> availableTypes = viewModel.availablePaymentTypes()
-            is UIState.Error -> onEffect(
-                DirectCheckoutEffect.ShowToast(state.message ?: addPaymentLoadErrorMessage),
-            )
+            is UIState.Error -> {
+                onEffect(
+                    DirectCheckoutEffect.ShowToast(state.message ?: addPaymentLoadErrorMessage),
+                )
+                state.exception?.let { onEffect(DirectCheckoutEffect.ShowSessionExpired(it)) }
+            }
             is UIState.Loading,
             is UIState.Idle,
             null -> Unit
@@ -94,27 +97,40 @@ fun DirectCheckoutRoute(
     LaunchedEffect(feesState) {
         when (val state = feesState) {
             is UIState.Loading -> {
-                localState = if (localState.simulatorRequestActive || localState.showSimulator) {
-                    localState.copy(simulatorLoading = true, simulatorError = null)
-                } else {
-                    localState.copy(feesLoading = true, feesError = null)
+                localState = when (localState.feeRequestTarget) {
+                    DirectCheckoutFeeRequestTarget.CheckoutCredit -> {
+                        localState.copy(feesLoading = true, feesError = null)
+                    }
+                    DirectCheckoutFeeRequestTarget.Simulator -> {
+                        localState.copy(simulatorLoading = true, simulatorError = null)
+                    }
+                    null -> localState
                 }
             }
             is UIState.Success -> {
                 val installments = state.data?.data.orEmpty().firstOrNull()?.installments.orEmpty()
-                localState = if (localState.simulatorRequestActive || localState.showSimulator) {
-                    DirectCheckoutReducer.simulatorLoaded(localState, installments, installmentErrorMessage)
-                } else {
-                    DirectCheckoutReducer.feesLoaded(localState, installments, installmentErrorMessage)
+                localState = when (localState.feeRequestTarget) {
+                    DirectCheckoutFeeRequestTarget.CheckoutCredit -> {
+                        DirectCheckoutReducer.feesLoaded(localState, installments, installmentErrorMessage)
+                    }
+                    DirectCheckoutFeeRequestTarget.Simulator -> {
+                        DirectCheckoutReducer.simulatorLoaded(localState, installments, installmentErrorMessage)
+                    }
+                    null -> localState
                 }
             }
             is UIState.Error -> {
                 val message = state.message ?: installmentErrorMessage
-                localState = if (localState.simulatorRequestActive || localState.showSimulator) {
-                    DirectCheckoutReducer.simulatorFailed(localState, message)
-                } else {
-                    DirectCheckoutReducer.feesFailed(localState, message)
+                localState = when (localState.feeRequestTarget) {
+                    DirectCheckoutFeeRequestTarget.CheckoutCredit -> {
+                        DirectCheckoutReducer.feesFailed(localState, message)
+                    }
+                    DirectCheckoutFeeRequestTarget.Simulator -> {
+                        DirectCheckoutReducer.simulatorFailed(localState, message)
+                    }
+                    null -> localState
                 }
+                state.exception?.let { onEffect(DirectCheckoutEffect.ShowSessionExpired(it)) }
             }
             is UIState.Idle,
             null -> localState = localState.copy(feesLoading = false, simulatorLoading = false)
@@ -126,7 +142,18 @@ fun DirectCheckoutRoute(
             is UIState.Success -> {
                 val pendingPayment = viewModel.consumeDirectCheckoutPendingPayment() ?: return@LaunchedEffect
                 if (PaymentTypeRules.requiresTerminalApproval(pendingPayment.paymentType)) {
-                    onEffect(DirectCheckoutEffect.OpenPaymentDialog(pendingPayment))
+                    onEffect(
+                        DirectCheckoutEffect.OpenPaymentDialog(pendingPayment) { paymentData ->
+                            localState = localState.copy(
+                                step = if (paymentData != null) {
+                                    DirectCheckoutStep.Orders
+                                } else {
+                                    DirectCheckoutStep.Method
+                                },
+                            )
+                            viewModel.loadDirectCheckoutOrders(forceRefresh = true)
+                        },
+                    )
                 } else {
                     onEffect(
                         DirectCheckoutEffect.ConfirmManualPayment(
@@ -139,6 +166,7 @@ fun DirectCheckoutRoute(
             is UIState.Error -> {
                 localState = localState.copy(step = DirectCheckoutStep.Method)
                 onEffect(DirectCheckoutEffect.ShowToast(state.message ?: addPaymentLoadErrorMessage))
+                state.exception?.let { onEffect(DirectCheckoutEffect.ShowSessionExpired(it)) }
                 viewModel.clearDirectCheckoutPaymentState()
             }
             is UIState.Loading,
@@ -158,6 +186,7 @@ fun DirectCheckoutRoute(
             is UIState.Error -> {
                 localState = localState.copy(step = DirectCheckoutStep.Method)
                 onEffect(DirectCheckoutEffect.ShowToast(state.message ?: addPaymentLoadErrorMessage))
+                state.exception?.let { onEffect(DirectCheckoutEffect.ShowSessionExpired(it)) }
                 viewModel.clearDirectCheckoutPaymentState()
             }
             is UIState.Loading,

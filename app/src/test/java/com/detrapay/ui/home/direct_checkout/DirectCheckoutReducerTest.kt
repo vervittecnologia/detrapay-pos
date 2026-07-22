@@ -67,6 +67,7 @@ class DirectCheckoutReducerTest {
         assertEquals("credito", next.selectedPaymentType)
         assertEquals(1, next.selectedInstallment)
         assertEquals(DirectCheckoutStep.Credit, next.step)
+        assertEquals(DirectCheckoutFeeRequestTarget.CheckoutCredit, next.feeRequestTarget)
     }
 
     @Test
@@ -136,7 +137,27 @@ class DirectCheckoutReducerTest {
         val closed = DirectCheckoutReducer.closeSimulator(updated)
 
         assertFalse(closed.showSimulator)
-        assertFalse(closed.simulatorRequestActive)
+        assertNull(closed.feeRequestTarget)
+    }
+
+    @Test
+    fun `simulator fee request is marked and cleared when response is consumed`() {
+        val loading = DirectCheckoutReducer.startSimulatorLoading(DirectCheckoutLocalState())
+
+        assertEquals(DirectCheckoutFeeRequestTarget.Simulator, loading.feeRequestTarget)
+
+        val loaded = DirectCheckoutReducer.simulatorLoaded(loading, emptyList(), "No installments")
+
+        assertNull(loaded.feeRequestTarget)
+    }
+
+    @Test
+    fun `checkout credit fee request is cleared when response fails`() {
+        val requested = DirectCheckoutReducer.selectPaymentType(DirectCheckoutLocalState(), "credito")
+
+        val failed = DirectCheckoutReducer.feesFailed(requested, "Unable to load installments")
+
+        assertNull(failed.feeRequestTarget)
     }
 
     private fun order(

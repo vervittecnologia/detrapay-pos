@@ -64,7 +64,7 @@ class DirectCheckoutFragment : Fragment() {
         when (effect) {
             DirectCheckoutEffect.ShowLogoutConfirmation -> showLogoutConfirmation()
             DirectCheckoutEffect.NavigateToRegistration -> openNewOrderFlow()
-            is DirectCheckoutEffect.OpenPaymentDialog -> openPaymentDialog(effect.pendingPayment)
+            is DirectCheckoutEffect.OpenPaymentDialog -> openPaymentDialog(effect.pendingPayment, effect.onResult)
             is DirectCheckoutEffect.ConfirmManualPayment -> {
                 viewModel.confirmDirectCheckoutManualPayment(effect.pendingPayment, effect.paymentData)
             }
@@ -79,12 +79,15 @@ class DirectCheckoutFragment : Fragment() {
         }
     }
 
-    private fun openPaymentDialog(pendingPayment: DirectCheckoutPendingPayment) {
+    private fun openPaymentDialog(
+        pendingPayment: DirectCheckoutPendingPayment,
+        onResult: (PaymentData?) -> Unit,
+    ) {
         viewModel.clearDirectCheckoutPaymentState()
         PaymentDialogFragment(
             listener = object : PaymentDialogFragment.PaymentListener {
                 override fun onResult(paymentData: PaymentData?) {
-                    viewModel.loadDirectCheckoutOrders(forceRefresh = true)
+                    onResult(paymentData)
                 }
             },
             orderId = pendingPayment.order.id,
