@@ -65,3 +65,12 @@ Result: The focused test did not produce a result. The first run exceeded 120 se
 ### Concerns
 
 - Gradle daemon/test execution remains unresolved in this environment; no test assertion or compilation failure was reported.
+
+## Controller Verification After Fix
+
+Command:
+```powershell
+.\gradlew.bat testDebugUnitTest --tests "com.detrapay.ui.home.direct_checkout.DirectCheckoutReducerTest" --no-watch-fs
+```
+
+Result: PASS. Build successful in 21s; 36 actionable tasks up-to-date.
