@@ -1,10 +1,5 @@
 package com.detrapay.ui.home.direct_checkout.screens
 
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,31 +22,20 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.TrendingDown
-import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -69,15 +53,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.detrapay.data.model.Order
-import com.detrapay.data.model.remote.InstallmentFee
 import com.detrapay.ui.home.direct_checkout.components.DirectCheckoutColors
-import com.detrapay.ui.order_details.OrderDetailsPaymentMethodPickerBottomSheet
-import com.detrapay.ui.util.PaymentTypeRules
 import com.detrapay.ui.home.direct_checkout.components.*
 import com.detrapay.ui.home.simplified.DirectCheckoutOrderPresentation
 
@@ -167,7 +147,7 @@ fun OrdersScreen(
                             } else {
                                 null
                             },
-                            placeholder = { Text("Buscar por cliente, CPF ou nÂº pedido...") },
+                            placeholder = { Text("Buscar por cliente, CPF ou nº pedido...") },
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
                         )
@@ -179,7 +159,7 @@ fun OrdersScreen(
                 isLoading -> item { LoadingBlock("Carregando pedidos...") }
                 errorMessage != null -> item {
                     EmptyBlock(
-                        title = "NÃ£o foi possÃ­vel carregar os pedidos.",
+                        title = "Não foi possível carregar os pedidos.",
                         subtitle = errorMessage,
                         actionText = "Recarregar",
                         onAction = onReload,
@@ -255,7 +235,7 @@ fun OrdersScreen(
         ) {
             Icon(
                 Icons.Default.Add,
-                contentDescription = "Abrir aÃ§Ãµes",
+                contentDescription = "Abrir ações",
                 modifier = Modifier
                     .size(36.dp)
                     .graphicsLayer(rotationZ = if (showFabMenu) 45f else 0f),
@@ -404,7 +384,7 @@ private fun SellerStatusBadge(status: String) {
     val label = when (status) {
         "paid" -> "Pago"
         "authorized" -> "Autorizado"
-        "completed" -> "ConcluÃ­do"
+        "completed" -> "Concluído"
         "cancelled" -> "Cancelado"
         else -> "Pendente Vendedor"
     }
@@ -570,7 +550,7 @@ private fun LegacyOrdersScreen(
                     value = query,
                     onValueChange = { query = it },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    placeholder = { Text("Buscar por nÃºmero ou cliente") },
+                    placeholder = { Text("Buscar por número ou cliente") },
                     singleLine = true,
                     shape = RoundedCornerShape(16.dp),
                 )
@@ -582,7 +562,7 @@ private fun LegacyOrdersScreen(
         } else if (errorMessage != null) {
             item {
                 EmptyBlock(
-                    title = "NÃ£o foi possÃ­vel carregar os pedidos.",
+                    title = "Não foi possível carregar os pedidos.",
                     subtitle = errorMessage,
                     actionText = "Recarregar",
                     onAction = onReload,
@@ -592,7 +572,7 @@ private fun LegacyOrdersScreen(
             item {
                 EmptyBlock(
                     title = "Nenhum pedido aberto",
-                    subtitle = "Quando houver pedidos com saldo pendente, eles aparecerÃ£o aqui.",
+                    subtitle = "Quando houver pedidos com saldo pendente, eles aparecerão aqui.",
                     actionText = "Recarregar",
                     onAction = onReload,
                 )
@@ -654,7 +634,7 @@ private fun DealershipHeader(companyName: String, companyDocument: String, onLog
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                "CONCESSIONÃRIA",
+                "CONCESSIONÁRIA",
                 color = DirectCheckoutColors.BlueOnSoft,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,

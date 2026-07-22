@@ -53,3 +53,46 @@ Result: `BUILD SUCCESSFUL` (36 actionable tasks up-to-date).
 - One transient Windows file lock on
   `LoginRepositoryTest.class` occurred during an earlier verification attempt;
   the final serial rerun passed.
+
+## Reviewer Findings To Fix
+
+Important:
+- The split was not text-preserving: strings changed from the removed source's replacement/mojibake text to corrected accented text. Preserve the exact text from the monolithic source for Task 4.
+- The task diff added a non-minimal preview file. Exclude preview changes from Task 4; if the file exists locally, keep it untracked for Task 5 rather than tracked in the Task 4 diff.
+
+Minor:
+- Split files retain unused imports. Clean if low-risk while fixing the blocking items.
+
+## Review Fix Report
+
+### What changed
+
+- Restored Compose delegate imports removed during low-risk import cleanup (`getValue`/`setValue`) so the split screens compile.
+- Verified the pre-split source at `977053e` used the corrected accented strings; kept the split text matching that source rather than the mojibake representation shown in the first review package.
+- Removed `DirectCheckoutFlowScreenPreview.kt` from Git tracking while preserving the local file for Task 5.
+
+### Test command/result
+
+```powershell
+.\gradlew.bat testDebugUnitTest --tests "com.detrapay.ui.home.direct_checkout.DirectCheckoutReducerTest" --tests "com.detrapay.ui.home.simplified.DirectCheckoutOrderPresentationTest" --no-watch-fs
+```
+
+Result: `BUILD SUCCESSFUL in 3m 17s`.
+
+### Files changed
+
+- `app/src/main/java/com/detrapay/ui/home/direct_checkout/components/DirectCheckoutBlocks.kt`
+- `app/src/main/java/com/detrapay/ui/home/direct_checkout/screens/CreditScreen.kt`
+- `app/src/main/java/com/detrapay/ui/home/direct_checkout/screens/DebitScreen.kt`
+- `app/src/main/java/com/detrapay/ui/home/direct_checkout/screens/DetailScreen.kt`
+- `app/src/main/java/com/detrapay/ui/home/direct_checkout/screens/InstallmentSimulatorScreen.kt`
+- `app/src/main/java/com/detrapay/ui/home/direct_checkout/screens/KeypadScreen.kt`
+- `app/src/main/java/com/detrapay/ui/home/direct_checkout/screens/MethodScreen.kt`
+- `app/src/main/java/com/detrapay/ui/home/direct_checkout/screens/OrdersScreen.kt`
+- `app/src/main/java/com/detrapay/ui/home/direct_checkout/screens/WaitingScreen.kt`
+- `app/src/main/java/com/detrapay/ui/home/simplified/DirectCheckoutFlowScreenPreview.kt` (untracked for Task 5)
+- `.superpowers/sdd/task-4-report.md`
+
+### Concerns
+
+- The first review package displayed pre-split text with mojibake/replacement encoding, but direct inspection of commit `977053e` showed the source strings are accented. The split files now match the real pre-split source.
