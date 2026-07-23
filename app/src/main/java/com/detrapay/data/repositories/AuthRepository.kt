@@ -54,7 +54,7 @@ class AuthRepository @Inject constructor(
             expiresIn = authResponse.expiresIn,
             expiresAt = authResponse.expiresAt,
             tokenType = authResponse.tokenType,
-            appMode = SellerAppMode.mostSpecific(
+            appMode = authResponse.appMode?.takeIf { it.isNotBlank() } ?: SellerAppMode.mostSpecific(
                 authResponse.companies.map { SellerAppMode.from(it.sellerAppMode) }
             ).apiValue,
         )

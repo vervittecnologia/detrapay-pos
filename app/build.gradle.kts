@@ -110,6 +110,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.coil.compose)
     implementation(libs.zxing.core)
     implementation(libs.material.icons)
     testImplementation(libs.junit)

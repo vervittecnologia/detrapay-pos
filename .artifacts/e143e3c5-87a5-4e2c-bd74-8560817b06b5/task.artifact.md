@@ -1,0 +1,9 @@
+- [x] Corrigir persistência do modo `direct_checkout` no login (`AuthRepository.kt`)
+- [x] Migrar Dashboard (`RegistrationFragment`) para Compose
+    - [x] Criar `HomeScreen.kt` com layout moderno
+    - [x] Atualizar `RegistrationFragment.kt` para usar `ComposeView`
+- [x] Migrar Listagem Simplificada (`SimplifiedReceivableListFragment`) para Compose
+    - [x] Criar `SimplifiedReceivableScreen.kt`
+    - [x] Atualizar `SimplifiedReceivableListFragment.kt`
+- [x] Melhorar roteamento e visibilidade na `HomeActivity.kt`
+- [ ] Verificação e Testes (Logout/Login e Navegação)

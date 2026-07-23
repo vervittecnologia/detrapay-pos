@@ -49,6 +49,7 @@ fun DirectCheckoutRoute(
 
     LaunchedEffect(Unit) {
         viewModel.loadDirectCheckoutOrders(forceRefresh = false)
+        viewModel.prefetchRegistrationData()
     }
 
     LaunchedEffect(homeState) {
