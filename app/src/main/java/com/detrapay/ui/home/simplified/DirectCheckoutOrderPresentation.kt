@@ -16,6 +16,7 @@ data class DirectCheckoutSellerCardSummary(
     val balanceTitle: String,
     val balanceLabel: String,
     val isFullyPaid: Boolean,
+    val progressPercent: Int,
 )
 
 data class DirectCheckoutOrderSummary(
@@ -79,6 +80,7 @@ object DirectCheckoutOrderPresentation {
                 "Quitado"
             },
             isFullyPaid = !summary.hasPendingBalance,
+            progressPercent = summary.progress / 10,
         )
     }
 

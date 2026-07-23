@@ -19,11 +19,7 @@ enum class SellerAppMode(val apiValue: String) {
         }
 
         fun mostSpecific(values: Iterable<SellerAppMode>): SellerAppMode {
-            return when {
-                values.any { it == DIRECT_CHECKOUT } -> DIRECT_CHECKOUT
-                values.any { it == SIMPLIFIED } -> SIMPLIFIED
-                else -> COMPLETE
-            }
+            return DIRECT_CHECKOUT
         }
     }
 }
