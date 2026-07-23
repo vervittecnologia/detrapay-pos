@@ -48,9 +48,25 @@ class LoginRepositoryTest {
     }
 
     @Test
-    fun `login exposes simplified app mode returned by backend`() = runTest {
+    fun `login ignores legacy simplified profile mode when dealership uses complete mode`() = runTest {
         coEvery { remoteDataSource.login("04685620000162", "crasa04685620") } returns Result.Success(
             authResponse(appMode = "simplified")
+        )
+        coEvery { usersDao.insertUser(any()) } returns 1L
+        coEvery { authRepository.saveLoginSession(any(), any()) } just Runs
+
+        val result = repository.login("04685620000162", "crasa04685620")
+
+        assertTrue(result is Result.Success)
+        val user = (result as Result.Success).data
+        assertEquals("complete", user.appMode)
+        assertTrue(!user.isSimplifiedMode)
+    }
+
+    @Test
+    fun `login uses simplified mode from company configuration`() = runTest {
+        coEvery { remoteDataSource.login("04685620000162", "crasa04685620") } returns Result.Success(
+            authResponse(appMode = "complete", companySellerAppMode = "simplified")
         )
         coEvery { usersDao.insertUser(any()) } returns 1L
         coEvery { authRepository.saveLoginSession(any(), any()) } just Runs
@@ -63,7 +79,23 @@ class LoginRepositoryTest {
         assertTrue(user.isSimplifiedMode)
     }
 
-    private fun authResponse(appMode: String) = AuthResponse(
+    @Test
+    fun `login uses direct checkout mode from company configuration`() = runTest {
+        coEvery { remoteDataSource.login("04685620000162", "crasa04685620") } returns Result.Success(
+            authResponse(appMode = "complete", companySellerAppMode = "direct_checkout")
+        )
+        coEvery { usersDao.insertUser(any()) } returns 1L
+        coEvery { authRepository.saveLoginSession(any(), any()) } just Runs
+
+        val result = repository.login("04685620000162", "crasa04685620")
+
+        assertTrue(result is Result.Success)
+        val user = (result as Result.Success).data
+        assertEquals("direct_checkout", user.appMode)
+        assertTrue(user.isSimplifiedMode)
+    }
+
+    private fun authResponse(appMode: String, companySellerAppMode: String? = null) = AuthResponse(
         token = "legacy-token",
         accessToken = "access-token",
         refreshToken = "refresh-token",
@@ -90,6 +122,7 @@ class LoginRepositoryTest {
             LoginCompanyResponse(
                 id = 37,
                 name = "CRASA",
+                sellerAppMode = companySellerAppMode,
             ),
         ),
         dispatchers = listOf(

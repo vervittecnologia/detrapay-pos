@@ -374,7 +374,7 @@ class OrderDetailsActivity : AppCompatActivity(),
 
     private fun defaultPendingAmount(): Double {
         val order = currentOrder ?: return 0.0
-        val registeredAmount = paidReceivables(order).sumOf { it.amountOriginal }
+        val registeredAmount = OrderPaymentTotals.from(order.receivables).declaredAmount
         val remaining = order.originalAmount - registeredAmount
         val suggestedValue = if (remaining > 0.0) remaining else order.originalAmount
         return suggestedValue.coerceAtLeast(0.0)
@@ -435,8 +435,8 @@ class OrderDetailsActivity : AppCompatActivity(),
 
     private fun currentBalance(): Double {
         val order = currentOrder ?: return 0.0
-        val totalReceived = paidReceivables(order).sumOf(::receivedAmountForSummary)
-        return order.originalAmount - totalReceived
+        val declaredAmount = OrderPaymentTotals.from(order.receivables).declaredAmount
+        return order.originalAmount - declaredAmount
     }
 
     private fun setupPayments(order: Order) {
@@ -450,7 +450,7 @@ class OrderDetailsActivity : AppCompatActivity(),
 
     @SuppressLint("SetTextI18n")
     private fun setupBalanceSummary(order: Order) {
-        val totalReceived = paidReceivables(order).sumOf(::receivedAmountForSummary)
+        val totalReceived = OrderPaymentTotals.from(order.receivables).receivedDisplayAmount
         val balance = currentBalance()
 
         binding.registeredAmountLabelTextView.setText(R.string.order_details_received_amount)
@@ -539,18 +539,6 @@ class OrderDetailsActivity : AppCompatActivity(),
             time = SimpleDateFormat("HH:mm:ss", locale).format(now),
             amountFinal = amountFinal,
         )
-    }
-
-    private fun paidReceivables(order: Order): List<OrderReceivableItem> {
-        return order.receivables.filter { it.status == com.detrapay.data.model.OrderReceivableItemStatus.PAID }
-    }
-
-    private fun receivedAmountForSummary(receivable: OrderReceivableItem): Double {
-        return when (resolvedPaymentType(receivable)) {
-            OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CASH,
-            OrderDetailsPaymentMethodPickerBottomSheet.TYPE_STORE_CREDIT -> receivable.amountFinal
-            else -> receivable.amountOriginal
-        }
     }
 
     private fun isManualPayment(receivable: OrderReceivableItem): Boolean {

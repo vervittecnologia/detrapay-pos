@@ -6,6 +6,7 @@ import com.detrapay.data.model.Company
 import com.detrapay.data.model.Dispatcher
 import com.detrapay.data.model.LoggedInUser
 import com.detrapay.data.model.Salesman
+import com.detrapay.data.model.SellerAppMode
 import com.detrapay.data.model.remote.AuthResponse
 import com.detrapay.data.model.remote.SessionRefreshResponse
 import com.detrapay.data.model.local.User
@@ -53,7 +54,9 @@ class AuthRepository @Inject constructor(
             expiresIn = authResponse.expiresIn,
             expiresAt = authResponse.expiresAt,
             tokenType = authResponse.tokenType,
-            appMode = authResponse.appMode,
+            appMode = SellerAppMode.mostSpecific(
+                authResponse.companies.map { SellerAppMode.from(it.sellerAppMode) }
+            ).apiValue,
         )
         updateCachedUser(localUser)
     }

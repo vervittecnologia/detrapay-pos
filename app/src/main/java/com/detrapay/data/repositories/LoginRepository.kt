@@ -7,6 +7,7 @@ import com.detrapay.data.model.Company
 import com.detrapay.data.model.Dispatcher
 import com.detrapay.data.model.LoggedInUser
 import com.detrapay.data.model.Salesman
+import com.detrapay.data.model.SellerAppMode
 import com.detrapay.data.model.local.User
 import com.detrapay.ui.util.Logger
 import com.google.gson.Gson
@@ -58,7 +59,8 @@ class LoginRepository @Inject constructor(
                             id = companyResponse.id,
                             name = companyResponse.name,
                             logoUrl = companyResponse.logoUrl,
-                            logoKey = logoKey
+                            logoKey = logoKey,
+                            sellerAppMode = companyResponse.sellerAppMode
                         )
                     }
                     val dispatchers = result.data.dispatchers.map { Dispatcher(it.id, it.name) }
@@ -80,9 +82,9 @@ class LoginRepository @Inject constructor(
                         dispatchers = Gson().toJson(dispatchers),
                         salesmen = Gson().toJson(salesmen)
                     )
-                    val appMode = result.data.appMode
-                        ?.takeIf { it.isNotBlank() }
-                        ?: LoggedInUser.APP_MODE_COMPLETE
+                    val appMode = SellerAppMode.mostSpecific(
+                        companies.map { it.normalizedSellerAppMode }
+                    ).apiValue
 
                     userLocalDataSource.insertUser(user)
                     authRepository.saveLoginSession(result.data, user)

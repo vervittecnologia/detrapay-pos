@@ -71,8 +71,13 @@ class HomeActivity : AppCompatActivity() {
     private fun observeHomeMode() {
         viewModel.homeState.observe(this) { state ->
             val homeState = (state as? UIState.Success)?.data ?: return@observe
-            if (homeState.isSimplifiedMode) {
-                showSimplifiedMode()
+            when {
+                HomeModeRouter.shouldUseSimplifiedSurface(homeState.sellerAppMode) -> {
+                    showSimplifiedMode()
+                }
+                HomeModeRouter.shouldUseDirectCheckoutSurface(homeState.sellerAppMode) -> {
+                    showDirectCheckoutMode()
+                }
             }
         }
     }
@@ -83,6 +88,14 @@ class HomeActivity : AppCompatActivity() {
         simplifiedModeApplied = true
         binding.bottomAppBar.visibility = android.view.View.GONE
         navController.navigate(R.id.simplifiedReceivableListFragment)
+    }
+
+    private fun showDirectCheckoutMode() {
+        if (simplifiedModeApplied) return
+
+        simplifiedModeApplied = true
+        binding.bottomAppBar.visibility = android.view.View.GONE
+        navController.navigate(R.id.directCheckoutFragment)
     }
 
     private fun showLogoutDialog() {
