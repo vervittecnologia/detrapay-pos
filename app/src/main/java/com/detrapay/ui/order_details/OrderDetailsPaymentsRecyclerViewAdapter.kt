@@ -100,6 +100,14 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
 
             setupActionArea(item, isPending, canDelete, listener)
             setupCardClick(item, isPending, listener)
+            
+            if (isPending && canDelete && item.status != REFUNDED) {
+                paymentDeletePending.visibility = View.VISIBLE
+                paymentDeletePending.setOnClickListener { listener.onDeletePendingClick(item) }
+            } else {
+                paymentDeletePending.visibility = View.GONE
+                paymentDeletePending.setOnClickListener(null)
+            }
         }
 
         private fun setupActionArea(

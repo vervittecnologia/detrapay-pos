@@ -32,6 +32,13 @@ object PaymentTypeRules {
         }
     }
 
+    fun shouldPersistInMemory(rawType: String?): Boolean {
+        return when (normalize(rawType)) {
+            "pix", "credito", "debito" -> false
+            else -> true
+        }
+    }
+
     fun isPix(rawType: String?): Boolean = normalize(rawType) == "pix"
 
     fun zeroFeeQuote(amount: Double, brand: String = "Sem taxa"): CalculateFeesResponse {

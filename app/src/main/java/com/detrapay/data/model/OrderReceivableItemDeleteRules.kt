@@ -11,5 +11,6 @@ fun OrderReceivableItem.canBeDeleted(): Boolean {
         paymentName.contains("credito") ||
         paymentName.contains("debito")
 
-    return !(status == OrderReceivableItemStatus.PAID && isCard)
+    return !(status == OrderReceivableItemStatus.PAID && isCard) &&
+            status != OrderReceivableItemStatus.REFUNDED
 }

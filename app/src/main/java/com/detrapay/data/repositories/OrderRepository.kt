@@ -31,7 +31,6 @@ import com.detrapay.data.model.remote.OrderSimulationRequest
 import com.detrapay.data.model.remote.SplitConfigRequest
 import com.detrapay.ui.util.Logger
 import com.detrapay.ui.util.Mask
-import com.detrapay.ui.util.DebugConstants
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -460,10 +459,26 @@ class OrderRepository @Inject constructor(
         orderId: Int,
         paymentMethod: PaymentMethod,
         amountOriginal: Double,
-        paymentDate: String? = null
+        paymentDate: String? = null,
+        shouldPersistInMemory: Boolean = false
     ): Result<Order> {
         if (amountOriginal <= 0.0) {
             return Result.Error(Exception("Informe um valor maior que zero para adicionar o pagamento."))
+        }
+
+        val normalizedType = paymentMethod.paymentType.orEmpty().trim().lowercase()
+        val paymentName = paymentMethod.name.trim().lowercase()
+        
+        val isCreditoDebitoPix = normalizedType.contains("credit") || 
+                               normalizedType.contains("credito") ||
+                               normalizedType.contains("debit") || 
+                               normalizedType.contains("debito") ||
+                               paymentName.contains("credito") || 
+                               paymentName.contains("debito") || 
+                               normalizedType == "pix"
+
+        if (shouldPersistInMemory && isCreditoDebitoPix) {
+            return Result.Error(Exception("Pagamento via plug and pag não realizado com sucesso."))
         }
 
         return when (
@@ -565,18 +580,12 @@ class OrderRepository @Inject constructor(
     }
 
     suspend fun updateSplitConfig(receivableId: Int, serial: String): Result<Unit> {
-        val splitSerial = if (BuildConfig.DEBUG) {
-            DebugConstants.DEBUG_SPLIT_DEVICE_ID
-        } else {
-            serial
-        }
-        val splitDescription = if (BuildConfig.DEBUG) DebugConstants.DEBUG_SPLIT_DESCRIPTION else null
+        if (BuildConfig.DEBUG) return Result.Success(Unit)
 
         return detrapayRemoteDataSource.updateSplitConfig(
             SplitConfigRequest(
                 receivableId = receivableId,
-                serial = splitSerial,
-                description = splitDescription
+                serial = serial,
             )
         )
     }

@@ -325,7 +325,9 @@ class OrderDetailsPaymentConfigBottomSheet : BottomSheetDialogFragment() {
     private fun submitPendingPayment(paymentMethod: PaymentMethod, amount: Double) {
         parentFragmentManager.setFragmentResult(REQUEST_PENDING_ADDED, bundleOf())
         dismiss()
-        viewModel.addPendingReceivable(paymentMethod, amount)
+        
+        val shouldPersistInMemory = PaymentTypeRules.shouldPersistInMemory(paymentType)
+        viewModel.addPendingReceivable(paymentMethod, amount, shouldPersistInMemory)
     }
 
     private fun resetCreditInstallmentsState() {
