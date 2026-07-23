@@ -20,6 +20,22 @@ data class DirectCheckoutOrderSummary(
     val hasPendingBalance: Boolean,
 )
 
+data class SellerCardSummary(
+    val totalLabel: String,
+    val paidLabel: String,
+    val balanceLabel: String,
+    val balanceTitle: String,
+    val progressPercent: Int,
+    val isFullyPaid: Boolean,
+)
+
+data class WaitingPresentation(
+    val amountLabel: String,
+    val title: String,
+    val subtitle: String,
+    val status: String,
+)
+
 object DirectCheckoutOrderPresentation {
     private const val PROGRESS_MAX = 1000
     private val locale = Locale("pt", "BR")
@@ -81,5 +97,111 @@ object DirectCheckoutOrderPresentation {
 
     fun formatCurrency(value: Double): String {
         return "R$ %,.2f".format(locale, value)
+    }
+
+    fun paymentAmount(digits: String, pendingAmount: Double): Double {
+        return if (digits.isBlank()) pendingAmount else digits.toDouble() / 100.0
+    }
+
+    fun paymentDisplayAmount(digits: String, pendingAmount: Double): String {
+        return formatCurrency(paymentAmount(digits, pendingAmount))
+    }
+
+    fun currencyInputAmount(digits: String): Double {
+        return digits.toDoubleOrNull()?.let { it / 100.0 } ?: 0.0
+    }
+
+    fun formatCurrencyInput(digits: String): String {
+        return formatCurrency(currencyInputAmount(digits))
+    }
+
+    fun nextPaymentDigits(digits: String, key: String): String {
+        return when (key) {
+            "DEL" -> if (digits.isNotEmpty()) digits.dropLast(1) else ""
+            else -> if (digits.length < 10) digits + key else digits
+        }
+    }
+
+    fun debitFee(amount: Double): Double {
+        return amount * 0.0199
+    }
+
+    fun debitTotal(amount: Double): Double {
+        return amount + debitFee(amount)
+    }
+
+    fun statusLabel(order: Order): String {
+        return statusLabel(order.status)
+    }
+
+    fun statusLabel(status: OrderStatus): String {
+        return when (status) {
+            OrderStatus.PAID, OrderStatus.AUTHORIZED -> "Pago"
+            OrderStatus.COMPLETED -> "Concluído"
+            OrderStatus.CANCELLED -> "Cancelado"
+            else -> "Pendente"
+        }
+    }
+
+    fun paidPercent(order: Order): Int {
+        return (summary(order).progress / 10.0).roundToInt()
+    }
+
+    fun receivableStatusLabel(receivable: OrderReceivableItem): String {
+        return receivableStatusLabel(receivable.status)
+    }
+
+    fun receivableStatusLabel(status: OrderReceivableItemStatus): String {
+        return when (status) {
+            OrderReceivableItemStatus.PAID -> "Pago"
+            OrderReceivableItemStatus.CANCELLED -> "Cancelado"
+            OrderReceivableItemStatus.PENDING -> "Pendente"
+            OrderReceivableItemStatus.REFUNDED -> "Reembolsado"
+            else -> status.name.lowercase().replaceFirstChar { it.uppercase() }
+        }
+    }
+
+    fun sellerCardSummary(order: Order): SellerCardSummary {
+        val summary = summary(order)
+        return SellerCardSummary(
+            totalLabel = formatCurrency(order.originalAmount),
+            paidLabel = formatCurrency(summary.registeredAmount),
+            balanceLabel = formatCurrency(summary.missingAmount),
+            balanceTitle = if (summary.hasPendingBalance) "Falta" else "Saldo",
+            progressPercent = paidPercent(order),
+            isFullyPaid = !summary.hasPendingBalance,
+        )
+    }
+
+    fun sellerDateLabel(date: String): String {
+        val parts = date.take(10).split("-")
+        return if (parts.size == 3) "${parts[2]}/${parts[1]}/${parts[0]}" else date
+    }
+
+    fun shouldStartPayment(order: Order): Boolean {
+        return summary(order).hasPendingBalance
+    }
+
+    fun primaryActionLabel(order: Order): String {
+        return if (shouldStartPayment(order)) "Pagar agora" else "Ver detalhes"
+    }
+
+    fun waitingPresentation(paymentType: String): WaitingPresentation {
+        val normalized = PaymentTypeRules.normalize(paymentType)
+        return if (normalized == "pix") {
+            WaitingPresentation(
+                amountLabel = "VALOR DO PIX",
+                title = "Aguardando Pix",
+                subtitle = "Peça ao cliente para escanear o QR Code gerado na maquininha.",
+                status = "Aguardando pagamento..."
+            )
+        } else {
+            WaitingPresentation(
+                amountLabel = "VALOR DO PAGAMENTO",
+                title = "Processando",
+                subtitle = "Siga as instruções na maquininha para concluir o pagamento.",
+                status = "Comunicando..."
+            )
+        }
     }
 }

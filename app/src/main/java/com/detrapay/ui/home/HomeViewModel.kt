@@ -5,7 +5,9 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.detrapay.data.Result
+import com.detrapay.data.model.SellerAppMode
 import com.detrapay.data.repositories.AuthRepository
+import com.detrapay.data.repositories.RegistrationRepository
 import com.detrapay.data.repositories.SalesmanRepository
 import com.detrapay.ui.state.UIState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,7 +18,8 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val salesmanRepository: SalesmanRepository
+    private val salesmanRepository: SalesmanRepository,
+    private val registrationRepository: RegistrationRepository,
 ) :
     ViewModel() {
 
@@ -27,7 +30,8 @@ class HomeViewModel @Inject constructor(
     fun loadScreenContent() {
         _homeState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
-            val result = authRepository.getLoggedUser(firstInitialization)
+            // Force refresh from local DB but also trigger a refresh if needed
+            val result = authRepository.getLoggedUser(forceRefresh = true)
             if (result != null) {
                 val company = result.companies.firstOrNull()
                 val companyName = company?.name ?: ""
@@ -35,6 +39,9 @@ class HomeViewModel @Inject constructor(
                 val salesmen = when (val salesmenResult = salesmanRepository.getSalesmen()) {
                     is Result.Success -> salesmenResult.data
                     is Result.Error -> emptyList()
+                }
+                viewModelScope.launch {
+                    registrationRepository.loadVehicleTypes()
                 }
                 _homeState.postValue(
                     UIState.Success(
@@ -44,7 +51,7 @@ class HomeViewModel @Inject constructor(
                             dispatcherName = dispatcherName,
                             companyLogoKey = company?.logoKey,
                             salesmen = salesmen,
-                            sellerAppMode = result.activeSellerAppMode
+                            sellerAppMode = SellerAppMode.DIRECT_CHECKOUT
                         )
                     )
                 )

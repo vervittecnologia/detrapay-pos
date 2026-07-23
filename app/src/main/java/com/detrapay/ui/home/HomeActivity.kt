@@ -71,12 +71,22 @@ class HomeActivity : AppCompatActivity() {
     private fun observeHomeMode() {
         viewModel.homeState.observe(this) { state ->
             val homeState = (state as? UIState.Success)?.data ?: return@observe
+            Logger.d("HomeActivity - App Mode: ${homeState.sellerAppMode}")
+            
+            val shouldHideNav = HomeModeRouter.shouldHideBottomNavigation(homeState.sellerAppMode)
+            binding.bottomAppBar.visibility = if (shouldHideNav) android.view.View.GONE else android.view.View.VISIBLE
+
             when {
                 HomeModeRouter.shouldUseSimplifiedSurface(homeState.sellerAppMode) -> {
+                    Logger.d("HomeActivity - Routing to Simplified")
                     showSimplifiedMode()
                 }
                 HomeModeRouter.shouldUseDirectCheckoutSurface(homeState.sellerAppMode) -> {
+                    Logger.d("HomeActivity - Routing to Direct Checkout")
                     showDirectCheckoutMode()
+                }
+                else -> {
+                    Logger.d("HomeActivity - Staying in Complete Mode")
                 }
             }
         }
@@ -86,7 +96,6 @@ class HomeActivity : AppCompatActivity() {
         if (simplifiedModeApplied) return
 
         simplifiedModeApplied = true
-        binding.bottomAppBar.visibility = android.view.View.GONE
         navController.navigate(R.id.simplifiedReceivableListFragment)
     }
 
@@ -94,7 +103,6 @@ class HomeActivity : AppCompatActivity() {
         if (simplifiedModeApplied) return
 
         simplifiedModeApplied = true
-        binding.bottomAppBar.visibility = android.view.View.GONE
         navController.navigate(R.id.directCheckoutFragment)
     }
 

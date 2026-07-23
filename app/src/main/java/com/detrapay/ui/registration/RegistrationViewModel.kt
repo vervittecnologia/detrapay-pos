@@ -133,6 +133,8 @@ class RegistrationViewModel @Inject constructor(
                 )
             }.toMutableList()
         }
+        loadLoggedUser()
+        loadOrderScreenContent()
     }
 
     fun loggedUser(): LoggedInUser? {
@@ -165,7 +167,10 @@ class RegistrationViewModel @Inject constructor(
 
     fun loadOrderScreenContent() {
         Logger.d("RegistrationViewModel - loadScreenContent")
-        _orderInitialState.postValue(UIState.Loading())
+        val currentInitialState = _orderInitialState.value
+        if (currentInitialState !is UIState.Success) {
+            _orderInitialState.postValue(UIState.Loading())
+        }
         viewModelScope.launch(Dispatchers.IO) {
             val vehicleTypesDeferred = async { registrationRepository.loadVehicleTypes() }
             val salesmenDeferred = async { salesmanRepository.getSalesmen() }
@@ -188,36 +193,7 @@ class RegistrationViewModel @Inject constructor(
                     return@launch
                 }
                 salesmen = (salesmenResult as Result.Success).data
-                val initialState = if (inEditMode && firstInitialization) {
-                    RegistrationOrderInitialState(
-                        vehicleTypes = result.data,
-                        salesmen = salesmen,
-                        orderData = OrderData(
-                            cpfCnpj = order!!.customer.cpfCnpj,
-                            phone = order!!.customer.phoneNumber,
-                            name = order!!.customer.name,
-                            invoiceDate = order!!.billingDate,
-                            specialPlate = order!!.isVehicleSpecialPlate,
-                            disposalVehicle = order!!.isVehicleFinanced,
-                            vehicleType = order!!.vehicleType,
-                            vehiclePrice = "%,.2f".format(locale, order!!.vehiclePrice),
-                            salesmanId = order!!.salesman?.id
-                        )
-                    )
-                } else {
-                    RegistrationOrderInitialState(
-                        vehicleTypes = result.data,
-                        salesmen = salesmen,
-                        orderData = if (BuildConfig.DEBUG) {
-                            DebugOrderDefaults.createOrderData(
-                                vehicleTypes = result.data,
-                                salesmen = salesmen
-                            )
-                        } else {
-                            null
-                        }
-                    )
-                }
+                val initialState = buildOrderInitialState()
                 _orderInitialState.postValue(UIState.Success(initialState))
                 firstInitialization = false
             } else {
@@ -230,6 +206,39 @@ class RegistrationViewModel @Inject constructor(
                     )
                 )
             }
+        }
+    }
+
+    private fun buildOrderInitialState(): RegistrationOrderInitialState {
+        return if (inEditMode && firstInitialization) {
+            RegistrationOrderInitialState(
+                vehicleTypes = vehicleTypes,
+                salesmen = salesmen,
+                orderData = OrderData(
+                    cpfCnpj = order!!.customer.cpfCnpj,
+                    phone = order!!.customer.phoneNumber,
+                    name = order!!.customer.name,
+                    invoiceDate = order!!.billingDate,
+                    specialPlate = order!!.isVehicleSpecialPlate,
+                    disposalVehicle = order!!.isVehicleFinanced,
+                    vehicleType = order!!.vehicleType,
+                    vehiclePrice = "%,.2f".format(locale, order!!.vehiclePrice),
+                    salesmanId = order!!.salesman?.id
+                )
+            )
+        } else {
+            RegistrationOrderInitialState(
+                vehicleTypes = vehicleTypes,
+                salesmen = salesmen,
+                orderData = if (BuildConfig.DEBUG) {
+                    DebugOrderDefaults.createOrderData(
+                        vehicleTypes = vehicleTypes,
+                        salesmen = salesmen
+                    )
+                } else {
+                    null
+                }
+            )
         }
     }
 

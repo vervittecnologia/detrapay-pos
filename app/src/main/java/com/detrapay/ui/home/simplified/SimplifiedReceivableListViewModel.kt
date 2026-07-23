@@ -14,6 +14,7 @@ import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.remote.CalculateFeesResponse
 import com.detrapay.data.repositories.OrderRepository
 import com.detrapay.data.repositories.RegistrationRepository
+import com.detrapay.data.repositories.SalesmanRepository
 import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.PaymentTypeRules
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,6 +33,7 @@ data class DirectCheckoutPendingPayment(
 class SimplifiedReceivableListViewModel @Inject constructor(
     private val orderRepository: OrderRepository,
     private val registrationRepository: RegistrationRepository,
+    private val salesmanRepository: SalesmanRepository,
 ) : ViewModel() {
 
     private var paymentMethods: List<PaymentMethod> = emptyList()
@@ -238,6 +240,13 @@ class SimplifiedReceivableListViewModel @Inject constructor(
         val payment = (_pendingPaymentState.value as? UIState.Success)?.data
         _pendingPaymentState.value = UIState.Idle()
         return payment
+    }
+
+    fun prefetchRegistrationData() {
+        viewModelScope.launch(Dispatchers.IO) {
+            registrationRepository.loadVehicleTypes()
+            salesmanRepository.getSalesmen()
+        }
     }
 
     private fun resolvePaymentMethod(type: String, installments: Int): PaymentMethod? {
