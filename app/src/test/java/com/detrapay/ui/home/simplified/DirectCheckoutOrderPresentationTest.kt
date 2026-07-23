@@ -75,6 +75,20 @@ class DirectCheckoutOrderPresentationTest {
     }
 
     @Test
+    fun `seller status label uses settled and pending badges from balance`() {
+        val settled = order(
+            id = 11,
+            total = 100.0,
+            status = OrderStatus.PENDING,
+            receivables = listOf(receivable(amount = 100.0, status = OrderReceivableItemStatus.PAID)),
+        )
+        val pending = order(id = 12, total = 100.0, status = OrderStatus.PENDING)
+
+        assertEquals("Quitado", DirectCheckoutOrderPresentation.sellerStatusLabel(settled))
+        assertEquals("Pendente", DirectCheckoutOrderPresentation.sellerStatusLabel(pending))
+    }
+
+    @Test
     fun `created receivable returns only a distinguishably new matching receivable`() {
         val oldOrder = order(
             id = 9,
