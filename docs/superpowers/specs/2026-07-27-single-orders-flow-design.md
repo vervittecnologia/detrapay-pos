@@ -18,16 +18,20 @@ O fluxo canonico inicia na tela **Pedidos** e preserva as jornadas hoje acessive
 - Remover destinos, fragments, menus e recursos da Home antiga que nao sejam alcancaveis pelo fluxo atual.
 - Preservar as Activities e componentes usados pelas jornadas atuais de cadastro, detalhes, pagamento e relatorio.
 - Ajustar a entrada de pagamento para sempre iniciar em `R$ 0,00`, sem preencher automaticamente o saldo pendente.
+- Classificar meios de pagamento com uma unica propriedade, `PaymentMethod.isOnlinePayment`, originada de `is_online_payment` no `GET /payment-methods`.
+- Garantir que pagamentos online so sejam gravados e exibidos no pedido depois da aprovacao PagBank no device.
+- Registrar Credito Loja, Transferencia Pix e Dinheiro imediatamente apos a confirmacao do usuario, sem PagBank e sem tela de espera.
 - Atualizar testes e referencias para refletir o fluxo unico.
 - Validar compilacao, testes e execucao no device conectado.
 
 ### Fora de escopo
 
 - Redesenhar as telas atuais.
-- Alterar regras de negocio de pedidos ou pagamentos.
+- Alterar regras de negocio de pedidos ou pagamentos alem das regras de classificacao e persistencia explicitadas neste documento.
 - Migrar toda a navegacao para uma Activity Compose unica.
 - Criar compatibilidade visual ou comportamental com as Homes antigas.
 - Implementar workaround para eventual ausencia de dados ou contratos do backend.
+- Remover ou alterar de forma incompativel campos, modelos ou endpoints do backend ja usados pelas versoes em producao. Este documento exige evolucao aditiva e retrocompativel.
 
 ## Arquitetura
 
@@ -86,7 +90,57 @@ A lista de Pedidos continua vindo do repositorio atual. Atualizacao manual, load
 
 Ao iniciar um pagamento, `paymentDigits` sera vazio e o valor principal exibido sera `R$ 0,00`. O saldo pendente sera calculado separadamente e usado somente na dica formada por `Valor pendente:` mais o saldo formatado e no atalho `Usar valor pendente`. Esse atalho preenchera `paymentDigits` com o saldo atual; ele nunca sera acionado automaticamente. O botao `Pagar` permanecera desabilitado enquanto o valor principal for zero.
 
-Os dados de pagamento, parcelas e pagamentos pendentes continuam usando os repositorios e ViewModels existentes. Renomeacoes nao alterarao endpoints, payloads ou contratos.
+Os dados de leitura de pedidos e de simulacao de parcelas continuam usando os repositorios e ViewModels existentes. A escrita de pagamentos da nova versao adotara o contrato atomico descrito abaixo. Esse contrato deve ser aditivo: os endpoints atuais que exigem um recebivel pendente permanecem disponiveis para as versoes do app ja instaladas, mas nao serao usados pelo novo fluxo.
+
+### Classificacao unica dos meios de pagamento
+
+`PaymentMethod` tera uma unica propriedade de classificacao:
+
+```kotlin
+val isOnlinePayment: Boolean
+```
+
+Ela sera desserializada exclusivamente de `is_online_payment`. O app nao adicionara nem usara `requiresTerminal`, `allowsManualConfirmation`, `paymentGateway` ou outra propriedade paralela para escolher o fluxo. Essa eliminacao vale para o modelo de decisao Android: os campos do contrato backend usados por versoes ja publicadas nao serao removidos de forma destrutiva.
+
+- `isOnlinePayment == true`: Pagamento online. Inclui Credito, Debito e Pix. Exige aprovacao PagBank no device.
+- `isOnlinePayment == false`: Pagamento apenas para registro. Inclui Credito Loja (`store_credit`), Transferencia Pix (`pix_manual`) e Dinheiro (`cash`/`dinheiro`).
+
+A tela de meios de pagamento recebera e selecionara o objeto `PaymentMethod` completo. Isso preserva o `id`, o parcelamento e `isOnlinePayment`, e impede que Pix (`pix`) seja confundido com Transferencia Pix (`pix_manual`).
+
+### Persistencia de pagamentos
+
+Para pagamentos online:
+
+1. O usuario confirma valor, meio e parcela no app.
+2. O app inicia PagBank sem criar recebivel no pedido.
+3. Falha, cancelamento, timeout ou retorno diferente de aprovado encerra a tentativa sem gravar qualquer recebivel.
+4. Somente depois da aprovacao PagBank o app envia os dados da transacao para o backend.
+5. O backend grava atomicamente o recebivel ja aprovado e devolve o pedido atualizado.
+
+Credito, Debito e Pix nunca podem aparecer com status `PENDING`. Nao sera permitido criar um recebivel pendente e depois tentar remove-lo em caso de falha.
+
+Para pagamentos apenas de registro:
+
+1. O usuario confirma Credito Loja, Transferencia Pix ou Dinheiro.
+2. O app nao chama PagBank e nao navega para `WaitingScreen`.
+3. O backend grava atomicamente o pagamento confirmado.
+4. O app exibe sucesso e atualiza Pedidos.
+
+### Pre-requisito de backend
+
+O contrato atual nao permite cumprir a persistencia acima: `POST /orders/{id}/receivables` cria um recebivel antes da aprovacao; `POST /receivables/{id}/confirm-payment`, `POST /receivables/{id}/generate-pix` e `POST /update-split-config` dependem desse recebivel ja persistido.
+
+Antes da implementacao Android, o backend deve fornecer um fluxo novo, aditivo e retrocompativel que:
+
+- Inicie/configure Credito, Debito ou Pix sem anexar um recebivel pendente ao pedido.
+- Receba o resultado PagBank aprovado e crie atomicamente um recebivel final, nunca `PENDING`.
+- Registre atomicamente Credito Loja, Transferencia Pix e Dinheiro como pagamentos confirmados.
+- Retorne o pedido atualizado depois do registro final.
+- Corrija `GET /payment-methods`: todos os parcelamentos de Credito, incluindo 13x a 18x, Debito e Pix devem retornar `is_online_payment=true`; Credito Loja, Transferencia Pix e Dinheiro devem retornar `false`.
+- Preserve os campos, modelos e endpoints atuais para que as versoes do app em producao continuem funcionando durante a migracao.
+- Valide os consumidores antes de corrigir valores do catalogo compartilhado. Se a correcao puder alterar de forma insegura outro cliente publicado, forneca a semantica correta por contrato versionado ou escopo de cliente, preservando a resposta legada onde necessario.
+
+O rollout deve ocorrer em duas etapas: primeiro publicar e validar o contrato aditivo no backend sem remover o contrato antigo; somente depois liberar a nova versao Android. Sem esse contrato, o app deve parar a implementacao do fluxo online e solicitar o ajuste do backend. Nao sera aceito criar e apagar recebiveis pendentes como compensacao.
 
 ## Tratamento de erros
 
@@ -94,6 +148,9 @@ Os dados de pagamento, parcelas e pagamentos pendentes continuam usando os repos
 - Falhas de simulacao, parcelas e pagamento continuam seguindo os efeitos e mensagens existentes.
 - Sessao expirada continua encaminhando o usuario para o fluxo de autenticacao.
 - Dados ou contratos ausentes no backend nao serao mascarados no app. O problema devera ser descrito objetivamente para ajuste do endpoint correspondente.
+- Se `is_online_payment` estiver ausente, o catalogo falhara com erro de configuracao; o app nunca inferira o fluxo pelo nome/tipo nem fara fallback de online para registro manual. A consistencia da matriz de valores sera validada no contrato backend, nao por uma segunda regra de classificacao no app.
+- Falha ou cancelamento PagBank nao produz escrita no pedido.
+- Falha ao registrar um meio manual permanece na tela de confirmacao com erro e sem abrir `WaitingScreen`.
 - A remocao de destinos antigos deve falhar em compilacao ou teste caso ainda exista alguma referencia, impedindo uma remocao parcial silenciosa.
 
 ## Estrategia de migracao
@@ -145,14 +202,20 @@ O plano de implementacao devera repetir este mapa e estes wireframes como refere
                               v
                     [Forma de pagamento]
                        |      |      |
-                       |      |      +--> Pix / manual
-                       |      +---------> Debito
-                       +----------------> Credito --> [Parcelas]
+                       |      |      +--> Pix online
+                       |      +---------> Debito online
+                       +----------------> Credito online --> [Parcelas]
                                               |
                                               v
-                                      [Aguardando/resultado]
+                                      [PagBank/resultado]
                                               |
                                               +--> volta para Pedidos
+
+[Forma de pagamento]
+          |
+          +--> Credito Loja / Transferencia Pix / Dinheiro
+                         |
+                         +--> confirmar registro --> Pedidos
 ```
 
 ### Pedidos
@@ -220,15 +283,15 @@ Ao tocar no botao flutuante:
 |                       |  |                       |
 | DIGITE O VALOR        |  | Escolha a forma      |
 | R$ 0,00               |  | de pagamento         |
-| Pedido #544           |  |                       |
+| Pedido #544           |  | Pagamentos online    |
 | Valor pendente:       |  | [ Credito           ] |
 | R$ 2.570,18           |  | [ Debito            ] |
 | [Usar valor pendente] |  | [ Pix               ] |
-| [1] [2] [3]           |  |                       |
-| [4] [5] [6]           |  |                       |
+| [1] [2] [3]           |  | Pagamentos p/ registro|
+| [4] [5] [6]           |  | [Transf.Pix][Loja][$]|
 | [7] [8] [9]           |  |                       |
-| [,] [0] [apagar]      |  | Outras formas        |
-|                       |  | [Pix] [Loja] [Dinheiro]|
+| [,] [0] [apagar]      |  |                       |
+|                       |  |                       |
 | [   Pagar (inativo) ] |  |                       |
 +-----------------------+  +-----------------------+
 ```
@@ -291,6 +354,8 @@ Para Pix, o estado de resultado substitui a area de status pelo codigo gerado, c
 - Pedido pendente: abrir `#544`, confirmar `Resumo financeiro` e o botao `Pagar`, entrar com `R$ 0,00`, digitar `R$ 1.000,00`, escolher credito e selecionar uma parcela; ao concluir, voltar para Pedidos e atualizar os totais.
 - Atalho de saldo: abrir `#544`, confirmar a dica `Valor pendente: R$ 2.570,18`, tocar em `Usar valor pendente` e verificar que somente entao o valor principal muda de `R$ 0,00` para `R$ 2.570,18`.
 - Pix: informar um valor, escolher Pix, gerar o codigo, copiar e voltar para Pedidos sem perder a navegacao raiz.
+- PagBank recusado: tentar Credito, Debito ou Pix e simular falha/cancelamento; confirmar que nenhum pagamento foi salvo ou exibido no pedido.
+- Pagamento para registro: confirmar Credito Loja, Transferencia Pix (`pix_manual`) e Dinheiro; confirmar que nenhum deles abre PagBank ou `WaitingScreen` e que o pedido e atualizado logo apos o registro.
 - Novo pedido: abrir o menu `+`, entrar em `RegistrationActivity`, concluir ou cancelar e retornar para a lista canonica.
 - Simulacao: abrir o menu `+`, consultar parcelas para `R$ 2.570,18`, selecionar uma opcao e testar copiar/compartilhar.
 - Busca: pesquisar por numero, cliente ou CPF/CNPJ e limpar o filtro sem alterar os dados carregados.
@@ -298,6 +363,9 @@ Para Pix, o estado de resultado substitui a area de status pelo codigo gerado, c
 ## Testes e verificacao
 
 - Testes unitarios das regras de apresentacao de pedidos e roteamento de pagamentos continuarao cobrindo o comportamento atual com nomes atualizados.
+- Testes de `PaymentMethod` e roteamento comprovarao que somente `isOnlinePayment` decide entre PagBank e registro imediato.
+- Testes do fluxo online comprovarao que falha/cancelamento PagBank executa zero chamadas de persistencia e que a persistencia ocorre uma unica vez depois da aprovacao.
+- Testes do fluxo manual comprovarao que `store_credit`, `pix_manual` e `cash` nao chamam PagBank nem entram em `WaitingScreen`.
 - Testes de repositorio e sessao serao ajustados para comprovar que nenhum modo e armazenado ou devolvido.
 - O grafo sera verificado para garantir que Pedidos e o destino inicial e que os destinos removidos nao possuem referencias.
 - Uma busca global devera confirmar que nao restam conceitos funcionais de `simplified`, `direct_checkout`, `SellerAppMode`, `HomeModeRouter` ou equivalentes. Referencias historicas em documentos antigos podem permanecer apenas quando claramente identificadas como historico.
@@ -319,5 +387,9 @@ Para Pix, o estado de resultado substitui a area de status pelo codigo gerado, c
 - Para pedidos com saldo pendente, Detalhes exibe `Resumo financeiro` e um botao `Pagar` sem valor embutido.
 - Todo novo pagamento inicia em `R$ 0,00`; o saldo pendente aparece apenas como dica e pode ser aplicado pelo atalho `Usar valor pendente`.
 - `Pagar` fica desabilitado em zero e habilita somente para um valor digitado ou aplicado pelo atalho.
+- A UI agrupa `isOnlinePayment=true` como `Pagamentos online` e distingue Pix de Transferencia Pix.
+- Credito, Debito e Pix so aparecem no pedido depois de aprovados pelo PagBank e nunca possuem status `PENDING`.
+- Credito Loja, Transferencia Pix e Dinheiro sao gravados ao confirmar, sem PagBank e sem tela de espera.
+- `PaymentMethod.isOnlinePayment` e a unica propriedade de classificacao usada pelo app.
 - Fora desse ajuste explicito de entrada de pagamento, o comportamento visual e as regras de negocio das telas atuais permanecem inalterados.
 - Build, testes relevantes, instalacao e verificacao de logs concluem sem falhas introduzidas pela migracao.

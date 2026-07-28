@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make the current Pedidos experience the only supported Home flow, removing all application-mode concepts, legacy Home surfaces, and mode-specific naming without changing current order or payment behavior.
+**Goal:** Make the current Pedidos experience the only supported Home flow, remove all application-mode concepts and legacy Home surfaces, and enforce the approved online-versus-record-only payment persistence rules.
 
-**Architecture:** `HomeActivity` remains the Android host and loads shared company state, while `OrdersFragment` becomes the navigation graph start destination. The canonical `com.detrapay.ui.home.orders` package owns the Compose route, immutable flow contract, reducer, payment routing, ViewModel, presentation rules, screens, and Android effects.
+**Architecture:** `HomeActivity` remains the Android host and loads shared company state, while `OrdersFragment` becomes the navigation graph start destination. The canonical `com.detrapay.ui.home.orders` package owns the Compose route, immutable flow contract, reducer, payment routing, ViewModel, presentation rules, screens, and Android effects. `PaymentMethod.isOnlinePayment`, mapped only from `is_online_payment`, is the sole classification property used to choose PagBank or immediate record-only persistence.
 
 **Tech Stack:** Kotlin 2.1.10, Android SDK 35, XML Navigation 2.8.9, Jetpack Compose Material 3, Hilt 2.57.1, LiveData/coroutines, JUnit 4, MockK, Gradle wrapper, ADB.
 
@@ -17,7 +17,14 @@
 - Support exactly one Home surface: Pedidos.
 - Do not select, persist, normalize, or branch on `complete`, `simplified`, `direct_checkout`, or any equivalent mode.
 - Preserve new-order, detail, payment, installment simulation, refresh, search, report, and logout journeys reachable from Pedidos.
-- Keep existing backend endpoints and payload behavior unchanged.
+- Add exactly one payment-flow classification property to the Android domain model: non-null `PaymentMethod.isOnlinePayment`. Do not add or route on `requiresTerminal`, `allowsManualConfirmation`, `paymentGateway`, `shouldPersistInMemory`, or any equivalent parallel flag.
+- Do not remove or incompatibly change any backend field, model, payload, or endpoint consumed by released app versions. The backend payment contract must evolve additively and remain backward compatible throughout rollout.
+- The removal of parallel classification properties applies to the Android decision model and routing code, not to destructive removal of backend response fields. Existing backend properties may remain in the wire contract for older clients; the new Android domain simply does not depend on them.
+- Label and group `isOnlinePayment == true` methods as `Pagamentos online`; Credit, Debit, and Pix use PagBank on the device and are persisted only after approval.
+- Credit, Debit, and Pix must never be persisted or displayed with status `PENDING`. Cancellation, decline, timeout, or SDK failure performs zero payment-persistence calls.
+- Treat `isOnlinePayment == false` methods as record-only payments. Store Credit (`store_credit`), Pix Transfer (`pix_manual`), and Cash (`cash`/`dinheiro`) are persisted immediately after user confirmation, never invoke PagBank, and never enter `WaitingScreen`.
+- Keep Pix (`pix`) and Pix Transfer (`pix_manual`) distinct throughout model, selection, routing, and persistence.
+- Preserve existing order-read and installment-simulation contracts. The new app uses the new additive payment-write contract only after its backend gate is satisfied; released app versions may continue using the retained legacy endpoints.
 - Do not hide missing backend fields or contracts with an app workaround; report the affected endpoint, missing field, expected contract, and UI impact.
 - Use TDD for each behavior-bearing task and keep commits atomic.
 - After every install on the connected device, open the app and inspect logs filtered for `com.detrapay`, `AndroidRuntime`, and `FATAL EXCEPTION`.
@@ -52,15 +59,22 @@ These wireframes preserve the current device screens. They are acceptance refere
                                                   |
                                                   v
                                         [Forma de pagamento]
-                                           |      |      |
-                                           |      |      +--> Pix/manual
-                                           |      +---------> Debito
-                                           +----------------> Credito --> [Parcelas]
-                                                                  |
-                                                                  v
-                                                        [Aguardando/resultado]
-                                                                  |
-                                                                  +--> Pedidos
+                                           |              |
+                         [Pagamentos online]              [Pagamentos para registro]
+                          |       |       |                  |       |       |
+                       Credito  Debito   Pix             Credito  Transf.  Dinheiro
+                          |       |       |              Loja     Pix
+                          +-------+-------+                  |       |       |
+                                  |                          +-------+-------+
+                                  v                                  |
+                        [PagBank/resultado]                    [Confirmar]
+                                  |                                  |
+                       aprovado: gravar uma vez              gravar imediatamente
+                       falha: nao gravar                             |
+                                  +---------------+------------------+
+                                                  |
+                                                  v
+                                               Pedidos
 ```
 
 ```text
@@ -106,13 +120,13 @@ These wireframes preserve the current device screens. They are acceptance refere
 | [<] PAGAMENTO         |  | [<] R$ 1.000,00       |
 | DIGITE O VALOR        |  | Escolha a forma      |
 | R$ 0,00               |  | de pagamento         |
-| Pedido #544           |  |                       |
+| Pedido #544           |  | Pagamentos online    |
 | Valor pendente:       |  | [ Credito           ] |
 | R$ 2.570,18           |  | [ Debito            ] |
 | [Usar valor pendente] |  | [ Pix               ] |
-| [1] [2] [3]           |  |                       |
-| [4] [5] [6]           |  | Outras formas        |
-| [7] [8] [9]           |  | [Pix] [Loja] [Dinheiro]|
+| [1] [2] [3]           |  | Pagamentos p/ registro|
+| [4] [5] [6]           |  | [Transf.Pix][Loja][$]|
+| [7] [8] [9]           |  |                       |
 | [,] [0] [apagar]      |  |                       |
 | [   Pagar (inativo) ] |  |                       |
 +-----------------------+  +-----------------------+
@@ -138,6 +152,8 @@ Flow examples to verify during implementation:
 - Confirm `Valor pendente: R$ 2.570,18` is secondary information; tap `Usar valor pendente` and verify only that explicit action fills the primary amount.
 - Clear the amount back to zero and verify `Pagar` becomes disabled; enter `R$ 1.000,00`, continue with credit, select an installment, complete, and return to Pedidos.
 - Choose Pix, generate/copy its code, and return to Pedidos without losing the root navigation state.
+- Decline or cancel Credit, Debit, and Pix in the PagBank SDK; verify the order receives no new payment and never shows a pending online payment.
+- Confirm Store Credit, Pix Transfer, and Cash; verify each is recorded immediately without opening PagBank or `WaitingScreen`.
 - Open `+`, enter `RegistrationActivity`, cancel or finish, and return to the canonical list.
 - Open `+`, simulate `R$ 2.570,18`, select an installment, and exercise copy/share.
 - Search by order number, customer, and CPF/CNPJ, then clear the filter without mutating loaded data.
@@ -155,7 +171,7 @@ app/src/main/java/com/detrapay/ui/home/
     OrdersScreen.kt               Stateless Compose flow switch
     OrderFlowContract.kt          Flow state, step, action, effect, fee request target
     OrderFlowReducer.kt           Pure local state transitions
-    OrderPaymentRouter.kt         Terminal versus manual payment routing
+    OrderPaymentRouter.kt         Online versus record-only routing from isOnlinePayment
     OrdersViewModel.kt            Orders, methods, fees, and payment mutations
     OrderPresentation.kt          Pure formatting and order/payment presentation rules
     OrderPreviewFixtures.kt       Compose preview fixtures
@@ -175,6 +191,65 @@ app/src/main/java/com/detrapay/ui/home/
 ```
 
 The following production packages are removed completely: `ui.home.registration`, `ui.home.order_list`, `ui.home.profile`, `ui.home.payment_history`, `ui.home.simplified`, `ui.home.direct_checkout`, and `ui.notification`.
+
+---
+
+### Task 0: Satisfy the backward-compatible backend gate
+
+**Scope:** Backend coordination and contract verification only. Do not change Android payment behavior in this task and do not remove or mutate any production backend contract.
+
+**Current incompatibility:** The installed app creates an order receivable through `POST /orders/{id}/receivables` before PagBank approval. Card completion then uses `POST /update-split-config` and `POST /receivables/{id}/confirm-payment`; Pix uses `POST /receivables/{id}/generate-pix`. Because all of these paths depend on a persisted receivable, they cannot guarantee that Credit, Debit, and Pix never exist as `PENDING`.
+
+**Required additive contract:**
+
+- Keep every current endpoint and payload available for released app versions during and after the rollout.
+- Keep current backend model fields, including any legacy classification or gateway metadata, while older clients may depend on them. The new Android model maps only `is_online_payment` for flow selection.
+- Add a new operation that can prepare an online Credit, Debit, or Pix attempt without attaching a receivable to the order.
+- Add a new idempotent operation that accepts an approved PagBank transaction and atomically creates the final approved/paid receivable, returning the updated order. Repeating the same PagBank transaction must not duplicate the payment.
+- Add or expose an idempotent operation that atomically records Store Credit, Pix Transfer, or Cash as confirmed and returns the updated order.
+- Do not implement create-then-delete compensation for rejected online payments.
+- Publish the exact new endpoint paths, request DTOs, response DTOs, idempotency key, authentication, and error semantics before Android implementation begins. The Android service/repository files in Tasks 2 and 3 must use that published contract rather than guessed names.
+- Keep `GET /payment-methods` backward compatible and return a reliable `is_online_payment` value: `true` for all Credit installments (including 13x-18x), Debit, and Pix; `false` for Store Credit, Pix Transfer (`pix_manual`), and Cash.
+- Before correcting shared catalog values, run contract/consumer tests for every production client known to use them. If a released client would change behavior unsafely, expose the corrected catalog through an additive versioned/client-scoped contract and retain the legacy response for that client.
+
+- [ ] **Step 1: Verify the existing production contract is retained**
+
+Capture contract tests or API evidence that the current receivable, confirm-payment, generate-pix, and split-config endpoints still accept the payloads used by released Android versions.
+
+Expected: no removed field, renamed field, changed requiredness, removed endpoint, or incompatible response shape.
+
+- [ ] **Step 2: Verify the new atomic operations in a non-production environment**
+
+Exercise all paths with a unique external transaction/idempotency key:
+
+```text
+online approved  -> one final approved/paid receivable; updated order returned
+same approval x2 -> still one receivable
+online declined  -> zero receivables created
+online cancelled -> zero receivables created
+store_credit     -> one confirmed record; no PagBank dependency
+pix_manual       -> one confirmed record; no PagBank dependency
+cash             -> one confirmed record; no PagBank dependency
+```
+
+- [ ] **Step 3: Verify the payment-method catalog**
+
+Expected matrix:
+
+```text
+credit 1x-18x  is_online_payment=true
+debit          is_online_payment=true
+pix            is_online_payment=true
+store_credit   is_online_payment=false
+pix_manual     is_online_payment=false
+cash/dinheiro  is_online_payment=false
+```
+
+- [ ] **Step 4: Approve the deployment gate**
+
+Deploy the additive backend contract first, run smoke tests for both the released app contract and the new atomic contract, and record the published endpoint/DTO details in this plan before implementing Android network calls.
+
+Expected: old Android versions remain operational. If any check fails or the exact new contract is not published, stop; do not implement a client workaround and do not release the new Android flow.
 
 ---
 
@@ -399,6 +474,12 @@ git commit -m "refactor: remove seller app modes"
 ### Task 2: Canonicalize order presentation and ViewModel support
 
 **Files:**
+- Modify: `app/src/main/java/com/detrapay/data/model/PaymentMethod.kt`
+- Modify: `app/src/main/java/com/detrapay/data/model/remote/PaymentMethodResponse.kt`
+- Modify: `app/src/main/java/com/detrapay/data/repositories/RegistrationRepository.kt`
+- Modify: `app/src/main/java/com/detrapay/ui/util/PaymentTypeRules.kt`
+- Modify: `app/src/test/java/com/detrapay/data/repositories/RegistrationRepositoryTest.kt`
+- Modify: `app/src/test/java/com/detrapay/ui/util/PaymentTypeRulesTest.kt`
 - Create: `app/src/main/java/com/detrapay/ui/home/orders/OrderPresentation.kt`
 - Create: `app/src/main/java/com/detrapay/ui/home/orders/OrdersViewModel.kt`
 - Create: `app/src/test/java/com/detrapay/ui/home/orders/OrderPresentationTest.kt`
@@ -408,8 +489,43 @@ git commit -m "refactor: remove seller app modes"
 - Delete: `app/src/test/java/com/detrapay/ui/home/simplified/DirectCheckoutOrderPresentationTest.kt`
 
 **Interfaces:**
-- Consumes: `OrderRepository`, `RegistrationRepository`, `SalesmanRepository`, `PaymentTypeRules`, and `OrderPaymentTotals`.
-- Produces: `OrderPresentation`, `OrdersViewModel`, `PendingOrderPayment`, `OrderSummary`, `SellerCardSummary`, and `WaitingPresentation` under `com.detrapay.ui.home.orders`.
+- Consumes: the backward-compatible `GET /payment-methods`, the additive payment contract approved in Task 0, `OrderRepository`, `RegistrationRepository`, `SalesmanRepository`, `PaymentTypeRules`, and `OrderPaymentTotals`.
+- Produces: a domain `PaymentMethod` with one non-null routing property, plus `OrderPresentation`, `OrdersViewModel`, `OrderPaymentRequest`, `OrderSummary`, `SellerCardSummary`, and `WaitingPresentation` under `com.detrapay.ui.home.orders`.
+
+- [ ] **Step 0: Add failing tests for the single classification property**
+
+Extend `RegistrationRepositoryTest` to prove that `is_online_payment=true` and `false` are copied to the domain model and that a missing value returns a configuration error instead of silently becoming offline. Replace tests for `requiresTerminalApproval` and `shouldPersistInMemory` in `PaymentTypeRulesTest` with normalization-only coverage proving that `pix` remains `pix` and `pix_manual` remains `pix_manual`.
+
+Run:
+
+```powershell
+.\gradlew.bat testDebugUnitTest --tests "com.detrapay.data.repositories.RegistrationRepositoryTest" --tests "com.detrapay.ui.util.PaymentTypeRulesTest"
+```
+
+Expected: FAIL because the domain model does not expose `isOnlinePayment`, the repository ignores the field, and the obsolete routing helpers still exist.
+
+- [ ] **Step 0.1: Adjust the Android model and mapping without changing the backend response shape**
+
+Keep all existing response DTO fields so deserialization stays backward compatible. Keep `PaymentMethodResponse.isOnlinePayment` nullable only at the transport boundary to detect an absent field. Add exactly this routing property to the domain model:
+
+```kotlin
+data class PaymentMethod(
+    val id: Int,
+    val name: String,
+    val installments: Int,
+    val interestTax: Double?,
+    val paymentType: String? = null,
+    val isOnlinePayment: Boolean,
+) : Serializable
+```
+
+In `RegistrationRepository.loadPaymentMethods`, require `PaymentMethodResponse.isOnlinePayment` while mapping. If it is absent, return `Result.Error` identifying `GET /payment-methods`, the method id/name, and the missing `is_online_payment` field. Never default it to `false`.
+
+Remove `PaymentTypeRules.requiresTerminalApproval` and `PaymentTypeRules.shouldPersistInMemory`. Keep normalization and fee calculation helpers only; they must not decide online versus record-only routing. Add the explicit normalization alias for `pix_manual` without mapping it to `pix`.
+
+Update every `PaymentMethod(...)` construction in production fixtures and tests to provide `isOnlinePayment`, using the catalog semantics rather than inferring from the name.
+
+Run the two focused tests again. Expected: `BUILD SUCCESSFUL`.
 
 - [ ] **Step 1: Move the presentation test to the canonical package first**
 
@@ -489,14 +605,14 @@ There must be no overload that accepts `pendingAmount`; the pending balance is s
 
 - [ ] **Step 4: Create the canonical Orders ViewModel**
 
-Copy only the behavior used by the current Pedidos flow. Remove `receivableListState` and the old receivables-only `loadScreenContent`. Apply this exact public API:
+Copy only the behavior used by the current Pedidos flow. Remove `receivableListState`, the old receivables-only `loadScreenContent`, and the create-pending-then-confirm API. An order payment request is local and contains no persisted receivable:
 
 ```kotlin
-data class PendingOrderPayment(
+data class OrderPaymentRequest(
     val order: Order,
-    val receivable: OrderReceivableItem,
-    val paymentType: String,
+    val paymentMethod: PaymentMethod,
     val amount: Double,
+    val installments: Int,
 )
 
 @HiltViewModel
@@ -508,36 +624,34 @@ class OrdersViewModel @Inject constructor(
     val orderListState: LiveData<UIState<List<Order>>>
     val paymentMethodsState: LiveData<UIState<List<PaymentMethod>>>
     val calculateFeesState: LiveData<UIState<CalculateFeesResponse>>
-    val pendingPaymentState: LiveData<UIState<PendingOrderPayment>>
-    val manualPaymentState: LiveData<UIState<Order>>
+    val paymentRecordState: LiveData<UIState<Order>>
 
     fun loadOrders(forceRefresh: Boolean = false)
     fun loadPaymentMethods(forceRefresh: Boolean = false)
-    fun availablePaymentTypes(): List<String>
+    fun availablePaymentMethods(): List<PaymentMethod>
     fun calculateFees(value: Double, paymentType: String)
     fun clearFeesState()
-    fun addPendingPayment(order: Order, paymentType: String, amount: Double, installments: Int)
-    fun confirmManualPayment(pendingPayment: PendingOrderPayment, paymentData: PaymentData)
+    fun recordApprovedOnlinePayment(request: OrderPaymentRequest, approval: PaymentData)
+    fun recordOfflinePayment(request: OrderPaymentRequest)
     fun clearPaymentState()
-    fun consumePendingPayment(): PendingOrderPayment?
     fun prefetchRegistrationData()
 }
 ```
+
+`recordApprovedOnlinePayment` and `recordOfflinePayment` use the exact additive repository operations published and approved in Task 0. Neither method may call `addPendingReceivable`. The online method is reachable only after PagBank approval; the offline method is reachable only after the user confirms a method with `isOnlinePayment == false`.
 
 The implementation is the existing ViewModel logic with these exact symbol changes:
 
 ```text
 SimplifiedReceivableListViewModel       -> OrdersViewModel
-DirectCheckoutPendingPayment            -> PendingOrderPayment
 directOrderListState                    -> orderListState
 _directOrderListState                   -> _orderListState
 loadDirectCheckoutOrders                -> loadOrders
-addDirectCheckoutPendingPayment         -> addPendingPayment
-confirmDirectCheckoutManualPayment      -> confirmManualPayment
 clearDirectCheckoutPaymentState         -> clearPaymentState
-consumeDirectCheckoutPendingPayment     -> consumePendingPayment
 DirectCheckoutOrderPresentation         -> OrderPresentation
 ```
+
+Do not mechanically copy `addDirectCheckoutPendingPayment`, `confirmDirectCheckoutManualPayment`, or `consumeDirectCheckoutPendingPayment`; replace those behaviors with the two atomic recording methods above.
 
 - [ ] **Step 5: Bridge current consumers to the canonical support API**
 
@@ -549,7 +663,7 @@ com.detrapay.ui.home.simplified.DirectCheckoutOrderPresentation
 com.detrapay.ui.home.simplified.SimplifiedReceivableListViewModel
   -> com.detrapay.ui.home.orders.OrdersViewModel
 com.detrapay.ui.home.simplified.DirectCheckoutPendingPayment
-  -> com.detrapay.ui.home.orders.PendingOrderPayment
+  -> com.detrapay.ui.home.orders.OrderPaymentRequest (local request only; no receivable)
 ```
 
 Apply the ViewModel method/property map from Step 4 to `DirectCheckoutFragment.kt` and `DirectCheckoutRoute.kt`.
@@ -557,7 +671,7 @@ Apply the ViewModel method/property map from Step 4 to `DirectCheckoutFragment.k
 - [ ] **Step 6: Run presentation tests and compile all current consumers**
 
 ```powershell
-.\gradlew.bat testDebugUnitTest --tests "com.detrapay.ui.home.orders.OrderPresentationTest"
+.\gradlew.bat testDebugUnitTest --tests "com.detrapay.data.repositories.RegistrationRepositoryTest" --tests "com.detrapay.ui.util.PaymentTypeRulesTest" --tests "com.detrapay.ui.home.orders.OrderPresentationTest"
 .\gradlew.bat compileDebugKotlin
 ```
 
@@ -586,6 +700,14 @@ git commit -m "refactor: name orders support code canonically"
 
 **Files:**
 - Create: all target files under `app/src/main/java/com/detrapay/ui/home/orders/` listed in Target file structure
+- Modify: `app/src/main/java/com/detrapay/data/api/DetrapayService.kt` using the exact additive contract approved in Task 0
+- Modify: `app/src/main/java/com/detrapay/data/datasources/remote/DetrapayRemoteDataSource.kt`
+- Modify: `app/src/main/java/com/detrapay/data/repositories/OrderRepository.kt`
+- Modify: `app/src/main/java/com/detrapay/ui/payment/PaymentDialogViewModel.kt`
+- Modify: corresponding request/response DTO files named by the published backend contract
+- Modify: `app/src/test/java/com/detrapay/data/datasources/remote/DetrapayRemoteDataSourceTest.kt`
+- Modify: `app/src/test/java/com/detrapay/data/repositories/OrderRepositoryTest.kt`
+- Modify: `app/src/test/java/com/detrapay/ui/payment/PaymentDialogViewModelTest.kt`
 - Create: `app/src/test/java/com/detrapay/ui/home/HomeNavigationContractTest.kt`
 - Create: `app/src/test/java/com/detrapay/ui/home/orders/OrderFlowReducerTest.kt`
 - Create: `app/src/test/java/com/detrapay/ui/home/orders/OrderPaymentRouterTest.kt`
@@ -600,7 +722,7 @@ git commit -m "refactor: name orders support code canonically"
 - Delete: `app/src/main/res/layout/direct_checkout_order_list_item.xml`
 
 **Interfaces:**
-- Consumes: `OrdersViewModel`, `OrderPresentation`, `HomeViewModel`, and `PaymentDialogViewModel`.
+- Consumes: `OrdersViewModel`, `OrderPresentation`, `HomeViewModel`, `PaymentDialogViewModel`, and the additive atomic payment operations approved in Task 0.
 - Produces: `OrdersFragment`, `OrdersRoute`, `OrdersScreen`, `OrderFlowContract`, `OrderFlowReducer`, `OrderPaymentRouter`, and `ordersFragment` as the Home start destination.
 
 - [ ] **Step 1: Add the failing Home navigation contract test**
@@ -647,7 +769,7 @@ DirectCheckoutPaymentRouterTest      -> OrderPaymentRouterTest
 DirectCheckoutPaymentRouter          -> OrderPaymentRouter
 DirectCheckoutPaymentRoute           -> OrderPaymentRoute
 TestDirectCheckoutFixtures           -> TestOrderFixtures
-DirectCheckoutPendingPayment         -> PendingOrderPayment
+DirectCheckoutPendingPayment         -> OrderPaymentRequest
 ```
 
 Replace the old auto-filled start-payment test and add the explicit shortcut test:
@@ -675,6 +797,29 @@ fun `pending balance is filled only by explicit shortcut`() {
 }
 ```
 
+Replace type-name routing assertions with property-based cases. Use deliberately misleading names to prove that only the property decides:
+
+```kotlin
+@Test
+fun `true is online regardless of payment type text`() {
+    val request = paymentRequest(method = paymentMethod(paymentType = "cash", isOnlinePayment = true))
+    assertTrue(OrderPaymentRouter.routeFor(request) is OrderPaymentRoute.Online)
+}
+
+@Test
+fun `false is record only regardless of payment type text`() {
+    val request = paymentRequest(method = paymentMethod(paymentType = "credit", isOnlinePayment = false))
+    assertTrue(OrderPaymentRouter.routeFor(request) is OrderPaymentRoute.RecordOnly)
+}
+```
+
+Add `PaymentDialogViewModelTest` cases before production changes:
+
+- Credit, Debit, and Pix cancellation/decline/timeout call the PagBank adapter but execute zero repository persistence calls.
+- Credit, Debit, and Pix approval execute exactly one atomic approved-payment call using the PagBank transaction id as idempotency key.
+- Pix uses the PagBank SDK (`PlugPag.TYPE_PIX`) and never calls the legacy backend-generated Pix endpoint.
+- A record-only request never reaches `PaymentDialogViewModel`.
+
 - [ ] **Step 3: Run the new tests and verify both navigation and symbols fail**
 
 ```powershell
@@ -696,7 +841,7 @@ data class OrderFlowLocalState(
     val step: OrderFlowStep = OrderFlowStep.Orders,
     val selectedOrder: Order? = null,
     val paymentDigits: String = "",
-    val selectedPaymentType: String = "",
+    val selectedPaymentMethod: PaymentMethod? = null,
     val selectedInstallment: Int = 1,
     val creditInstallments: List<InstallmentFee> = emptyList(),
     val feesLoading: Boolean = false,
@@ -709,7 +854,7 @@ data class OrderFlowLocalState(
     val simulatorError: String? = null,
     val feeRequestTarget: OrderFeeRequestTarget? = null,
     val feeRequestInFlight: Boolean = false,
-    val activePendingPayment: PendingOrderPayment? = null,
+    val activePaymentRequest: OrderPaymentRequest? = null,
 )
 
 data class OrdersUiState(
@@ -719,7 +864,7 @@ data class OrdersUiState(
     val isLoading: Boolean,
     val isRefreshing: Boolean = false,
     val errorMessage: String?,
-    val availablePaymentTypes: List<String>,
+    val availablePaymentMethods: List<PaymentMethod>,
     val local: OrderFlowLocalState,
     val inPagePaymentState: UIState<PaymentData> = UIState.Idle(),
 )
@@ -734,7 +879,7 @@ sealed interface OrderFlowAction {
     data class Key(val value: String) : OrderFlowAction
     data object UsePendingAmount : OrderFlowAction
     data object OpenMethods : OrderFlowAction
-    data class SelectPaymentType(val paymentType: String) : OrderFlowAction
+    data class SelectPaymentMethod(val paymentMethod: PaymentMethod) : OrderFlowAction
     data class SelectInstallment(val installment: Int) : OrderFlowAction
     data object ContinueCredit : OrderFlowAction
     data object ContinueDebit : OrderFlowAction
@@ -753,10 +898,7 @@ sealed interface OrderFlowAction {
 sealed interface OrderFlowEffect {
     data object ShowLogoutConfirmation : OrderFlowEffect
     data object NavigateToRegistration : OrderFlowEffect
-    data class ConfirmManualPayment(
-        val pendingPayment: PendingOrderPayment,
-        val paymentData: PaymentData,
-    ) : OrderFlowEffect
+    data class ConfirmRecordOnlyPayment(val request: OrderPaymentRequest) : OrderFlowEffect
     data class CopyPaymentText(val text: String) : OrderFlowEffect
     data class CopySimulatorText(val text: String) : OrderFlowEffect
     data class ShareSimulatorText(val text: String) : OrderFlowEffect
@@ -767,7 +909,7 @@ sealed interface OrderFlowEffect {
 
 - [ ] **Step 5: Move the remaining production flow using the exact rename map**
 
-Create target files, copy behavior byte-for-byte, update packages/imports, then delete the source files:
+Create target files, copy the current UI and non-payment behavior, update packages/imports, then delete the source files. Do not copy the old type-name routing or create-pending-then-confirm persistence behavior:
 
 ```text
 DirectCheckoutFragment.kt       -> OrdersFragment.kt / OrdersFragment
@@ -808,7 +950,7 @@ fun startPayment(state: OrderFlowLocalState, order: Order): OrderFlowLocalState 
     return state.copy(
         selectedOrder = order,
         paymentDigits = "",
-        selectedPaymentType = "",
+        selectedPaymentMethod = null,
         selectedInstallment = 1,
         creditInstallments = emptyList(),
         feesLoading = false,
@@ -824,6 +966,47 @@ fun usePendingAmount(state: OrderFlowLocalState, order: Order): OrderFlowLocalSt
     return state.copy(paymentDigits = (pendingAmount * 100).roundToLong().toString())
 }
 ```
+
+Implement the router with no lookup by name or normalized type:
+
+```kotlin
+sealed interface OrderPaymentRoute {
+    data class Online(val request: OrderPaymentRequest) : OrderPaymentRoute
+    data class RecordOnly(val request: OrderPaymentRequest) : OrderPaymentRoute
+}
+
+object OrderPaymentRouter {
+    fun routeFor(request: OrderPaymentRequest): OrderPaymentRoute {
+        return if (request.paymentMethod.isOnlinePayment) {
+            OrderPaymentRoute.Online(request)
+        } else {
+            OrderPaymentRoute.RecordOnly(request)
+        }
+    }
+}
+```
+
+`MethodScreen` receives `List<PaymentMethod>` and emits the selected object, never only a `String`:
+
+```kotlin
+@Composable
+fun MethodScreen(
+    order: Order,
+    amount: Double,
+    paymentMethods: List<PaymentMethod>,
+    onBack: () -> Unit,
+    onSelectPaymentMethod: (PaymentMethod) -> Unit,
+)
+```
+
+Render `paymentMethods.filter { it.isOnlinePayment }` under `Pagamentos online` and the `false` group under `Pagamentos para registro`. Resolve visual labels from `paymentType`, but retain and submit the complete selected object. Pix must match only normalized `pix`; Pix Transfer must match only `pix_manual`. Never reuse the Pix object or type for Pix Transfer.
+
+When a method is selected, create an in-memory `OrderPaymentRequest`. Route it as follows:
+
+- `Online`: Credit may open installments; Credit, Debit, and Pix then enter the PagBank flow. `WaitingScreen` is allowed only while representing this active SDK operation/result. Do not call `addPendingReceivable`, legacy `generatePixCharge`, or any persistence API before approval.
+- `RecordOnly`: ask for the existing user confirmation and emit `ConfirmRecordOnlyPayment`. Call `OrdersViewModel.recordOfflinePayment` immediately after confirmation, show inline loading/error if needed, refresh from the returned order, and return to Pedidos. Do not invoke `PaymentDialogViewModel`, PagBank, or `WaitingScreen`.
+
+Adjust `PaymentDialogViewModel` to start PagBank from the local request instead of an `OrderReceivableItem`. Credit maps to the existing credit transaction type, Debit to the existing debit transaction type, and Pix to `PlugPag.TYPE_PIX`. On decline, cancellation, timeout, or SDK error, publish the failure result and make zero calls to payment persistence. On approval, pass the approved transaction and its stable transaction id to `recordApprovedOnlinePayment` exactly once. Only the backend response may add the final payment to the order; the client must not create a local `PENDING` item.
 
 In `OrdersRoute`, handle the shortcut and calculate payments only from entered digits:
 
@@ -958,7 +1141,7 @@ Update `OrdersFragment` to use these names. Remove all `direct_checkout_*` strin
 - [ ] **Step 8: Run canonical flow and navigation tests**
 
 ```powershell
-.\gradlew.bat testDebugUnitTest --tests "com.detrapay.ui.home.HomeNavigationContractTest" --tests "com.detrapay.ui.home.orders.OrderFlowReducerTest" --tests "com.detrapay.ui.home.orders.OrderPaymentRouterTest" --tests "com.detrapay.ui.home.orders.OrderPresentationTest"
+.\gradlew.bat testDebugUnitTest --tests "com.detrapay.ui.home.HomeNavigationContractTest" --tests "com.detrapay.ui.home.orders.OrderFlowReducerTest" --tests "com.detrapay.ui.home.orders.OrderPaymentRouterTest" --tests "com.detrapay.ui.home.orders.OrderPresentationTest" --tests "com.detrapay.ui.payment.PaymentDialogViewModelTest" --tests "com.detrapay.data.repositories.OrderRepositoryTest" --tests "com.detrapay.data.datasources.remote.DetrapayRemoteDataSourceTest"
 .\gradlew.bat compileDebugKotlin
 ```
 
@@ -1093,13 +1276,20 @@ git commit -m "refactor: remove legacy home surfaces"
 - Consumes: completed canonical flow from Tasks 1-4.
 - Produces: passing build/tests plus device and log evidence that Pedidos is the only Home.
 
+- [ ] **Step 0: Recheck the production-safety gate**
+
+Confirm that the additive backend contract from Task 0 is deployed, its legacy compatibility smoke tests pass, and no existing field/model/endpoint was removed or changed incompatibly. Confirm the new Android build targets only the published new payment operations.
+
+Expected: both released app versions and the new contract work. Otherwise stop the Android release.
+
 - [ ] **Step 1: Run the forbidden-token audit**
 
 ```powershell
 rg -n -i "direct[_ -]?checkout|simplified|SellerAppMode|HomeModeRouter|appMode|sellerAppMode|APP_MODE_" app/src/main app/src/test
+rg -n "requiresTerminalApproval|shouldPersistInMemory|allowsManualConfirmation|paymentGateway" app/src/main app/src/test
 ```
 
-Expected: exit code 1 and no matches.
+Expected: both commands exit with code 1 and no matches. `isOnlinePayment` is the only payment-flow classification property in the Android domain and routing code.
 
 - [ ] **Step 2: Confirm the Home graph contains only canonical destinations**
 
@@ -1154,10 +1344,15 @@ Using `android layout` for coordinates and `adb shell input tap`, verify without
 3. Tap `Pagar`; confirm the primary value is `R$ 0,00`, the hint is `Valor pendente: R$ 2.570,18`, and `Pagar` is disabled.
 4. Tap `Usar valor pendente`; confirm the primary value becomes `R$ 2.570,18` only after this action and `Pagar` becomes enabled.
 5. Delete the filled amount; confirm it returns to `R$ 0,00` and disables `Pagar`, then return to Pedidos.
-6. Open the + menu and confirm Novo Pedido and Simular Parcelas.
-7. Open the simulator, enter R$ 2.570,18, and close it.
-8. Open Novo Pedido and cancel/back to Pedidos.
-9. Confirm root back opens the logout confirmation.
+6. Enter a positive value and confirm the method screen groups Credit, Debit, and Pix under `Pagamentos online`.
+7. Confirm `Pagamentos para registro` contains distinct Store Credit, Pix Transfer, and Cash options; Pix Transfer must carry `pix_manual`, never `pix`.
+8. In an authorized test environment, decline/cancel each online PagBank type and verify the order API returns no new receivable and the detail never displays an online `PENDING` payment.
+9. In an authorized test environment, approve each online type and verify exactly one final approved/paid receivable appears after SDK approval.
+10. Confirm each record-only type and verify it saves immediately without PagBank or `WaitingScreen`.
+11. Open the + menu and confirm Novo Pedido and Simular Parcelas.
+12. Open the simulator, enter R$ 2.570,18, and close it.
+13. Open Novo Pedido and cancel/back to Pedidos.
+14. Confirm root back opens the logout confirmation.
 ```
 
 Expected: every transition follows the reference flow, returns to Pedidos, and never reveals an alternate Home.
