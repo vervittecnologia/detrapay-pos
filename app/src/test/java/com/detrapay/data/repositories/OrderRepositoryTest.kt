@@ -85,6 +85,17 @@ class OrderRepositoryTest {
     }
 
     @Test
+    fun `debug build skips payment attempt split config update`() = runTest {
+        val result = repository.updatePaymentAttemptSplitConfig(
+            attemptId = "attempt-1",
+            serial = "SER123",
+        )
+
+        assertTrue(result is Result.Success)
+        coVerify(exactly = 0) { remoteDataSource.updateSplitConfig(any()) }
+    }
+
+    @Test
     fun `getOrders parses summary contract response`() = runTest {
         coEvery { authRepository.getLoggedUser(false) } returns loggedUser()
         coEvery { remoteDataSource.getOrders(37, 35) } returns Result.Success(

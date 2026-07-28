@@ -660,6 +660,8 @@ class OrderRepository @Inject constructor(
     }
 
     suspend fun updatePaymentAttemptSplitConfig(attemptId: String, serial: String): Result<Unit> {
+        if (BuildConfig.DEBUG) return Result.Success(Unit)
+
         return detrapayRemoteDataSource.updateSplitConfig(
             SplitConfigRequest(
                 serial = serial,
