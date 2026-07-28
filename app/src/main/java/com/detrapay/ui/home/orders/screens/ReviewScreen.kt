@@ -32,6 +32,7 @@ import com.detrapay.ui.home.orders.components.SummaryRow
 fun ReviewScreen(
     paymentMethod: PaymentMethod,
     review: OrderPaymentReview,
+    isSubmitting: Boolean,
     onBack: () -> Unit,
     onConfirm: () -> Unit,
 ) {
@@ -66,10 +67,15 @@ fun ReviewScreen(
                 Button(
                     modifier = Modifier.fillMaxWidth().height(58.dp),
                     onClick = onConfirm,
+                    enabled = !isSubmitting,
                     shape = RoundedCornerShape(18.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = OrderFlowColors.Blue),
                 ) {
-                    Text("Confirmar pagamento", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        if (isSubmitting) "Registrando..." else "Confirmar pagamento",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
                 }
             }
         }

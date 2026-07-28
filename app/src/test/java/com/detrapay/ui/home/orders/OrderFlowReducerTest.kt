@@ -28,7 +28,7 @@ class OrderFlowReducerTest {
         assertEquals(OrderFlowStep.Method, state.step)
         assertEquals("", state.paymentDigits)
         assertNull(state.selectedPaymentMethod)
-        assertEquals(1, state.selectedInstallment)
+        assertNull(state.selectedInstallment)
         assertFalse(state.showSimulator)
     }
 
@@ -81,7 +81,7 @@ class OrderFlowReducerTest {
         val next = OrderFlowReducer.selectPaymentMethod(state, paymentMethod("credito", true))
 
         assertEquals("credito", next.selectedPaymentMethod?.paymentType)
-        assertEquals(1, next.selectedInstallment)
+        assertNull(next.selectedInstallment)
         assertEquals(OrderFlowStep.Amount, next.step)
         assertEquals("", next.paymentDigits)
         assertTrue(next.creditInstallments.isEmpty())
@@ -133,6 +133,8 @@ class OrderFlowReducerTest {
             "No installments",
         )
         assertEquals(OrderFlowStep.Installments, credit.step)
+        assertNull(credit.selectedInstallment)
+        assertEquals(OrderFlowStep.Installments, OrderFlowReducer.openInstallmentReview(credit).step)
 
         val pix = OrderFlowReducer.quoteLoaded(
             OrderFlowReducer.startCheckoutQuote(
@@ -371,7 +373,22 @@ class OrderFlowReducerTest {
         assertFalse(consumed.feeRequestInFlight)
         assertNull(consumed.feeRequestTarget)
         assertTrue(consumed.creditInstallments.isEmpty())
-        assertEquals(1, consumed.selectedInstallment)
+        assertNull(consumed.selectedInstallment)
+    }
+
+    @Test
+    fun `amount cannot change while checkout quote is loading`() {
+        val order = order(total = 200.0)
+        val loading = OrderFlowReducer.startCheckoutQuote(
+            OrderFlowLocalState(
+                step = OrderFlowStep.Amount,
+                paymentDigits = "10000",
+                selectedPaymentMethod = paymentMethod("pix", true),
+            ),
+        )
+
+        assertEquals("10000", OrderFlowReducer.applyPaymentKey(loading, "9").paymentDigits)
+        assertEquals("10000", OrderFlowReducer.usePendingAmount(loading, order).paymentDigits)
     }
 
     @Test

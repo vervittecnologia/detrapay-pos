@@ -66,7 +66,7 @@ fun KeypadScreen(
                     Text("Pedido #${order.id}", color = OrderFlowColors.Blue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     Text("Forma: $paymentMethodName", color = OrderFlowColors.Blue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     Text("Valor pendente: $pendingAmountLabel", color = OrderFlowColors.Muted, fontSize = 13.sp)
-                    OutlinedButton(onClick = onUsePendingAmount) {
+                    OutlinedButton(onClick = onUsePendingAmount, enabled = !isLoading) {
                         Text("Usar valor pendente")
                     }
                 }
@@ -80,7 +80,12 @@ fun KeypadScreen(
                     Text(errorMessage, color = OrderFlowColors.AmberText, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 }
             }
-            Keypad(modifier = Modifier.weight(1f), keyHeight = 58.dp, onKey = onKey)
+            Keypad(
+                modifier = Modifier.weight(1f),
+                keyHeight = 58.dp,
+                enabled = !isLoading,
+                onKey = onKey,
+            )
             Button(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -103,6 +108,7 @@ fun KeypadScreen(
 private fun Keypad(
     modifier: Modifier = Modifier,
     keyHeight: androidx.compose.ui.unit.Dp = 82.dp,
+    enabled: Boolean = true,
     onKey: (String) -> Unit,
 ) {
     val keys = listOf(
@@ -130,7 +136,7 @@ private fun Keypad(
                         modifier = Modifier
                             .weight(1f)
                             .height(keyHeight)
-                            .clickable { onKey(key) },
+                            .clickable(enabled = enabled) { onKey(key) },
                         shape = RoundedCornerShape(18.dp),
                         color = OrderFlowColors.Key,
                         border = BorderStroke(1.dp, OrderFlowColors.Border),

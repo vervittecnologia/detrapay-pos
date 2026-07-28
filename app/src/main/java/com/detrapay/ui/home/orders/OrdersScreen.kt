@@ -97,6 +97,7 @@ fun OrdersScreen(
                         ReviewScreen(
                             paymentMethod = local.selectedPaymentMethod,
                             review = local.paymentReview,
+                            isSubmitting = local.paymentSubmissionInFlight,
                             onBack = { onAction(OrderFlowAction.Back) },
                             onConfirm = { onAction(OrderFlowAction.ConfirmPayment) },
                         )

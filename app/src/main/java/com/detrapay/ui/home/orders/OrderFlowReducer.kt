@@ -22,29 +22,37 @@ object OrderFlowReducer {
             selectedOrder = order,
             paymentDigits = "",
             selectedPaymentMethod = null,
-            selectedInstallment = 1,
+            selectedInstallment = null,
             creditInstallments = emptyList(),
             feesLoading = false,
             feesError = null,
             paymentReview = null,
             showSimulator = false,
             feeRequestTarget = null,
+            activePaymentRequest = null,
+            paymentSubmissionInFlight = false,
             step = OrderFlowStep.Method,
         )
     }
 
     fun usePendingAmount(state: OrderFlowLocalState, order: Order): OrderFlowLocalState {
+        if (state.feesLoading) return state
         val pendingAmount = OrderPresentation.summary(order).missingAmount
-        return state.copy(paymentDigits = (pendingAmount * 100).roundToLong().toString())
+        return state.copy(
+            paymentDigits = (pendingAmount * 100).roundToLong().toString(),
+            activePaymentRequest = null,
+        )
     }
 
     fun applyPaymentKey(state: OrderFlowLocalState, key: String): OrderFlowLocalState {
+        if (state.feesLoading) return state
         return state.copy(
             paymentDigits = OrderPresentation.nextPaymentDigits(state.paymentDigits, key),
             creditInstallments = emptyList(),
-            selectedInstallment = 1,
+            selectedInstallment = null,
             paymentReview = null,
             feesError = null,
+            activePaymentRequest = null,
         )
     }
 
@@ -56,10 +64,11 @@ object OrderFlowReducer {
         return state.copy(
             selectedPaymentMethod = paymentMethod,
             paymentDigits = "",
-            selectedInstallment = 1,
+            selectedInstallment = null,
             creditInstallments = emptyList(),
             feesLoading = false,
             feesError = null,
+            activePaymentRequest = null,
             paymentReview = null,
             feeRequestTarget = state.feeRequestTarget,
             step = OrderFlowStep.Amount,
@@ -79,7 +88,7 @@ object OrderFlowReducer {
             feesError = null,
             paymentReview = null,
             creditInstallments = emptyList(),
-            selectedInstallment = 1,
+            selectedInstallment = null,
             feeRequestTarget = OrderFeeRequestTarget.CheckoutCredit,
             feeRequestInFlight = true,
         )
@@ -114,7 +123,7 @@ object OrderFlowReducer {
                 feeRequestTarget = null,
                 feeRequestInFlight = false,
                 creditInstallments = installments,
-                selectedInstallment = installments.first().installmentNumber,
+                selectedInstallment = null,
                 paymentReview = null,
                 feesError = null,
             )
@@ -136,7 +145,7 @@ object OrderFlowReducer {
         val amount = OrderPresentation.paymentAmount(state.paymentDigits)
         return state.copy(
             step = OrderFlowStep.Review,
-            selectedInstallment = 1,
+            selectedInstallment = null,
             paymentReview = OrderPresentation.directPaymentReview(amount),
             feesLoading = false,
             feesError = null,
@@ -158,7 +167,7 @@ object OrderFlowReducer {
     }
 
     fun selectInstallment(state: OrderFlowLocalState, installment: Int): OrderFlowLocalState {
-        return state.copy(selectedInstallment = installment)
+        return state.copy(selectedInstallment = installment, activePaymentRequest = null)
     }
 
     fun back(state: OrderFlowLocalState): OrderFlowLocalState {

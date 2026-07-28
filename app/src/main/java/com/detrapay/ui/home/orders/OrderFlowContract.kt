@@ -36,7 +36,7 @@ data class OrderFlowLocalState(
     val selectedOrder: Order? = null,
     val paymentDigits: String = "",
     val selectedPaymentMethod: PaymentMethod? = null,
-    val selectedInstallment: Int = 1,
+    val selectedInstallment: Int? = null,
     val creditInstallments: List<InstallmentFee> = emptyList(),
     val feesLoading: Boolean = false,
     val feesError: String? = null,
@@ -50,6 +50,7 @@ data class OrderFlowLocalState(
     val feeRequestTarget: OrderFeeRequestTarget? = null,
     val feeRequestInFlight: Boolean = false,
     val activePaymentRequest: OrderPaymentRequest? = null,
+    val paymentSubmissionInFlight: Boolean = false,
 )
 
 data class OrdersUiState(

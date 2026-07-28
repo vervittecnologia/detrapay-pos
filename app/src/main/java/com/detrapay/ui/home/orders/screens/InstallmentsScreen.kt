@@ -31,7 +31,7 @@ import com.detrapay.ui.home.orders.components.OrderFlowColors
 fun InstallmentsScreen(
     amount: Double,
     installments: List<InstallmentFee>,
-    selectedInstallment: Int,
+    selectedInstallment: Int?,
     onBack: () -> Unit,
     onSelectInstallment: (Int) -> Unit,
     onContinue: () -> Unit,

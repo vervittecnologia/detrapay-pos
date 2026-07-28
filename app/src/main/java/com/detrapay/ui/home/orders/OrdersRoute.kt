@@ -163,6 +163,7 @@ fun OrdersRoute(
                 localState = localState.copy(
                     step = OrderFlowStep.Orders,
                     activePaymentRequest = null,
+                    paymentSubmissionInFlight = false,
                 )
                 viewModel.clearPaymentState()
                 isRefreshing = true
@@ -180,13 +181,20 @@ fun OrdersRoute(
         when (val state = paymentRecordState) {
             is UIState.Success -> {
                 onEffect(OrderFlowEffect.ShowToast(paymentSuccessMessage, long = false))
-                localState = localState.copy(step = OrderFlowStep.Orders)
+                localState = localState.copy(
+                    step = OrderFlowStep.Orders,
+                    activePaymentRequest = null,
+                    paymentSubmissionInFlight = false,
+                )
                 viewModel.clearPaymentState()
                 isRefreshing = true
                 viewModel.loadOrders(forceRefresh = true)
             }
             is UIState.Error -> {
-                localState = localState.copy(step = OrderFlowStep.Review)
+                localState = localState.copy(
+                    step = OrderFlowStep.Review,
+                    paymentSubmissionInFlight = false,
+                )
                 onEffect(OrderFlowEffect.ShowToast(state.message ?: addPaymentLoadErrorMessage))
                 state.exception?.let { onEffect(OrderFlowEffect.ShowSessionExpired(it)) }
                 viewModel.clearPaymentState()
@@ -224,6 +232,7 @@ fun OrdersRoute(
     }
 
     fun startConfirmedRequest() {
+        if (localState.paymentSubmissionInFlight) return
         val order = localState.selectedOrder ?: return
         val paymentMethod = localState.selectedPaymentMethod ?: return
         val review = localState.paymentReview ?: return
@@ -237,13 +246,20 @@ fun OrdersRoute(
             localState = localState.copy(step = OrderFlowStep.Installments)
             return
         }
-        val request = OrderPaymentRequest(
+        val request = localState.activePaymentRequest?.takeIf { existing ->
+            existing.order.id == order.id &&
+                existing.paymentMethod.id == selectedMethod.id &&
+                existing.amount == review.amountOriginal &&
+                existing.amountFinal == review.amountFinal &&
+                existing.installments == review.installments
+        } ?: OrderPaymentRequest(
             order = order,
             paymentMethod = selectedMethod,
             amount = review.amountOriginal,
             amountFinal = review.amountFinal,
             installments = review.installments,
         )
+        localState = localState.copy(activePaymentRequest = request)
         when (val route = OrderPaymentRouter.routeFor(request)) {
             is OrderPaymentRoute.Online -> {
                 localState = localState.copy(
@@ -254,6 +270,7 @@ fun OrdersRoute(
                 paymentViewModel.payOrder(route.request, terminalSerial)
             }
             is OrderPaymentRoute.RecordOnly -> {
+                localState = localState.copy(paymentSubmissionInFlight = true)
                 viewModel.recordOfflinePayment(route.request)
             }
         }
@@ -308,7 +325,6 @@ fun OrdersRoute(
                 OrderFlowAction.Back -> {
                     if (localState.step == OrderFlowStep.Waiting) {
                         paymentViewModel.abortPayment()
-                        localState = localState.copy(activePaymentRequest = null)
                     }
                     localState = OrderFlowReducer.back(localState)
                 }
@@ -368,6 +384,7 @@ fun OrdersRoute(
                     localState = localState.copy(
                         step = OrderFlowStep.Orders,
                         activePaymentRequest = null,
+                        paymentSubmissionInFlight = false,
                     )
                     viewModel.clearPaymentState()
                     isRefreshing = true
