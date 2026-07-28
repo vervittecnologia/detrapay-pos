@@ -103,6 +103,188 @@ Os dados de pagamento, parcelas e pagamentos pendentes continuam usando os repos
 
 As alteracoes serao feitas em passos compilaveis para evitar uma renomeacao ampla sem verificacao intermediaria.
 
+## Fluxo e wireframes ASCII
+
+O plano de implementacao devera repetir este mapa e estes wireframes como referencia de preservacao visual e comportamental. Eles representam as telas atuais; nao autorizam redesign.
+
+### Mapa principal
+
+```text
+[Splash / Login]
+       |
+       v
++------------------+
+| PEDIDOS          |
+| lista + busca    |
++------------------+
+   |       |      |
+   |       |      +--------------------> [Logout]
+   |       |
+   |       +--> [+ Acoes] --> [Novo pedido] --> [RegistrationActivity]
+   |                         |                         |
+   |                         |                         +--> volta para Pedidos
+   |                         |
+   |                         +--> [Simular parcelas] --> [Simulador]
+   |                                                       |
+   |                                                       +--> copiar/compartilhar
+   |
+   +--> [Cartao do pedido]
+             |
+             +--> [Detalhes]
+                     |
+                     +--> [Pagar saldo]
+                              |
+                              v
+                      [Digitar valor]
+                              |
+                              v
+                    [Forma de pagamento]
+                       |      |      |
+                       |      |      +--> Pix / manual
+                       |      +---------> Debito
+                       +----------------> Credito --> [Parcelas]
+                                              |
+                                              v
+                                      [Aguardando/resultado]
+                                              |
+                                              +--> volta para Pedidos
+```
+
+### Pedidos
+
+Exemplo baseado na tela observada no device:
+
+```text
++------------------------------------------------+
+| Pedidos                         [Sair] [Buscar] |
+| CONCESSIONARIA TESTE                           |
+| 11.222.333/0001-81                             |
++------------------------------------------------+
+| #544   28/07/2026              [ PENDENTE ]    |
+| WESLEY DE CASTRO                               |
+|------------------------------------------------|
+| TOTAL          PAGO             FALTA          |
+| R$ 2.570,18    R$ 0,00          R$ 2.570,18    |
+| [progresso-----------------------------------] |
++------------------------------------------------+
+| #537   23/07/2026              [ PENDENTE ]    |
+| alberto de lima                                |
+|------------------------------------------------|
+| TOTAL          PAGO             FALTA          |
+| R$ 2.330,71    R$ 2.330,71      R$ 2.330,71    |
++------------------------------------------------+
+|                                          ( + ) |
++------------------------------------------------+
+```
+
+Ao tocar no botao flutuante:
+
+```text
+                                  +------------------+
+                                  | Novo Pedido      |
+                                  +------------------+
+                                  | Simular Parcelas |
+                                  +------------------+
+                                             ( x )
+```
+
+### Detalhes e inicio do pagamento
+
+```text
++------------------------------------------------+
+| [<] Pedido #544                                |
++------------------------------------------------+
+| Resumo financeiro                              |
+| Total          Pago             Falta          |
+| R$ 2.570,18    R$ 0,00          R$ 2.570,18    |
++------------------------------------------------+
+| Pagamentos registrados                    0    |
+|                                                |
+|          Nenhum pagamento registrado          |
+|                                                |
++------------------------------------------------+
+|            [ Pagar R$ 2.570,18 ]               |
++------------------------------------------------+
+```
+
+### Valor e forma de pagamento
+
+```text
++-----------------------+  +-----------------------+
+| [<] PAGAMENTO         |  | [<] R$ 1.000,00       |
+|                       |  |                       |
+| DIGITE O VALOR        |  | Escolha a forma      |
+| R$ 1.000,00           |  | de pagamento         |
+| Pedido #544           |  |                       |
+|                       |  | [ Credito           ] |
+| [1] [2] [3]           |  | [ Debito            ] |
+| [4] [5] [6]           |  | [ Pix               ] |
+| [7] [8] [9]           |  |                       |
+| [,] [0] [apagar]      |  | Outras formas        |
+|                       |  | [Pix] [Loja] [Dinheiro]|
+| [       Pagar       ] |  |                       |
++-----------------------+  +-----------------------+
+```
+
+### Credito, debito e resultado
+
+```text
++-----------------------+  +-----------------------+
+| [<] Credito           |  | Pagamento             |
+| R$ 1.000,00           |  |                       |
+|                       |  |       [status]        |
+| Escolha o parcelamento|  | Aguardando pagamento |
+| ( ) 1x R$ 1.000,00    |  | R$ 1.000,00          |
+| ( ) 2x R$   520,00    |  |                       |
+| ( ) 3x R$   353,33    |  | Conectando...        |
+|                       |  |                       |
+| [Continuar no credito]|  | [Tentar novamente]   |
++-----------------------+  | [Voltar para pedidos]|
+                           +-----------------------+
+
++-----------------------+
+| [<] Debito            |
+| R$ 1.000,00           |
+|                       |
+| Resumo do debito      |
+| Pagamento imediato    |
+|                       |
+| [Continuar no debito] |
++-----------------------+
+```
+
+Para Pix, o estado de resultado substitui a area de status pelo codigo gerado, com as acoes `Copiar codigo Pix` e `Voltar para pedidos`.
+
+### Simulador de parcelas
+
+```text
++------------------------------------------------+
+| [<] Simular parcelas                       [x] |
++------------------------------------------------+
+| Credito                                        |
+| Simular parcelamento em ate 18x                |
+|                                                |
+| Valor                                          |
+| [ R$ 2.570,18                               ]  |
+| [ Consultar Parcelas ]                         |
+|                                                |
+| Parcelas                                       |
+| ( ) 1x de R$ 2.570,18   Total R$ 2.570,18      |
+| ( ) 6x de R$   465,00   Total R$ 2.790,00      |
+| ( ) 12x de R$  252,00   Total R$ 3.024,00      |
+|                                                |
+| [ Copiar ]                 [ WhatsApp ]         |
++------------------------------------------------+
+```
+
+### Exemplos de verificacao do fluxo
+
+- Pedido pendente: abrir `#544`, pagar `R$ 1.000,00`, escolher credito e selecionar uma parcela; ao concluir, voltar para Pedidos e atualizar os totais.
+- Pix: informar um valor, escolher Pix, gerar o codigo, copiar e voltar para Pedidos sem perder a navegacao raiz.
+- Novo pedido: abrir o menu `+`, entrar em `RegistrationActivity`, concluir ou cancelar e retornar para a lista canonica.
+- Simulacao: abrir o menu `+`, consultar parcelas para `R$ 2.570,18`, selecionar uma opcao e testar copiar/compartilhar.
+- Busca: pesquisar por numero, cliente ou CPF/CNPJ e limpar o filtro sem alterar os dados carregados.
+
 ## Testes e verificacao
 
 - Testes unitarios das regras de apresentacao de pedidos e roteamento de pagamentos continuarao cobrindo o comportamento atual com nomes atualizados.
