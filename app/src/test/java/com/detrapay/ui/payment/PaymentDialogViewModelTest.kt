@@ -25,10 +25,13 @@ import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 class PaymentDialogViewModelTest {
 
@@ -83,6 +86,37 @@ class PaymentDialogViewModelTest {
         assertTrue(state.message?.contains("split failure") == true)
         verify(exactly = 0) { plugPag.doPayment(any<PlugPagPaymentData>()) }
         coVerify(exactly = 0) { orderRepository.recordApprovedOnlinePayment(any(), any()) }
+    }
+
+    @Test
+    fun `cancelling during backend preparation never starts terminal payment`() {
+        val preparationStarted = CountDownLatch(1)
+        val releasePreparation = CountDownLatch(1)
+        val splitStarted = CountDownLatch(1)
+        coEvery {
+            orderRepository.prepareOnlinePayment(any(), any(), any(), any(), any())
+        } answers {
+            preparationStarted.countDown()
+            releasePreparation.await(2, TimeUnit.SECONDS)
+            Result.Success(attempt())
+        }
+        coEvery {
+            orderRepository.updatePaymentAttemptSplitConfig(any(), any())
+        } answers {
+            splitStarted.countDown()
+            Result.Success(Unit)
+        }
+
+        viewModel.payOrder(request("credito", online = true), "SER123")
+        assertTrue(preparationStarted.await(2, TimeUnit.SECONDS))
+
+        viewModel.abortPayment()
+        releasePreparation.countDown()
+
+        val state = viewModel.paymentState.getOrAwaitValueMatching { it is UIState.Error<*> }
+        assertTrue(state.message.orEmpty().contains("cancelado"))
+        assertFalse(splitStarted.await(500, TimeUnit.MILLISECONDS))
+        verify(exactly = 0) { plugPag.doPayment(any<PlugPagPaymentData>()) }
     }
 
     @Test

@@ -10,7 +10,6 @@ import com.detrapay.ui.state.UIState
 
 enum class OrderFlowStep {
     Orders,
-    Detail,
     Method,
     Amount,
     Installments,
@@ -102,6 +101,7 @@ sealed interface OrderFlowAction {
 sealed interface OrderFlowEffect {
     data object ShowLogoutConfirmation : OrderFlowEffect
     data object NavigateToRegistration : OrderFlowEffect
+    data class OpenOfficialOrderDetails(val order: Order) : OrderFlowEffect
     data class CopyPaymentText(val text: String) : OrderFlowEffect
     data class CopySimulatorText(val text: String) : OrderFlowEffect
     data class ShareSimulatorText(val text: String) : OrderFlowEffect

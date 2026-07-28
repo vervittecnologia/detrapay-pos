@@ -54,6 +54,9 @@ class PaymentDialogViewModel @Inject constructor(
     private var terminalPaymentActive = false
     @Volatile
     private var cancellationRequested = false
+    @Volatile
+    private var terminalOperationStarted = false
+    private val terminalStartLock = Any()
     private var pendingCompletion: PendingCompletion? = null
 
     fun init() {
@@ -74,7 +77,10 @@ class PaymentDialogViewModel @Inject constructor(
     }
 
     fun payOrder(request: OrderPaymentRequest, serial: String) {
-        cancellationRequested = false
+        synchronized(terminalStartLock) {
+            cancellationRequested = false
+            terminalOperationStarted = false
+        }
         if (!request.paymentMethod.isOnlinePayment) {
             _paymentState.postValue(UIState.Error("Este pagamento deve ser apenas registrado."))
             return
@@ -113,6 +119,10 @@ class PaymentDialogViewModel @Inject constructor(
                     prepared.exception,
                 )
                 is Result.Success -> {
+                    if (cancellationRequested) {
+                        finishCancelledBeforeTerminal()
+                        return@launch
+                    }
                     val preparedAmount = prepared.data.amountFinal
                     if (!preparedAmount.isFinite() ||
                         amountInCents(preparedAmount) != confirmedAmountCents
@@ -153,12 +163,29 @@ class PaymentDialogViewModel @Inject constructor(
             is Result.Success -> Unit
         }
 
+        if (cancellationRequested) {
+            finishCancelledBeforeTerminal()
+            return
+        }
+
         if (!plugPag.isAuthenticated()) {
             finishWithError("Nenhum usuario autenticado, contate o suporte.")
             return
         }
 
         try {
+            val canStartTerminal = synchronized(terminalStartLock) {
+                if (cancellationRequested) {
+                    false
+                } else {
+                    terminalOperationStarted = true
+                    true
+                }
+            }
+            if (!canStartTerminal) {
+                finishCancelledBeforeTerminal()
+                return
+            }
             postStep(PaymentStep.WAITING)
             val result = plugPag.doPayment(
                 PlugPagPaymentData(
@@ -287,14 +314,35 @@ class PaymentDialogViewModel @Inject constructor(
     }
 
     private fun finishWithError(message: String, exception: Exception? = null) {
-        terminalPaymentActive = false
-        cancellationRequested = false
+        synchronized(terminalStartLock) {
+            terminalPaymentActive = false
+            terminalOperationStarted = false
+            cancellationRequested = false
+        }
         _paymentState.postValue(UIState.Error(message, exception))
     }
 
+    private fun finishCancelledBeforeTerminal() {
+        synchronized(terminalStartLock) {
+            terminalPaymentActive = false
+            terminalOperationStarted = false
+            cancellationRequested = true
+        }
+        _paymentState.postValue(
+            UIState.Error("Pagamento cancelado antes de iniciar a cobrança na maquininha."),
+        )
+    }
+
     fun abortPayment() {
-        cancellationRequested = true
+        val shouldAbortTerminal = synchronized(terminalStartLock) {
+            cancellationRequested = true
+            terminalOperationStarted
+        }
         _paymentState.postValue(UIState.Loading("Cancelando pagamento na maquininha..."))
+        if (!shouldAbortTerminal) {
+            finishCancelledBeforeTerminal()
+            return
+        }
         viewModelScope.launch(Dispatchers.Default) {
             runCatching {
                 plugPag.abort()

@@ -307,7 +307,7 @@ fun OrdersRoute(
                     viewModel.loadPaymentMethods()
                 }
                 is OrderFlowAction.OrderDetail -> {
-                    localState = OrderFlowReducer.showDetail(localState, action.order)
+                    onEffect(OrderFlowEffect.OpenOfficialOrderDetails(action.order))
                 }
                 is OrderFlowAction.DeletePayment -> {
                     localState.selectedOrder?.let { order ->

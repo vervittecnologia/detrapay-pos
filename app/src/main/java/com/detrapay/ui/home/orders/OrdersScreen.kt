@@ -13,7 +13,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.Modifier
 import com.detrapay.ui.home.orders.components.OrderFlowColors
-import com.detrapay.ui.home.orders.screens.DetailScreen
 import com.detrapay.ui.home.orders.screens.InstallmentSimulatorScreen
 import com.detrapay.ui.home.orders.screens.InstallmentsScreen
 import com.detrapay.ui.home.orders.screens.KeypadScreen
@@ -77,14 +76,6 @@ fun OrdersScreen(
                         onOrderPay = { onAction(OrderFlowAction.OrderPay(it)) },
                         onOrderDetail = { onAction(OrderFlowAction.OrderDetail(it)) },
                     )
-                    OrderFlowStep.Detail -> if (currentOrder != null) {
-                        DetailScreen(
-                            order = currentOrder,
-                            onBack = { onAction(OrderFlowAction.Back) },
-                            onPay = { onAction(OrderFlowAction.OrderPay(currentOrder)) },
-                            onDeletePayment = { onAction(OrderFlowAction.DeletePayment(it)) },
-                        )
-                    }
                     OrderFlowStep.Amount -> if (
                         currentOrder != null && local.selectedPaymentMethod != null
                     ) {

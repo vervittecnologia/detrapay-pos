@@ -22,6 +22,7 @@ import com.detrapay.data.UnauthorizedException
 import com.detrapay.ui.home.HomeViewModel
 import com.detrapay.ui.home.orders.OrdersViewModel
 import com.detrapay.ui.login.LoginActivity
+import com.detrapay.ui.order_details.OrderDetailsActivity
 import com.detrapay.ui.payment.PaymentDialogViewModel
 import com.detrapay.ui.session_expired_dialog.SessionExpiredDialog
 import com.detrapay.ui.util.DebugConstants
@@ -65,6 +66,7 @@ class OrdersFragment : Fragment() {
         when (effect) {
             OrderFlowEffect.ShowLogoutConfirmation -> showLogoutConfirmation()
             OrderFlowEffect.NavigateToRegistration -> openNewOrderFlow()
+            is OrderFlowEffect.OpenOfficialOrderDetails -> openOfficialOrderDetails(effect.order)
             is OrderFlowEffect.CopyPaymentText -> copyPaymentText(effect.text)
             is OrderFlowEffect.CopySimulatorText -> copySimulatorText(effect.text)
             is OrderFlowEffect.ShareSimulatorText -> shareSimulatorText(effect.text)
@@ -110,6 +112,16 @@ class OrdersFragment : Fragment() {
                 Toast.LENGTH_SHORT,
             ).show()
         }
+    }
+
+    private fun openOfficialOrderDetails(order: com.detrapay.data.model.Order) {
+        startActivity(
+            Intent(requireContext(), OrderDetailsActivity::class.java).apply {
+                putExtra("order", order)
+                putExtra("orderId", order.id)
+                putExtra("isSuccess", false)
+            },
+        )
     }
 
     private fun showLogoutConfirmation() {

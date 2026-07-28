@@ -72,4 +72,21 @@ class OrdersUxContractTest {
         assertTrue(list.contains("onPay = { onOrderPay(order) }"))
         assertTrue(list.contains("""Text("Pagar agora""""))
     }
+
+    @Test
+    fun `order details always use the official activity`() {
+        val duplicateScreen = File(
+            "src/main/java/com/detrapay/ui/home/orders/screens/DetailScreen.kt",
+        )
+        val route = File(
+            "src/main/java/com/detrapay/ui/home/orders/OrdersRoute.kt",
+        ).readText()
+        val fragment = File(
+            "src/main/java/com/detrapay/ui/home/orders/OrdersFragment.kt",
+        ).readText()
+
+        assertFalse(duplicateScreen.exists())
+        assertTrue(route.contains("OpenOfficialOrderDetails(action.order)"))
+        assertTrue(fragment.contains("OrderDetailsActivity::class.java"))
+    }
 }
