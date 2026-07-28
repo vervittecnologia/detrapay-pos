@@ -411,6 +411,10 @@ fun OrdersRoute(
                 }
             }
         },
+        onRefresh = {
+            isRefreshing = true
+            viewModel.loadOrders(forceRefresh = true)
+        },
     )
 }
 
