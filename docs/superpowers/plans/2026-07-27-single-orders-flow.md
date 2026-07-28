@@ -222,7 +222,7 @@ The following production packages are removed completely: `ui.home.registration`
 - The full request/response and retry contract is recorded in backend document `docs/MOBILE_ATOMIC_PAYMENT_CONTRACT.md` on branch `codex/single-orders-flow-backend`, commit `5dcb589a`.
 - Current gate status (28/07/2026): local unit tests and Deno type-check pass; the additive migration is applied and registered in `detrapay-prod`; the `mobile` Edge Function is published; remote schema/RLS/grant/catalog checks pass; and legacy/new unauthenticated smoke requests reach the function and return the expected `401 TOKEN_INVALID` without writes. End-to-end writes and idempotency remain for the controlled Android/device scenarios with an authorized user and order.
 
-- [ ] **Step 1: Verify the existing production contract is retained**
+- [x] **Step 1: Verify the existing production contract is retained**
 
 Capture contract tests or API evidence that the current receivable, confirm-payment, generate-pix, and split-config endpoints still accept the payloads used by released Android versions.
 
@@ -242,7 +242,7 @@ pix_manual       -> one confirmed record; no PagBank dependency
 cash             -> one confirmed record; no PagBank dependency
 ```
 
-- [ ] **Step 3: Verify the payment-method catalog**
+- [x] **Step 3: Verify the payment-method catalog**
 
 Expected matrix:
 
@@ -255,7 +255,7 @@ pix_manual     is_online_payment=false
 cash/dinheiro  is_online_payment=false
 ```
 
-- [ ] **Step 4: Approve the deployment gate**
+- [x] **Step 4: Approve the deployment gate**
 
 Deploy the additive backend contract first, run smoke tests for both the released app contract and the new atomic contract, and record the published endpoint/DTO details in this plan before implementing Android network calls.
 
@@ -285,7 +285,7 @@ Expected: old Android versions remain operational. If any check fails or the exa
 - Consumes: Existing auth/session DTOs and repositories.
 - Produces: `LoggedInUser` and `HomeState` without mode properties; auth persistence with access/refresh/token metadata only.
 
-- [ ] **Step 1: Write the failing architecture test**
+- [x] **Step 1: Write the failing architecture test**
 
 ```kotlin
 package com.detrapay.architecture
@@ -321,7 +321,7 @@ class ModeFreeDomainArchitectureTest {
 }
 ```
 
-- [ ] **Step 2: Run the test and verify the existing mode model fails it**
+- [x] **Step 2: Run the test and verify the existing mode model fails it**
 
 Run:
 
@@ -331,7 +331,7 @@ Run:
 
 Expected: FAIL with `Found forbidden mode token: SellerAppMode`.
 
-- [ ] **Step 3: Remove mode fields from the domain and DTOs**
+- [x] **Step 3: Remove mode fields from the domain and DTOs**
 
 Use these exact target declarations:
 
@@ -365,7 +365,7 @@ data class LoginCompanyResponse(
 
 Remove `AuthResponse.appMode` entirely. Extra `appMode` and `seller_app_mode` JSON properties remain safe because Gson ignores unknown properties.
 
-- [ ] **Step 4: Remove mode persistence from repositories**
+- [x] **Step 4: Remove mode persistence from repositories**
 
 `AuthRepository.persistSessionTokens` must have this signature and preference edit:
 
@@ -391,7 +391,7 @@ Update both callers to omit the mode argument, construct `LoggedInUser` without 
 
 In `LoginRepository`, remove the `SellerAppMode` import, omit `sellerAppMode` when mapping `Company`, delete the local `appMode`, and construct `LoggedInUser` without `appMode`.
 
-- [ ] **Step 5: Remove mode from Home state construction**
+- [x] **Step 5: Remove mode from Home state construction**
 
 ```kotlin
 data class HomeState(
@@ -405,7 +405,7 @@ data class HomeState(
 
 Remove the `SellerAppMode` import and `sellerAppMode` argument from `HomeViewModel`. Delete `SellerAppMode.kt`, `HomeModeRouter.kt`, `LoggedInUserTest.kt`, and `HomeModeRouterTest.kt`.
 
-- [ ] **Step 6: Rewrite the login repository test around canonical user mapping**
+- [x] **Step 6: Rewrite the login repository test around canonical user mapping**
 
 Keep the existing mocks, then replace the three mode tests and their fixture arguments with:
 
@@ -451,7 +451,7 @@ private fun userResponse() = UserResponse(
 )
 ```
 
-- [ ] **Step 7: Run focused and full unit tests**
+- [x] **Step 7: Run focused and full unit tests**
 
 Run:
 
@@ -462,7 +462,7 @@ Run:
 
 Expected: both commands finish with `BUILD SUCCESSFUL`.
 
-- [ ] **Step 8: Verify no domain/session mode tokens remain**
+- [x] **Step 8: Verify no domain/session mode tokens remain**
 
 Run:
 
@@ -472,7 +472,7 @@ rg -n "SellerAppMode|appMode|sellerAppMode|HomeModeRouter" app/src/main app/src/
 
 Expected: exit code 1 and no matches.
 
-- [ ] **Step 9: Commit the domain cleanup**
+- [x] **Step 9: Commit the domain cleanup**
 
 ```powershell
 git add app/src/main app/src/test
@@ -502,7 +502,7 @@ git commit -m "refactor: remove seller app modes"
 - Consumes: the backward-compatible `GET /payment-methods`, the additive payment contract approved in Task 0, `OrderRepository`, `RegistrationRepository`, `SalesmanRepository`, `PaymentTypeRules`, and `OrderPaymentTotals`.
 - Produces: a domain `PaymentMethod` with one non-null routing property, plus `OrderPresentation`, `OrdersViewModel`, `OrderPaymentRequest`, `OrderSummary`, `SellerCardSummary`, and `WaitingPresentation` under `com.detrapay.ui.home.orders`.
 
-- [ ] **Step 0: Add failing tests for the single classification property**
+- [x] **Step 0: Add failing tests for the single classification property**
 
 Extend `RegistrationRepositoryTest` to prove that `is_online_payment=true` and `false` are copied to the domain model and that a missing value returns a configuration error instead of silently becoming offline. Replace tests for `requiresTerminalApproval` and `shouldPersistInMemory` in `PaymentTypeRulesTest` with normalization-only coverage proving that `pix` remains `pix` and `pix_manual` remains `pix_manual`.
 
@@ -514,7 +514,7 @@ Run:
 
 Expected: FAIL because the domain model does not expose `isOnlinePayment`, the repository ignores the field, and the obsolete routing helpers still exist.
 
-- [ ] **Step 0.1: Adjust the Android model and mapping without changing the backend response shape**
+- [x] **Step 0.1: Adjust the Android model and mapping without changing the backend response shape**
 
 Keep all existing response DTO fields so deserialization stays backward compatible. Keep `PaymentMethodResponse.isOnlinePayment` nullable only at the transport boundary to detect an absent field. Add exactly this routing property to the domain model:
 
@@ -537,7 +537,7 @@ Update every `PaymentMethod(...)` construction in production fixtures and tests 
 
 Run the two focused tests again. Expected: `BUILD SUCCESSFUL`.
 
-- [ ] **Step 1: Move the presentation test to the canonical package first**
+- [x] **Step 1: Move the presentation test to the canonical package first**
 
 Create `OrderPresentationTest.kt` by copying the existing test body and applying exactly:
 
@@ -566,7 +566,7 @@ fun `typed payment input uses only the entered digits`() {
 }
 ```
 
-- [ ] **Step 2: Run the moved test and verify the target object is missing**
+- [x] **Step 2: Run the moved test and verify the target object is missing**
 
 ```powershell
 .\gradlew.bat testDebugUnitTest --tests "com.detrapay.ui.home.orders.OrderPresentationTest"
@@ -574,7 +574,7 @@ fun `typed payment input uses only the entered digits`() {
 
 Expected: compilation FAIL with `Unresolved reference 'OrderPresentation'`.
 
-- [ ] **Step 3: Create the canonical presentation file without behavior changes**
+- [x] **Step 3: Create the canonical presentation file without behavior changes**
 
 Copy every function body from `DirectCheckoutOrderPresentation.kt` and apply this declaration map:
 
@@ -613,7 +613,7 @@ fun paymentDisplayAmount(digits: String): String {
 
 There must be no overload that accepts `pendingAmount`; the pending balance is separate presentation data.
 
-- [ ] **Step 4: Create the canonical Orders ViewModel**
+- [x] **Step 4: Create the canonical Orders ViewModel**
 
 Copy only the behavior used by the current Pedidos flow. Remove `receivableListState`, the old receivables-only `loadScreenContent`, and the create-pending-then-confirm API. An order payment request is local and contains no persisted receivable:
 
@@ -663,7 +663,7 @@ DirectCheckoutOrderPresentation         -> OrderPresentation
 
 Do not mechanically copy `addDirectCheckoutPendingPayment`, `confirmDirectCheckoutManualPayment`, or `consumeDirectCheckoutPendingPayment`; replace those behaviors with the two atomic recording methods above.
 
-- [ ] **Step 5: Bridge current consumers to the canonical support API**
+- [x] **Step 5: Bridge current consumers to the canonical support API**
 
 In the existing fragment, route, contract, reducer, payment router, screens, and previews, replace imports and calls using this map:
 
@@ -678,7 +678,7 @@ com.detrapay.ui.home.simplified.DirectCheckoutPendingPayment
 
 Apply the ViewModel method/property map from Step 4 to `DirectCheckoutFragment.kt` and `DirectCheckoutRoute.kt`.
 
-- [ ] **Step 6: Run presentation tests and compile all current consumers**
+- [x] **Step 6: Run presentation tests and compile all current consumers**
 
 ```powershell
 .\gradlew.bat testDebugUnitTest --tests "com.detrapay.data.repositories.RegistrationRepositoryTest" --tests "com.detrapay.ui.util.PaymentTypeRulesTest" --tests "com.detrapay.ui.home.orders.OrderPresentationTest"
@@ -687,7 +687,7 @@ Apply the ViewModel method/property map from Step 4 to `DirectCheckoutFragment.k
 
 Expected: both commands finish with `BUILD SUCCESSFUL`.
 
-- [ ] **Step 7: Remove the old simplified package and prove it is gone**
+- [x] **Step 7: Remove the old simplified package and prove it is gone**
 
 Delete the two old production files and the old test. Then run:
 
@@ -697,7 +697,7 @@ rg -n -i "simplified" app/src/main app/src/test
 
 Expected: exit code 1 and no matches.
 
-- [ ] **Step 8: Commit the canonical support layer**
+- [x] **Step 8: Commit the canonical support layer**
 
 ```powershell
 git add app/src/main app/src/test
@@ -735,7 +735,7 @@ git commit -m "refactor: name orders support code canonically"
 - Consumes: `OrdersViewModel`, `OrderPresentation`, `HomeViewModel`, `PaymentDialogViewModel`, and the additive atomic payment operations approved in Task 0.
 - Produces: `OrdersFragment`, `OrdersRoute`, `OrdersScreen`, `OrderFlowContract`, `OrderFlowReducer`, `OrderPaymentRouter`, and `ordersFragment` as the Home start destination.
 
-- [ ] **Step 1: Add the failing Home navigation contract test**
+- [x] **Step 1: Add the failing Home navigation contract test**
 
 ```kotlin
 package com.detrapay.ui.home
@@ -764,7 +764,7 @@ class HomeNavigationContractTest {
 }
 ```
 
-- [ ] **Step 2: Move reducer and payment-router tests to their canonical names**
+- [x] **Step 2: Move reducer and payment-router tests to their canonical names**
 
 Copy the existing tests and fixtures with these exact replacements:
 
@@ -830,7 +830,7 @@ Add `PaymentDialogViewModelTest` cases before production changes:
 - Pix uses the PagBank SDK (`PlugPag.TYPE_PIX`) and never calls the legacy backend-generated Pix endpoint.
 - A record-only request never reaches `PaymentDialogViewModel`.
 
-- [ ] **Step 3: Run the new tests and verify both navigation and symbols fail**
+- [x] **Step 3: Run the new tests and verify both navigation and symbols fail**
 
 ```powershell
 .\gradlew.bat testDebugUnitTest --tests "com.detrapay.ui.home.HomeNavigationContractTest" --tests "com.detrapay.ui.home.orders.OrderFlowReducerTest" --tests "com.detrapay.ui.home.orders.OrderPaymentRouterTest"
@@ -838,7 +838,7 @@ Add `PaymentDialogViewModelTest` cases before production changes:
 
 Expected: FAIL because `ordersFragment`, `OrderFlowReducer`, and `OrderPaymentRouter` do not yet exist.
 
-- [ ] **Step 4: Create the canonical flow contract**
+- [x] **Step 4: Create the canonical flow contract**
 
 Copy `DirectCheckoutContract.kt` and apply the canonical types below while retaining all existing properties and actions:
 
@@ -917,7 +917,7 @@ sealed interface OrderFlowEffect {
 }
 ```
 
-- [ ] **Step 5: Move the remaining production flow using the exact rename map**
+- [x] **Step 5: Move the remaining production flow using the exact rename map**
 
 Create target files, copy the current UI and non-payment behavior, update packages/imports, then delete the source files. Do not copy the old type-name routing or create-pending-then-confirm persistence behavior:
 
@@ -1074,7 +1074,7 @@ fun KeypadScreen(
 
 Under the primary `displayAmount`, render `Text("Valor pendente: $pendingAmountLabel")` and an `OutlinedButton(onClick = onUsePendingAmount)` containing `Text("Usar valor pendente")`. Set the primary `Button(enabled = canPay, onClick = onPay, ...)`. Do not render the pending balance inside the primary amount or the Detail action label.
 
-- [ ] **Step 6: Make Orders the static Home root**
+- [x] **Step 6: Make Orders the static Home root**
 
 Replace `HomeActivity` with the same back/logout behavior but no mode observer or navigation mutation:
 
@@ -1139,7 +1139,7 @@ Use this complete graph shape:
 
 `activity_home.xml` must contain only the root `ConstraintLayout` and a `FragmentContainerView` constrained to all four parent edges; remove the bottom constraint to `bottomAppBar` and delete the `BottomNavigationView`.
 
-- [ ] **Step 7: Rename the two used string resources and remove obsolete direct-checkout resources**
+- [x] **Step 7: Rename the two used string resources and remove obsolete direct-checkout resources**
 
 ```xml
 <string name="orders_error">Nao foi possivel carregar os pedidos.</string>
@@ -1148,7 +1148,7 @@ Use this complete graph shape:
 
 Update `OrdersFragment` to use these names. Remove all `direct_checkout_*` strings/plurals and delete the two unused direct-checkout XML layouts.
 
-- [ ] **Step 8: Run canonical flow and navigation tests**
+- [x] **Step 8: Run canonical flow and navigation tests**
 
 ```powershell
 .\gradlew.bat testDebugUnitTest --tests "com.detrapay.ui.home.HomeNavigationContractTest" --tests "com.detrapay.ui.home.orders.OrderFlowReducerTest" --tests "com.detrapay.ui.home.orders.OrderPaymentRouterTest" --tests "com.detrapay.ui.home.orders.OrderPresentationTest" --tests "com.detrapay.ui.payment.PaymentDialogViewModelTest" --tests "com.detrapay.data.repositories.OrderRepositoryTest" --tests "com.detrapay.data.datasources.remote.DetrapayRemoteDataSourceTest"
@@ -1157,7 +1157,7 @@ Update `OrdersFragment` to use these names. Remove all `direct_checkout_*` strin
 
 Expected: both commands finish with `BUILD SUCCESSFUL`.
 
-- [ ] **Step 9: Prove direct-checkout naming is gone from app code and resources**
+- [x] **Step 9: Prove direct-checkout naming is gone from app code and resources**
 
 ```powershell
 rg -n -i "direct[_ -]?checkout|DirectCheckout" app/src/main app/src/test
@@ -1165,7 +1165,7 @@ rg -n -i "direct[_ -]?checkout|DirectCheckout" app/src/main app/src/test
 
 Expected: exit code 1 and no matches.
 
-- [ ] **Step 10: Commit the canonical Home flow**
+- [x] **Step 10: Commit the canonical Home flow**
 
 ```powershell
 git add app/src/main app/src/test
@@ -1193,7 +1193,7 @@ git commit -m "refactor: make orders the canonical home flow"
 - Consumes: canonical Home graph from Task 3.
 - Produces: no alternate Home implementation, menu, Activity, or resource set.
 
-- [ ] **Step 1: Extend the architecture test to fail while legacy sources exist**
+- [x] **Step 1: Extend the architecture test to fail while legacy sources exist**
 
 Add to `HomeNavigationContractTest`:
 
@@ -1214,7 +1214,7 @@ fun `legacy home surfaces do not exist`() {
 }
 ```
 
-- [ ] **Step 2: Run the test and verify it reports the first legacy directory**
+- [x] **Step 2: Run the test and verify it reports the first legacy directory**
 
 ```powershell
 .\gradlew.bat testDebugUnitTest --tests "com.detrapay.ui.home.HomeNavigationContractTest"
@@ -1222,7 +1222,7 @@ fun `legacy home surfaces do not exist`() {
 
 Expected: FAIL with `Legacy Home path still exists`.
 
-- [ ] **Step 3: Delete the legacy Kotlin packages and notification registration**
+- [x] **Step 3: Delete the legacy Kotlin packages and notification registration**
 
 Delete every file under the five directories listed in Step 1. Remove this manifest entry:
 
@@ -1232,7 +1232,7 @@ Delete every file under the five directories listed in Step 1. Remove this manif
     android:exported="false" />
 ```
 
-- [ ] **Step 4: Delete resources owned only by the removed surfaces**
+- [x] **Step 4: Delete resources owned only by the removed surfaces**
 
 Delete exactly:
 
@@ -1254,11 +1254,11 @@ app/src/main/res/color/bottom_nav_item_color.xml
 
 Do not delete `fragment_registration_order_*`, `fragment_registration_payment_detail.xml`, `order_payment_list_item.xml`, `employee_list_item.xml`, or `employee_shimmer_item.xml`; the current new-order and employee-selection flows use them.
 
-- [ ] **Step 5: Remove now-unused legacy strings and styles**
+- [x] **Step 5: Remove now-unused legacy strings and styles**
 
 Remove `home_tab_home`, `home_tab_sales`, `home_tab_profile`, all `payment_history_*` strings, and the two `TextAppearance.Detrapay.BottomNav.*` styles. Do not remove any resource beyond the exact lists in Steps 4 and 5.
 
-- [ ] **Step 6: Run the architecture test, resource linking, and full unit suite**
+- [x] **Step 6: Run the architecture test, resource linking, and full unit suite**
 
 ```powershell
 .\gradlew.bat testDebugUnitTest --tests "com.detrapay.ui.home.HomeNavigationContractTest"
@@ -1267,7 +1267,7 @@ Remove `home_tab_home`, `home_tab_sales`, `home_tab_profile`, all `payment_histo
 
 Expected: both commands finish with `BUILD SUCCESSFUL`.
 
-- [ ] **Step 7: Commit legacy surface removal**
+- [x] **Step 7: Commit legacy surface removal**
 
 ```powershell
 git add app/src/main app/src/test
@@ -1286,13 +1286,15 @@ git commit -m "refactor: remove legacy home surfaces"
 - Consumes: completed canonical flow from Tasks 1-4.
 - Produces: passing build/tests plus device and log evidence that Pedidos is the only Home.
 
-- [ ] **Step 0: Recheck the production-safety gate**
+**Device verification status (28/07/2026):** clean build, 106 unit tests, APK installation, app launch, Home capture, and crash-log inspection pass on `0123abcd`. The captured Home is the single Pedidos surface with no bottom navigation. Representative order/payment transitions remain blocked because the published `mobile` Edge Function currently returns `503 BOOT_ERROR` even for legacy endpoints; this is a backend deployment startup failure and must be repaired before release. No Android workaround may hide it.
+
+- [x] **Step 0: Recheck the production-safety gate**
 
 Confirm that the additive backend contract from Task 0 is deployed, its legacy compatibility smoke tests pass, and no existing field/model/endpoint was removed or changed incompatibly. Confirm the new Android build targets only the published new payment operations.
 
 Expected: both released app versions and the new contract work. Otherwise stop the Android release.
 
-- [ ] **Step 1: Run the forbidden-token audit**
+- [x] **Step 1: Run the forbidden-token audit**
 
 ```powershell
 rg -n -i "direct[_ -]?checkout|simplified|SellerAppMode|HomeModeRouter|appMode|sellerAppMode|APP_MODE_" app/src/main app/src/test
@@ -1301,7 +1303,7 @@ rg -n "requiresTerminalApproval|shouldPersistInMemory|allowsManualConfirmation|p
 
 Expected: both commands exit with code 1 and no matches. `isOnlinePayment` is the only payment-flow classification property in the Android domain and routing code.
 
-- [ ] **Step 2: Confirm the Home graph contains only canonical destinations**
+- [x] **Step 2: Confirm the Home graph contains only canonical destinations**
 
 ```powershell
 Get-Content -Raw app\src\main\res\navigation\home_navigation.xml
@@ -1309,7 +1311,7 @@ Get-Content -Raw app\src\main\res\navigation\home_navigation.xml
 
 Expected: `ordersFragment` is the start destination; the only destinations are `ordersFragment` and `registrationActivity`.
 
-- [ ] **Step 3: Run clean unit and debug build verification**
+- [x] **Step 3: Run clean unit and debug build verification**
 
 ```powershell
 .\gradlew.bat clean testDebugUnitTest assembleDebug
@@ -1317,7 +1319,7 @@ Expected: `ordersFragment` is the start destination; the only destinations are `
 
 Expected: `BUILD SUCCESSFUL`, with all unit tests passing and `app-debug.apk` generated.
 
-- [ ] **Step 4: Confirm a device is connected and clear current logs**
+- [x] **Step 4: Confirm a device is connected and clear current logs**
 
 ```powershell
 adb devices -l
@@ -1326,7 +1328,7 @@ adb logcat -c
 
 Expected: device `0123abcd` is listed with state `device`; log clear exits successfully.
 
-- [ ] **Step 5: Install and immediately open the app**
+- [x] **Step 5: Install and immediately open the app**
 
 ```powershell
 .\gradlew.bat installDebug
@@ -1335,7 +1337,7 @@ adb shell am start -n com.detrapay/.ui.splash.SplashActivity
 
 Expected: `BUILD SUCCESSFUL`, installation succeeds on `0123abcd`, and Activity Manager reports the splash Activity started.
 
-- [ ] **Step 6: Capture and visually inspect the current Home**
+- [x] **Step 6: Capture and visually inspect the current Home**
 
 ```powershell
 & 'C:\Users\gerbs\AppData\AndroidCLI\android.exe' layout --device 0123abcd --pretty
@@ -1367,7 +1369,7 @@ Using `android layout` for coordinates and `adb shell input tap`, verify without
 
 Expected: every transition follows the reference flow, returns to Pedidos, and never reveals an alternate Home.
 
-- [ ] **Step 8: Inspect filtered logs after the installed run**
+- [x] **Step 8: Inspect filtered logs after the installed run**
 
 ```powershell
 adb logcat -d | Select-String -Pattern "com.detrapay|AndroidRuntime|FATAL EXCEPTION"

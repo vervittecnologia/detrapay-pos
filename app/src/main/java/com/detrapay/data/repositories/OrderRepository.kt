@@ -1,4 +1,4 @@
-package com.detrapay.data.repositories
+﻿package com.detrapay.data.repositories
 
 import android.util.Log
 import com.detrapay.BuildConfig
@@ -26,6 +26,7 @@ import com.detrapay.data.model.remote.CreateOrderSimulationRequest
 import com.detrapay.data.model.remote.OrderCustomerRequest
 import com.detrapay.data.model.remote.OrderReceivableRequest
 import com.detrapay.data.model.remote.OrderResponse
+import com.detrapay.data.model.remote.PaymentAttempt
 import com.detrapay.data.model.remote.OrderSimulationItemRequest
 import com.detrapay.data.model.remote.OrderSimulationRequest
 import com.detrapay.data.model.remote.SplitConfigRequest
@@ -75,7 +76,7 @@ class OrderRepository @Inject constructor(
         val dispatcherId = user?.dispatchers?.firstOrNull()?.id
 
         if (companyId == null || dispatcherId == null) {
-            return Result.Error(Exception("Usuário não configurado com empresa e despachante."))
+            return Result.Error(Exception("UsuÃ¡rio nÃ£o configurado com empresa e despachante."))
         }
 
         when (val result = detrapayRemoteDataSource.getOrders(companyId, dispatcherId)) {
@@ -213,9 +214,12 @@ class OrderRepository @Inject constructor(
                     name = it.name,
                     installments = it.installments ?: 0,
                     interestTax = it.interestTax,
-                    paymentType = it.paymentType
+                    paymentType = it.paymentType,
+                    isOnlinePayment = requireOnlineClassification(it.id, it.name, it.isOnlinePayment),
                 )
-            } ?: PaymentMethod(id = 0, name = "", installments = 0, interestTax = 0.0, paymentType = null)
+            } ?: throw IllegalStateException(
+                "GET /orders returned receivable ${receivable.id} without paymentMethod",
+            )
             OrderReceivableItem(
                 id = receivable.id,
                 documentId = receivable.documentId,
@@ -241,7 +245,12 @@ class OrderRepository @Inject constructor(
                 name = receivable.attributes.payment_methods.data.attributes.name,
                 installments = receivable.attributes.payment_methods.data.attributes.installments,
                 interestTax = receivable.attributes.payment_methods.data.attributes.interestTax,
-                paymentType = receivable.attributes.payment_methods.data.attributes.paymentType
+                paymentType = receivable.attributes.payment_methods.data.attributes.paymentType,
+                isOnlinePayment = requireOnlineClassification(
+                    receivable.attributes.payment_methods.data.id,
+                    receivable.attributes.payment_methods.data.attributes.name,
+                    receivable.attributes.payment_methods.data.attributes.isOnlinePayment,
+                ),
             )
             val finalAmount = if ((paymentMethod.interestTax ?: 0.0) > 0.0) {
                 originalAmount + (originalAmount * (paymentMethod.interestTax ?: 0.0))
@@ -309,6 +318,15 @@ class OrderRepository @Inject constructor(
         }.getOrDefault(OrderReceivableItemStatus.PENDING)
     }
 
+    private fun requireOnlineClassification(
+        paymentMethodId: Int,
+        paymentMethodName: String,
+        isOnlinePayment: Boolean?,
+    ): Boolean = isOnlinePayment ?: throw IllegalStateException(
+        "GET /orders returned payment method $paymentMethodId ($paymentMethodName) " +
+            "without required field is_online_payment",
+    )
+
     private fun formatDate(date: String): String {
         return try {
             if (date.contains("-")) {
@@ -336,7 +354,7 @@ class OrderRepository @Inject constructor(
         val dispatcherId = user?.dispatchers?.firstOrNull()?.id
 
         if (salesCompanyId == null || dispatcherId == null) {
-            return Result.Error(Exception("ID da empresa ou do despachante não encontrado."))
+            return Result.Error(Exception("ID da empresa ou do despachante nÃ£o encontrado."))
         }
 
         val clientCpfCnpj = simulation.customer.cpfCnpj.replace(".", "")
@@ -450,7 +468,7 @@ class OrderRepository @Inject constructor(
                 return Result.Error(result.exception)
             }
             else -> {
-                return Result.Error(Exception("Tivemos um erro na atualização do pagamento do pedido com nosso servidor, por favor tente novamente."))
+                return Result.Error(Exception("Tivemos um erro na atualizaÃ§Ã£o do pagamento do pedido com nosso servidor, por favor tente novamente."))
             }
         }
     }
@@ -460,25 +478,17 @@ class OrderRepository @Inject constructor(
         paymentMethod: PaymentMethod,
         amountOriginal: Double,
         paymentDate: String? = null,
-        shouldPersistInMemory: Boolean = false
     ): Result<Order> {
         if (amountOriginal <= 0.0) {
             return Result.Error(Exception("Informe um valor maior que zero para adicionar o pagamento."))
         }
 
-        val normalizedType = paymentMethod.paymentType.orEmpty().trim().lowercase()
-        val paymentName = paymentMethod.name.trim().lowercase()
-        
-        val isCreditoDebitoPix = normalizedType.contains("credit") || 
-                               normalizedType.contains("credito") ||
-                               normalizedType.contains("debit") || 
-                               normalizedType.contains("debito") ||
-                               paymentName.contains("credito") || 
-                               paymentName.contains("debito") || 
-                               normalizedType == "pix"
-
-        if (shouldPersistInMemory && isCreditoDebitoPix) {
-            return Result.Error(Exception("Pagamento via plug and pag não realizado com sucesso."))
+        if (paymentMethod.isOnlinePayment) {
+            return Result.Error(
+                IllegalStateException(
+                    "Pagamentos online devem ser persistidos somente depois da aprovacao PagBank.",
+                ),
+            )
         }
 
         return when (
@@ -575,6 +585,65 @@ class OrderRepository @Inject constructor(
         )
     }
 
+    suspend fun prepareOnlinePayment(
+        orderId: Int,
+        paymentMethod: PaymentMethod,
+        amountOriginal: Double,
+        installments: Int,
+        idempotencyKey: String,
+    ): Result<PaymentAttempt> {
+        if (!paymentMethod.isOnlinePayment) {
+            return Result.Error(IllegalArgumentException("O meio selecionado nao e um pagamento online."))
+        }
+        return detrapayRemoteDataSource.prepareOnlinePayment(
+            orderId = orderId,
+            paymentMethodId = paymentMethod.id,
+            amountOriginal = amountOriginal,
+            installments = installments.coerceAtLeast(1),
+            idempotencyKey = idempotencyKey,
+        )
+    }
+
+    suspend fun recordApprovedOnlinePayment(
+        attemptId: String,
+        paymentData: PaymentData,
+    ): Result<Order> = parseAtomicPaymentResult(
+        detrapayRemoteDataSource.completeOnlinePayment(attemptId, paymentData),
+    )
+
+    suspend fun recordOfflinePayment(
+        orderId: Int,
+        paymentMethod: PaymentMethod,
+        amountOriginal: Double,
+        installments: Int,
+        idempotencyKey: String,
+    ): Result<Order> {
+        if (paymentMethod.isOnlinePayment) {
+            return Result.Error(IllegalArgumentException("Pagamento online exige aprovacao PagBank."))
+        }
+        return parseAtomicPaymentResult(
+            detrapayRemoteDataSource.recordManualPayment(
+                orderId = orderId,
+                paymentMethodId = paymentMethod.id,
+                amountOriginal = amountOriginal,
+                installments = installments.coerceAtLeast(1),
+                idempotencyKey = idempotencyKey,
+            ),
+        )
+    }
+
+    private fun parseAtomicPaymentResult(result: Result<OrderResponse>): Result<Order> {
+        return when (result) {
+            is Result.Success -> runCatching {
+                val order = parseOrder(result.data)
+                invalidateOrdersCache()
+                orderDetailsCache[order.id] = order
+                Result.Success(order)
+            }.getOrElse { Result.Error(it as? Exception ?: Exception(it)) }
+            is Result.Error -> result
+        }
+    }
+
     private fun formatDecimal(value: Double): String {
         return String.format(Locale.US, "%.2f", value)
     }
@@ -587,6 +656,15 @@ class OrderRepository @Inject constructor(
                 receivableId = receivableId,
                 serial = serial,
             )
+        )
+    }
+
+    suspend fun updatePaymentAttemptSplitConfig(attemptId: String, serial: String): Result<Unit> {
+        return detrapayRemoteDataSource.updateSplitConfig(
+            SplitConfigRequest(
+                serial = serial,
+                paymentAttemptId = attemptId,
+            ),
         )
     }
 

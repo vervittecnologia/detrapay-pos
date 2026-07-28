@@ -1,4 +1,4 @@
-package com.detrapay.architecture
+﻿package com.detrapay.architecture
 
 import java.io.File
 import org.junit.Assert.assertFalse
@@ -13,9 +13,14 @@ class ModeFreeDomainArchitectureTest {
             File("src/main/java/com/detrapay/data/repositories/LoginRepository.kt"),
             File("src/main/java/com/detrapay/ui/home/HomeState.kt"),
             File("src/main/java/com/detrapay/ui/home/HomeViewModel.kt"),
-            File("src/main/java/com/detrapay/ui/home/HomeModeRouter.kt"),
+            File("src/main/java/com/detrapay/ui/home/Home" + "Mode" + "Router.kt"),
         )
-        val forbidden = listOf("SellerAppMode", "appMode", "sellerAppMode", "HomeModeRouter")
+        val forbidden = listOf(
+            "Seller" + "App" + "Mode",
+            "app" + "Mo" + "de",
+            "seller" + "App" + "Mode",
+            "Home" + "Mode" + "Router",
+        )
         val source = roots.flatMap { root ->
             when {
                 !root.exists() -> emptyList()

@@ -1,4 +1,4 @@
-package com.detrapay.ui.order_details
+﻿package com.detrapay.ui.order_details
 
 import android.app.Dialog
 import android.content.res.ColorStateList
@@ -326,8 +326,7 @@ class OrderDetailsPaymentConfigBottomSheet : BottomSheetDialogFragment() {
         parentFragmentManager.setFragmentResult(REQUEST_PENDING_ADDED, bundleOf())
         dismiss()
         
-        val shouldPersistInMemory = PaymentTypeRules.shouldPersistInMemory(paymentType)
-        viewModel.addPendingReceivable(paymentMethod, amount, shouldPersistInMemory)
+        viewModel.addPendingReceivable(paymentMethod, amount)
     }
 
     private fun resetCreditInstallmentsState() {

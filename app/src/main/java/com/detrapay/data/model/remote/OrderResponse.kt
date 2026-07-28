@@ -1,4 +1,4 @@
-package com.detrapay.data.model.remote
+﻿package com.detrapay.data.model.remote
 
 import com.detrapay.data.model.Salesman
 import com.google.gson.annotations.SerializedName
@@ -159,7 +159,9 @@ data class PaymentMethodAttributesResponse(
     @SerializedName(value = "interestTax", alternate = ["interest_tax", "tax"])
     val interestTax: Double? = null,
     @SerializedName(value = "paymentType", alternate = ["payment_type"])
-    val paymentType: String? = null
+    val paymentType: String? = null,
+    @SerializedName(value = "isOnlinePayment", alternate = ["is_online_payment"])
+    val isOnlinePayment: Boolean? = null,
 )
 
 @Serializable
@@ -298,5 +300,7 @@ data class FlatPaymentMethodResponse(
     @SerializedName(value = "interestTax", alternate = ["interest_tax"])
     val interestTax: Double? = null,
     @SerializedName(value = "paymentType", alternate = ["payment_type"])
-    val paymentType: String? = null
+    val paymentType: String? = null,
+    @SerializedName(value = "isOnlinePayment", alternate = ["is_online_payment"])
+    val isOnlinePayment: Boolean? = null,
 )

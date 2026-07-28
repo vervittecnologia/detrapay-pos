@@ -1,4 +1,4 @@
-package com.detrapay.data.repositories
+﻿package com.detrapay.data.repositories
 
 import com.detrapay.data.datasources.remote.DetrapayRemoteDataSource
 import com.detrapay.data.model.PaymentMethod
@@ -88,12 +88,18 @@ class RegistrationRepository @Inject constructor(
             is Result.Success -> {
                 try {
                     val paymentMethods = result.data.map {
+                        val isOnlinePayment = it.isOnlinePayment ?: throw IllegalStateException(
+                            "GET /payment-methods returned method ${it.id} (${it.name}) " +
+                                "without required field is_online_payment",
+                        )
                         PaymentMethod(
                             id = it.id,
                             name = it.name,
                             installments = it.installments ?: 0,
                             interestTax = it.interestTax,
-                            paymentType = it.paymentType)
+                            paymentType = it.paymentType,
+                            isOnlinePayment = isOnlinePayment,
+                        )
                     }
                     paymentMethodsCache = CacheEntry(
                         value = paymentMethods,

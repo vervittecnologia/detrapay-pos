@@ -1,4 +1,4 @@
-package com.detrapay.ui.payment
+﻿package com.detrapay.ui.payment
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -13,10 +13,11 @@ import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagPaymentData
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagTransactionResult
 import br.com.uol.pagseguro.plugpagservice.wrapper.exception.PlugPagException
 import com.detrapay.data.Result
-import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.PaymentData
+import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.repositories.OrderRepository
 import com.detrapay.data.repositories.PaymentRepository
+import com.detrapay.ui.home.orders.OrderPaymentRequest
 import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.PaymentTypeRules
 import com.google.gson.Gson
@@ -30,30 +31,30 @@ import kotlin.math.roundToInt
 class PaymentDialogViewModel @Inject constructor(
     private val plugPag: IPlugPagWrapper,
     private val paymentRepository: PaymentRepository,
-    private val orderRepository: OrderRepository
+    private val orderRepository: OrderRepository,
 ) : ViewModel(), PlugPagEventListener {
 
-    private enum class CardPaymentStep(val message: String) {
+    private enum class PaymentStep(val message: String) {
         PREPARING("Aguarde, preparando a maquininha."),
-        WAITING_CARD("Insira ou aproxime o cartao."),
-        PROCESSING("Processando pagamento...")
+        WAITING("Siga as instrucoes na maquininha."),
+        PROCESSING("Processando pagamento..."),
+        RECORDING("Pagamento aprovado. Registrando no pedido..."),
     }
+
+    private data class PendingCompletion(
+        val idempotencyKey: String,
+        val attemptId: String,
+        val paymentData: PaymentData,
+    )
 
     private val _paymentState = MutableLiveData<UIState<PaymentData>>()
     val paymentState: LiveData<UIState<PaymentData>> = _paymentState
+
     @Volatile
     private var terminalPaymentActive = false
+    private var pendingCompletion: PendingCompletion? = null
 
     fun init() {
-        setupPrintLayout()
-        setupPlugPagEventListener()
-    }
-
-    private fun setupPlugPagEventListener() {
-        plugPag.setEventListener(this)
-    }
-
-    private fun setupPrintLayout() {
         plugPag.setPlugPagCustomPrinterLayout(
             PlugPagCustomPrinterLayout(
                 "Imprimir via do cliente?",
@@ -65,181 +66,184 @@ class PaymentDialogViewModel @Inject constructor(
                 "#808080",
                 "#FFFFFF",
                 60,
-            )
+            ),
         )
+        plugPag.setEventListener(this)
     }
 
-    fun payOrder(orderId: Int, receivable: OrderReceivableItem, serial: String) {
-        terminalPaymentActive = false
-        if (isPixPayment(receivable)) {
-            _paymentState.postValue(UIState.Loading("Gerando QR Code PIX..."))
-            viewModelScope.launch(Dispatchers.IO) {
-                when (val result = orderRepository.generatePixCharge(receivable)) {
-                    is Result.Success -> {
-                        val charge = result.data
-                        val paymentData = PaymentData(
-                            transactionId = charge.txId,
-                            pixTxIdCode = charge.txId,
-                            pendingConfirmation = true,
-                            pixQrCodeContent = charge.qrCodeContent,
-                            pixCopyPasteCode = charge.copyPasteCode,
-                            pixQrCodeBase64 = charge.qrCodeBase64,
-                            pixExpiresAt = charge.expiresAt
-                        )
-
-                        paymentRepository.saveTransaction(
-                            orderId = orderId,
-                            amount = receivable.amountFinal,
-                            installments = receivable.installments,
-                            paymentType = receivable.paymentMethod.name,
-                            pixTxIdCode = charge.txId,
-                            message = "QR Code PIX gerado"
-                        )
-
-                        _paymentState.postValue(UIState.Success(paymentData))
-                    }
-
-                    is Result.Error -> {
-                        _paymentState.postValue(
-                            UIState.Error(
-                                result.exception.message
-                                    ?: "Nao foi possivel gerar o QR Code PIX."
-                            )
-                        )
-                    }
-                }
-            }
+    fun payOrder(request: OrderPaymentRequest, serial: String) {
+        if (!request.paymentMethod.isOnlinePayment) {
+            _paymentState.postValue(UIState.Error("Este pagamento deve ser apenas registrado."))
             return
         }
 
-        if (PaymentTypeRules.isDirectNoFeePaymentType(receivable.paymentMethod.paymentType) ||
-            PaymentTypeRules.isDirectNoFeePaymentType(receivable.paymentMethod.name)
-        ) {
-            _paymentState.postValue(
-                UIState.Error("Este tipo de pagamento deve ser confirmado manualmente.")
-            )
+        val retry = pendingCompletion
+        if (retry?.idempotencyKey == request.idempotencyKey) {
+            retryApprovedPayment(retry)
             return
         }
 
         terminalPaymentActive = true
-        postCardLoadingStep(CardPaymentStep.PREPARING)
-        viewModelScope.launch(Dispatchers.Default) {
-            try {
-                val prePayResult = orderRepository.updateSplitConfig(receivable.id, serial)
-                if (prePayResult is Result.Error) {
-                    terminalPaymentActive = false
-                    _paymentState.postValue(
-                        UIState.Error(
-                            "Nao foi possivel configurar a maquininha: ${prePayResult.exception.message}"
-                        )
-                    )
-                    return@launch
-                }
-
-                if (!plugPag.isAuthenticated()) {
-                    terminalPaymentActive = false
-                    _paymentState.postValue(UIState.Error("Nenhum usuario autenticado, contate o suporte."))
-                    return@launch
-                }
-
-                val amountInCents = receivable.amountFinal * 100
-                val roundedAmountInCents = amountInCents.roundToInt()
-                val paymentType = getPaymentType(receivable)
-                val installmentType = getInstallmentType(receivable.installments)
-                val paymentData = PlugPagPaymentData(
-                    paymentType,
-                    roundedAmountInCents,
-                    installmentType,
-                    receivable.installments,
-                    null,
-                    printReceipt = true,
-                    partialPay = false,
-                    isCarne = false,
+        postStep(PaymentStep.PREPARING)
+        viewModelScope.launch(Dispatchers.IO) {
+            when (
+                val prepared = orderRepository.prepareOnlinePayment(
+                    orderId = request.order.id,
+                    paymentMethod = request.paymentMethod,
+                    amountOriginal = request.amount,
+                    installments = request.installments,
+                    idempotencyKey = request.idempotencyKey,
                 )
-
-                postCardLoadingStep(CardPaymentStep.WAITING_CARD)
-                val plugPagResult: PlugPagTransactionResult = plugPag.doPayment(paymentData)
-                val transactionLog = Gson().toJson(plugPagResult)
-
-                if (plugPagResult.result == PlugPag.RET_OK) {
-                    val transactionResult = PaymentData(
-                        transactionId = plugPagResult.transactionId!!,
-                        transactionCode = plugPagResult.transactionCode!!,
-                        date = plugPagResult.date!!,
-                        time = plugPagResult.time!!,
-                        cardBrand = plugPagResult.cardBrand,
-                        cardLast4 = plugPagResult.holder,
-                        cardHolder = plugPagResult.holderName,
-                        pixTxIdCode = plugPagResult.pixTxIdCode,
-                        transactionLog = transactionLog,
-                        amountOriginal = receivable.amountOriginal,
-                        amountFinal = receivable.amountFinal
-                    )
-
-                    paymentRepository.saveTransaction(
-                        orderId = orderId,
-                        amount = receivable.amountFinal,
-                        installments = receivable.installments,
-                        paymentType = receivable.paymentMethod.name,
-                        transactionId = plugPagResult.transactionId,
-                        transactionCode = plugPagResult.transactionCode,
-                        date = plugPagResult.date,
-                        result = plugPagResult.result,
-                        cardBrand = plugPagResult.cardBrand,
-                        cardLast4 = plugPagResult.holder,
-                        cardHolder = plugPagResult.holderName,
-                        pixTxIdCode = plugPagResult.pixTxIdCode,
-                        message = plugPagResult.message,
-                        errorCode = plugPagResult.errorCode
-                    )
-
-                    postCardLoadingStep(CardPaymentStep.PROCESSING)
-                    when (val apiResult = orderRepository.payOrder(orderId, receivable, transactionResult)) {
-                        is Result.Success -> {
-                            terminalPaymentActive = false
-                            _paymentState.postValue(UIState.Success(transactionResult))
-                        }
-                        is Result.Error -> {
-                            terminalPaymentActive = false
-                            _paymentState.postValue(
-                                UIState.Error(
-                                    apiResult.exception.message ?: "Falha ao concluir pagamento."
-                                )
-                            )
-                        }
-                    }
-                } else {
-                    paymentRepository.saveTransaction(
-                        orderId = orderId,
-                        amount = receivable.amountFinal,
-                        installments = receivable.installments,
-                        paymentType = receivable.paymentMethod.name,
-                        transactionId = plugPagResult.transactionId,
-                        transactionCode = plugPagResult.transactionCode,
-                        date = plugPagResult.date,
-                        result = plugPagResult.result,
-                        cardBrand = plugPagResult.cardBrand,
-                        cardLast4 = plugPagResult.holder,
-                        cardHolder = plugPagResult.holderName,
-                        pixTxIdCode = plugPagResult.pixTxIdCode,
-                        message = plugPagResult.message,
-                        errorCode = plugPagResult.errorCode
-                    )
-
-                    terminalPaymentActive = false
-                    _paymentState.postValue(UIState.Error(buildTerminalFailureMessage(plugPagResult)))
-                }
-            } catch (_: PlugPagException) {
-                terminalPaymentActive = false
-                _paymentState.postValue(UIState.Error("Falha no pagamento."))
-            } catch (e: Exception) {
-                terminalPaymentActive = false
-                _paymentState.postValue(UIState.Error(e.message ?: "Erro inesperado"))
+            ) {
+                is Result.Error -> finishWithError(
+                    prepared.exception.message ?: "Nao foi possivel preparar o pagamento online.",
+                    prepared.exception,
+                )
+                is Result.Success -> startPagBank(request, prepared.data.id, prepared.data.amountFinal, serial)
             }
         }
     }
 
-    private fun buildTerminalFailureMessage(result: PlugPagTransactionResult): String {
+    @Deprecated("Use o fluxo atomico baseado em OrderPaymentRequest")
+    fun payOrder(orderId: Int, receivable: OrderReceivableItem, serial: String) {
+        _paymentState.postValue(
+            UIState.Error(
+                "Este fluxo antigo nao pode iniciar pagamentos. Volte para Pedidos e toque em Pagar.",
+            ),
+        )
+    }
+
+    private suspend fun startPagBank(
+        request: OrderPaymentRequest,
+        attemptId: String,
+        amountFinal: Double,
+        serial: String,
+    ) {
+        when (val split = orderRepository.updatePaymentAttemptSplitConfig(attemptId, serial)) {
+            is Result.Error -> {
+                finishWithError("Nao foi possivel configurar a maquininha: ${split.exception.message}", split.exception)
+                return
+            }
+            is Result.Success -> Unit
+        }
+
+        if (!plugPag.isAuthenticated()) {
+            finishWithError("Nenhum usuario autenticado, contate o suporte.")
+            return
+        }
+
+        try {
+            postStep(PaymentStep.WAITING)
+            val result = plugPag.doPayment(
+                PlugPagPaymentData(
+                    paymentType(request),
+                    (amountFinal * 100).roundToInt(),
+                    installmentType(request.installments),
+                    request.installments,
+                    null,
+                    printReceipt = true,
+                    partialPay = false,
+                    isCarne = false,
+                ),
+            )
+            if (result.result != PlugPag.RET_OK) {
+                saveTransactionLog(request, result, amountFinal)
+                finishWithError(terminalFailureMessage(result))
+                return
+            }
+
+            val approval = PaymentData(
+                transactionId = result.transactionId,
+                transactionCode = result.transactionCode,
+                date = result.date,
+                time = result.time,
+                cardBrand = result.cardBrand,
+                cardLast4 = result.holder,
+                cardHolder = result.holderName,
+                pixTxIdCode = result.pixTxIdCode,
+                transactionLog = Gson().toJson(result),
+                amountOriginal = request.amount,
+                amountFinal = amountFinal,
+            )
+            if (approval.transactionId.isNullOrBlank()) {
+                finishWithError("A aprovacao PagBank nao retornou transaction_id.")
+                return
+            }
+            saveTransactionLog(request, result, amountFinal)
+            val completion = PendingCompletion(request.idempotencyKey, attemptId, approval)
+            pendingCompletion = completion
+            completeApprovedPayment(completion)
+        } catch (_: PlugPagException) {
+            finishWithError("Falha no pagamento.")
+        } catch (e: Exception) {
+            finishWithError(e.message ?: "Erro inesperado", e)
+        }
+    }
+
+    private fun retryApprovedPayment(completion: PendingCompletion) {
+        terminalPaymentActive = false
+        postStep(PaymentStep.RECORDING)
+        viewModelScope.launch(Dispatchers.IO) { completeApprovedPayment(completion) }
+    }
+
+    private suspend fun completeApprovedPayment(completion: PendingCompletion) {
+        terminalPaymentActive = false
+        postStep(PaymentStep.RECORDING)
+        when (
+            val result = orderRepository.recordApprovedOnlinePayment(
+                completion.attemptId,
+                completion.paymentData,
+            )
+        ) {
+            is Result.Success -> {
+                pendingCompletion = null
+                _paymentState.postValue(UIState.Success(completion.paymentData))
+            }
+            is Result.Error -> finishWithError(
+                result.exception.message ?: "Pagamento aprovado, mas ainda nao registrado. Tente novamente.",
+                result.exception,
+            )
+        }
+    }
+
+    private suspend fun saveTransactionLog(
+        request: OrderPaymentRequest,
+        result: PlugPagTransactionResult,
+        amountFinal: Double,
+    ) {
+        paymentRepository.saveTransaction(
+            orderId = request.order.id,
+            amount = amountFinal,
+            installments = request.installments,
+            paymentType = request.paymentMethod.name,
+            transactionId = result.transactionId,
+            transactionCode = result.transactionCode,
+            date = result.date,
+            result = result.result,
+            cardBrand = result.cardBrand,
+            cardLast4 = result.holder,
+            cardHolder = result.holderName,
+            pixTxIdCode = result.pixTxIdCode,
+            message = result.message,
+            errorCode = result.errorCode,
+        )
+    }
+
+    private fun paymentType(request: OrderPaymentRequest): Int = when (
+        PaymentTypeRules.normalize(request.paymentMethod.paymentType)
+    ) {
+        "credito" -> PlugPag.TYPE_CREDITO
+        "pix" -> PlugPag.TYPE_PIX
+        else -> PlugPag.TYPE_DEBITO
+    }
+
+    private fun installmentType(installments: Int): Int = if (installments > 1) {
+        PlugPag.INSTALLMENT_TYPE_PARC_VENDEDOR
+    } else {
+        PlugPag.INSTALLMENT_TYPE_A_VISTA
+    }
+
+    private fun terminalFailureMessage(result: PlugPagTransactionResult): String {
         val message = result.message?.trim().orEmpty()
         val errorCode = result.errorCode?.trim().orEmpty()
         return when {
@@ -250,41 +254,13 @@ class PaymentDialogViewModel @Inject constructor(
         }
     }
 
-    private fun postCardLoadingStep(step: CardPaymentStep) {
+    private fun postStep(step: PaymentStep) {
         _paymentState.postValue(UIState.Loading(step.message))
     }
 
-    private fun getInstallmentType(installments: Int): Int {
-        return if (installments > 1) {
-            PlugPag.INSTALLMENT_TYPE_PARC_VENDEDOR
-        } else {
-            PlugPag.INSTALLMENT_TYPE_A_VISTA
-        }
-    }
-
-    private fun isPixPayment(receivable: OrderReceivableItem): Boolean {
-        return PaymentTypeRules.isPix(receivable.paymentMethod.paymentType) ||
-            PaymentTypeRules.isPix(receivable.paymentMethod.name)
-    }
-
-    private fun getPaymentType(receivable: OrderReceivableItem): Int {
-        val normalizedType = PaymentTypeRules.normalize(receivable.paymentMethod.paymentType)
-        val normalizedName = PaymentTypeRules.normalize(receivable.paymentMethod.name)
-
-        val isCreditCard = normalizedType.contains("credit") ||
-            normalizedType.contains("credito") ||
-            normalizedName.contains("credit") ||
-            normalizedName.contains("credito") ||
-            normalizedName.contains("visa") ||
-            normalizedName.contains("mastercard")
-
-        val isPix = normalizedType.contains("pix") || normalizedName.contains("pix")
-
-        return when {
-            isCreditCard -> PlugPag.TYPE_CREDITO
-            isPix -> PlugPag.TYPE_PIX
-            else -> PlugPag.TYPE_DEBITO
-        }
+    private fun finishWithError(message: String, exception: Exception? = null) {
+        terminalPaymentActive = false
+        _paymentState.postValue(UIState.Error(message, exception))
     }
 
     fun abortPayment() {
@@ -297,17 +273,9 @@ class PaymentDialogViewModel @Inject constructor(
 
     override fun onEvent(data: PlugPagEventData) {
         if (!terminalPaymentActive) return
-        val message = data.customMessage.orEmpty().trim().lowercase()
-        val step = when {
-            message.contains("insira") ||
-                message.contains("insere") ||
-                message.contains("aproxime") ||
-                message.contains("aproximar") ||
-                message.contains("passe") ||
-                message.contains("cartao") -> CardPaymentStep.WAITING_CARD
-            else -> CardPaymentStep.PROCESSING
-        }
-
-        postCardLoadingStep(step)
+        val message = data.customMessage.orEmpty().trim()
+        _paymentState.postValue(
+            UIState.Loading(message.ifBlank { PaymentStep.PROCESSING.message }),
+        )
     }
 }

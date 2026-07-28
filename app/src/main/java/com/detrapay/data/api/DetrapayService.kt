@@ -1,11 +1,13 @@
-package com.detrapay.data.api
+﻿package com.detrapay.data.api
 
 import com.detrapay.data.model.remote.AuthRequest
 import com.detrapay.data.model.remote.AuthResponse
 import com.detrapay.data.model.remote.AddOrderReceivableRequest
+import com.detrapay.data.model.remote.AtomicPaymentMutationResponse
 import com.detrapay.data.model.remote.CardBrandIconResponse
 import com.detrapay.data.model.remote.CompanyListResponse
 import com.detrapay.data.model.remote.ConfirmPaymentRequest
+import com.detrapay.data.model.remote.CompleteOnlinePaymentRequest
 import com.detrapay.data.model.remote.CreateOrderRequest
 import com.detrapay.data.model.remote.CreateOrderResponse
 import com.detrapay.data.model.remote.CustomerSearchDataResponse
@@ -13,9 +15,12 @@ import com.detrapay.data.model.remote.OrderRequest
 import com.detrapay.data.model.remote.OrderResponse
 import com.detrapay.data.model.remote.PaginatedOrderResponse
 import com.detrapay.data.model.remote.PaymentMethodResponse
+import com.detrapay.data.model.remote.PaymentAttemptResponse
+import com.detrapay.data.model.remote.PrepareOnlinePaymentRequest
 import com.detrapay.data.model.remote.PixChargeRequest
 import com.detrapay.data.model.remote.PixChargeResponse
 import com.detrapay.data.model.remote.RefundOrderReceivableRequest
+import com.detrapay.data.model.remote.RecordManualPaymentRequest
 import com.detrapay.data.model.remote.RefreshSessionRequest
 import com.detrapay.data.model.remote.OrderReceivableMutationResponse
 import com.detrapay.data.model.remote.SalespeopleResponse
@@ -96,6 +101,24 @@ interface DetrapayService {
         @Path("id") id: Int,
         @Body payload: AddOrderReceivableRequest
     ): Response<OrderReceivableMutationResponse>
+
+    @POST("orders/{id}/payment-attempts")
+    suspend fun prepareOnlinePayment(
+        @Path("id") id: Int,
+        @Body payload: PrepareOnlinePaymentRequest,
+    ): Response<PaymentAttemptResponse>
+
+    @POST("payment-attempts/{id}/complete")
+    suspend fun completeOnlinePayment(
+        @Path("id") id: String,
+        @Body payload: CompleteOnlinePaymentRequest,
+    ): Response<AtomicPaymentMutationResponse>
+
+    @POST("orders/{id}/manual-payments")
+    suspend fun recordManualPayment(
+        @Path("id") id: Int,
+        @Body payload: RecordManualPaymentRequest,
+    ): Response<AtomicPaymentMutationResponse>
 
     @POST("receivables/{id}/confirm-payment")
     suspend fun confirmPayment(@Path("id") id: String, @Body payload: ConfirmPaymentRequest): Response<CreateOrderResponse>

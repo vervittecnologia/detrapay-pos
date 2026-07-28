@@ -1,4 +1,4 @@
-package com.detrapay.data.datasources.remote
+﻿package com.detrapay.data.datasources.remote
 
 import com.detrapay.data.Result
 import com.detrapay.data.api.DetrapayService
@@ -55,7 +55,8 @@ class DetrapayRemoteDataSourceTest {
                     name = "Credito",
                     installments = 12,
                     interestTax = 0.02,
-                    paymentType = "credit"
+                    paymentType = "credit",
+                    isOnlinePayment = true,
                 )
             )
         )
@@ -92,7 +93,8 @@ class DetrapayRemoteDataSourceTest {
             receivable().copy(
                 paymentMethod = receivable().paymentMethod.copy(
                     installments = 1,
-                    paymentType = "cash"
+                    paymentType = "cash",
+                    isOnlinePayment = false,
                 )
             ),
             paymentData().copy(
@@ -213,7 +215,8 @@ class DetrapayRemoteDataSourceTest {
                     name = "Credito",
                     installments = 12,
                     interestTax = 0.02,
-                    paymentType = "credit"
+                    paymentType = "credit",
+                    isOnlinePayment = true,
                 )
             )
         )
@@ -231,7 +234,8 @@ class DetrapayRemoteDataSourceTest {
             name = "Credito",
             installments = 12,
             interestTax = 0.02,
-            paymentType = "credit"
+            paymentType = "credit",
+            isOnlinePayment = true,
         ),
         paymentDate = null,
         refundDate = null,

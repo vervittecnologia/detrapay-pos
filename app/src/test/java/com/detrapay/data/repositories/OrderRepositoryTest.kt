@@ -1,4 +1,4 @@
-package com.detrapay.data.repositories
+﻿package com.detrapay.data.repositories
 
 import com.detrapay.data.Result
 import com.detrapay.data.datasources.remote.DetrapayRemoteDataSource
@@ -194,7 +194,8 @@ class OrderRepositoryTest {
                             name = "Credito",
                             installments = 1,
                             interestTax = 0.0,
-                            paymentType = "credit"
+                            paymentType = "credit",
+                            isOnlinePayment = true,
                         )
                     )
                 )
@@ -259,7 +260,8 @@ class OrderRepositoryTest {
                             name = "Credito",
                             installments = 1,
                             interestTax = 0.0,
-                            paymentType = "credit"
+                            paymentType = "credit",
+                            isOnlinePayment = true,
                         )
                     )
                 )
@@ -320,7 +322,8 @@ class OrderRepositoryTest {
                             name = "Credito",
                             installments = 12,
                             interestTax = 0.02,
-                            paymentType = "credit"
+                            paymentType = "credit",
+                            isOnlinePayment = true,
                         )
                     )
                 )
@@ -383,7 +386,8 @@ class OrderRepositoryTest {
                             name = "Dinheiro",
                             installments = 1,
                             interestTax = 0.0,
-                            paymentType = "cash"
+                            paymentType = "cash",
+                            isOnlinePayment = false,
                         )
                     )
                 )
@@ -439,7 +443,8 @@ class OrderRepositoryTest {
                             name = "Dinheiro",
                             installments = 1,
                             interestTax = 0.0,
-                            paymentType = "cash"
+                            paymentType = "cash",
+                            isOnlinePayment = false,
                         )
                     )
                 )
@@ -454,7 +459,8 @@ class OrderRepositoryTest {
                 paymentMethod = receivable().paymentMethod.copy(
                     installments = 1,
                     interestTax = 0.0,
-                    paymentType = "cash"
+                    paymentType = "cash",
+                    isOnlinePayment = false,
                 )
             ),
             PaymentData(
@@ -470,7 +476,7 @@ class OrderRepositoryTest {
     }
 
     @Test
-    fun `addPendingReceivable uses updated order returned by backend without extra fetch`() = runTest {
+    fun `addPendingReceivable blocks online payment before any persistence`() = runTest {
         coEvery {
             remoteDataSource.addOrderReceivable(
                 orderId = 123,
@@ -509,7 +515,8 @@ class OrderRepositoryTest {
                             name = "Credito 1x",
                             installments = 1,
                             interestTax = 0.0439,
-                            paymentType = "credit"
+                            paymentType = "credit",
+                            isOnlinePayment = true,
                         )
                     )
                 )
@@ -522,12 +529,9 @@ class OrderRepositoryTest {
             amountOriginal = 1000.0
         )
 
-        assertTrue(result is Result.Success)
-        val order = (result as Result.Success).data
-        assertEquals(OrderStatus.PENDING, order.status)
-        assertEquals(1, order.receivables.size)
-        assertEquals(1043.9, order.currentAmount, 0.0)
-        coVerify(exactly = 1) {
+        assertTrue(result is Result.Error)
+        assertTrue((result as Result.Error).exception.message.orEmpty().contains("aprovacao PagBank"))
+        coVerify(exactly = 0) {
             remoteDataSource.addOrderReceivable(
                 orderId = 123,
                 paymentMethodId = 168,
@@ -546,7 +550,8 @@ class OrderRepositoryTest {
             name = "Dinheiro",
             installments = 1,
             interestTax = 0.0,
-            paymentType = "cash"
+            paymentType = "cash",
+            isOnlinePayment = false,
         )
         coEvery {
             remoteDataSource.addOrderReceivable(
@@ -586,7 +591,8 @@ class OrderRepositoryTest {
                             name = "Dinheiro",
                             installments = 1,
                             interestTax = 0.0,
-                            paymentType = "cash"
+                            paymentType = "cash",
+                            isOnlinePayment = false,
                         )
                     )
                 )
@@ -622,7 +628,8 @@ class OrderRepositoryTest {
                 name = "Dinheiro",
                 installments = 1,
                 interestTax = 0.0,
-                paymentType = "cash"
+                paymentType = "cash",
+                isOnlinePayment = false,
             )
         )
         coEvery { remoteDataSource.deleteOrderReceivableItem("abc") } returns Result.Success(
@@ -673,7 +680,8 @@ class OrderRepositoryTest {
                 name = "Pix",
                 installments = 1,
                 interestTax = 0.0,
-                paymentType = "pix"
+                paymentType = "pix",
+                isOnlinePayment = true,
             )
         )
         coEvery { remoteDataSource.deleteOrderReceivableItem("abc") } returns Result.Success(
@@ -734,6 +742,7 @@ class OrderRepositoryTest {
             installments = 1,
             interestTax = 0.0439,
             paymentType = "credit",
+            isOnlinePayment = true,
         ),
         amountOriginal = "1000,00",
         amountFinal = "1043,90",
@@ -747,7 +756,8 @@ class OrderRepositoryTest {
             name = "Credito",
             installments = 12,
             interestTax = 0.02,
-            paymentType = "credit"
+            paymentType = "credit",
+            isOnlinePayment = true,
         )
     ) = com.detrapay.data.model.OrderReceivableItem(
         id = 20,

@@ -1,9 +1,10 @@
-package com.detrapay.data.datasources.remote
+﻿package com.detrapay.data.datasources.remote
 
 import com.detrapay.data.Result
 import com.detrapay.data.api.DetrapayService
 import com.detrapay.data.api.SupabaseService
 import com.detrapay.data.model.remote.AddOrderReceivableRequest
+import com.detrapay.data.model.remote.AtomicPaymentMutationResponse
 import com.detrapay.data.model.remote.AuthRequest
 import com.detrapay.data.model.remote.AuthResponse
 import com.detrapay.data.model.remote.CalculateFeesResponse
@@ -17,6 +18,8 @@ import com.detrapay.data.model.remote.OrderResponse
 import com.detrapay.data.model.remote.OrderSimulationItemRequest
 import com.detrapay.data.model.remote.OrderSimulationRequest
 import com.detrapay.data.model.remote.PaymentMethodResponse
+import com.detrapay.data.model.remote.PaymentAttempt
+import com.detrapay.data.model.remote.PrepareOnlinePaymentRequest
 import com.detrapay.data.model.remote.SimulationRequest
 import com.detrapay.data.model.remote.SimulationResponse
 import com.detrapay.data.model.remote.VehicleTypeListResponse
@@ -28,9 +31,11 @@ import com.detrapay.data.model.PixCharge
 import com.detrapay.data.model.remote.ApiError
 import com.detrapay.data.model.remote.CardBrandIconResponse
 import com.detrapay.data.model.remote.ConfirmPaymentRequest
+import com.detrapay.data.model.remote.CompleteOnlinePaymentRequest
 import com.detrapay.data.model.remote.CreateOrderRequest
 import com.detrapay.data.model.remote.PixChargeRequest
 import com.detrapay.data.model.remote.RefundOrderReceivableRequest
+import com.detrapay.data.model.remote.RecordManualPaymentRequest
 import com.detrapay.data.model.remote.SalespersonResponse
 import com.detrapay.data.model.remote.SplitConfigRequest
 import com.detrapay.data.model.remote.UpdateOrderReceivableRequest
@@ -65,6 +70,13 @@ class DetrapayRemoteDataSource @Inject constructor(
             Gson().fromJson(rawData, OrderResponse::class.java)
         }.getOrNull()
     }
+
+    private fun extractUpdatedOrder(response: AtomicPaymentMutationResponse): OrderResponse =
+        response.updatedOrder.data
+
+    private fun transactionLog(raw: String?): JsonElement? = raw
+        ?.takeIf { it.isNotBlank() }
+        ?.let { runCatching { Gson().fromJson(it, JsonElement::class.java) }.getOrNull() }
 
     suspend fun calculateFees(
         value: Double,
@@ -359,6 +371,91 @@ class DetrapayRemoteDataSource @Inject constructor(
         } catch (e: Throwable) {
             Logger.d(e.toString())
             return Result.Error(IOException("Error adding receivable", e))
+        }
+    }
+
+    suspend fun prepareOnlinePayment(
+        orderId: Int,
+        paymentMethodId: Int,
+        amountOriginal: Double,
+        installments: Int,
+        idempotencyKey: String,
+    ): Result<PaymentAttempt> {
+        return try {
+            val response = detrapayService.prepareOnlinePayment(
+                orderId,
+                PrepareOnlinePaymentRequest(
+                    paymentMethodId = paymentMethodId,
+                    amountOriginal = amountOriginal,
+                    installments = installments,
+                    idempotencyKey = idempotencyKey,
+                ),
+            )
+            when {
+                response.isSuccessful -> response.body()?.data?.let { Result.Success(it) }
+                    ?: Result.Error(Exception("Resposta vazia ao preparar pagamento online."))
+                response.code() == 401 -> unauthorizedError("POST /orders/$orderId/payment-attempts", response.errorBody())
+                else -> Result.Error(Exception(ApiError(response.errorBody()).message))
+            }
+        } catch (e: Throwable) {
+            Result.Error(IOException("Erro ao preparar pagamento online", e))
+        }
+    }
+
+    suspend fun completeOnlinePayment(
+        attemptId: String,
+        paymentData: PaymentData,
+    ): Result<OrderResponse> {
+        val transactionId = paymentData.transactionId?.takeIf { it.isNotBlank() }
+            ?: return Result.Error(Exception("A aprovacao PagBank nao retornou transaction_id."))
+        return try {
+            val response = detrapayService.completeOnlinePayment(
+                attemptId,
+                CompleteOnlinePaymentRequest(
+                    transactionId = transactionId,
+                    authorizationCode = paymentData.transactionCode,
+                    cardBrand = paymentData.cardBrand,
+                    cardLast4 = paymentData.cardLast4,
+                    cardHolder = paymentData.cardHolder,
+                    transactionLog = transactionLog(paymentData.transactionLog),
+                ),
+            )
+            when {
+                response.isSuccessful -> response.body()?.let { Result.Success(extractUpdatedOrder(it)) }
+                    ?: Result.Error(Exception("Resposta vazia ao concluir pagamento online."))
+                response.code() == 401 -> unauthorizedError("POST /payment-attempts/$attemptId/complete", response.errorBody())
+                else -> Result.Error(Exception(ApiError(response.errorBody()).message))
+            }
+        } catch (e: Throwable) {
+            Result.Error(IOException("Erro ao registrar pagamento aprovado", e))
+        }
+    }
+
+    suspend fun recordManualPayment(
+        orderId: Int,
+        paymentMethodId: Int,
+        amountOriginal: Double,
+        installments: Int,
+        idempotencyKey: String,
+    ): Result<OrderResponse> {
+        return try {
+            val response = detrapayService.recordManualPayment(
+                orderId,
+                RecordManualPaymentRequest(
+                    paymentMethodId = paymentMethodId,
+                    amountOriginal = amountOriginal,
+                    installments = installments,
+                    idempotencyKey = idempotencyKey,
+                ),
+            )
+            when {
+                response.isSuccessful -> response.body()?.let { Result.Success(extractUpdatedOrder(it)) }
+                    ?: Result.Error(Exception("Resposta vazia ao registrar pagamento."))
+                response.code() == 401 -> unauthorizedError("POST /orders/$orderId/manual-payments", response.errorBody())
+                else -> Result.Error(Exception(ApiError(response.errorBody()).message))
+            }
+        } catch (e: Throwable) {
+            Result.Error(IOException("Erro ao registrar pagamento", e))
         }
     }
 

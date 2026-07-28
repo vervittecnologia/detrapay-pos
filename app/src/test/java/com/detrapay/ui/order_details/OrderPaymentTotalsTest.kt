@@ -1,4 +1,4 @@
-package com.detrapay.ui.order_details
+﻿package com.detrapay.ui.order_details
 
 import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.OrderReceivableItemStatus
@@ -64,6 +64,7 @@ class OrderPaymentTotalsTest {
             installments = 1,
             interestTax = 0.0,
             paymentType = paymentType,
+            isOnlinePayment = paymentType in setOf("credito", "debito", "pix"),
         ),
         paymentDate = null,
         refundDate = null,

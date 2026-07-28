@@ -1,49 +1,17 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/home_navigation"
-    app:startDestination="@id/registrationFragment">
+    app:startDestination="@id/ordersFragment">
 
     <fragment
-        android:id="@+id/registrationFragment"
-        android:name="com.detrapay.ui.home.registration.RegistrationFragment"
-        tools:layout="@layout/fragment_registration">
-        <action
-            android:id="@+id/action_registrationFragment_to_registrationActivity"
-            app:destination="@id/registrationActivity"
-            app:popUpTo="@id/registrationFragment" />
-    </fragment>
+        android:id="@+id/ordersFragment"
+        android:name="com.detrapay.ui.home.orders.OrdersFragment"
+        android:label="Pedidos" />
 
     <activity
         android:id="@+id/registrationActivity"
         android:name="com.detrapay.ui.registration.RegistrationActivity"
         tools:layout="@layout/activity_registration" />
-
-    <fragment
-        android:id="@+id/orderListFragment"
-        android:name="com.detrapay.ui.home.order_list.OrderListFragment"
-        android:label="Meus pedidos"
-        tools:layout="@layout/fragment_order_list" />
-
-    <fragment
-        android:id="@+id/profileFragment"
-        android:name="com.detrapay.ui.home.profile.ProfileFragment"
-        android:label="@string/home_tab_profile"
-        tools:layout="@layout/fragment_profile" />
-
-    <fragment
-        android:id="@+id/paymentHistoryFragment"
-        android:name="com.detrapay.ui.home.payment_history.PaymentHistoryFragment"
-        android:label="Histórico de pagamentos"
-        tools:layout="@layout/fragment_payment_history" />
-
-    <activity
-        android:id="@+id/notificationsActivity"
-        android:name="com.detrapay.ui.notification.NotificationActivity"
-        tools:layout="@layout/activity_notification" />
-    <fragment
-        android:id="@+id/directCheckoutFragment"
-        android:name="com.detrapay.ui.home.direct_checkout.DirectCheckoutFragment"
-        android:label="Pedidos" />
 </navigation>

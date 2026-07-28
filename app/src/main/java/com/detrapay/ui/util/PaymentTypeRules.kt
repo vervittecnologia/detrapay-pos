@@ -1,4 +1,4 @@
-package com.detrapay.ui.util
+﻿package com.detrapay.ui.util
 
 import com.detrapay.data.model.remote.BrandFeesData
 import com.detrapay.data.model.remote.CalculateFeesResponse
@@ -9,9 +9,10 @@ object PaymentTypeRules {
 
     fun normalize(rawType: String?): String {
         return when (rawType.orEmpty().trim().lowercase()) {
-            "credito", "crédito", "credit", "cartao_credito", "cartão_credito", "cartao de credito", "cartão de crédito" -> "credito"
-            "debito", "débito", "debit", "cartao_debito", "cartão_debito", "cartao de debito", "cartão de débito" -> "debito"
+            "credito", "crÃ©dito", "credit", "cartao_credito", "cartÃ£o_credito", "cartao de credito", "cartÃ£o de crÃ©dito" -> "credito"
+            "debito", "dÃ©bito", "debit", "cartao_debito", "cartÃ£o_debito", "cartao de debito", "cartÃ£o de dÃ©bito" -> "debito"
             "pix" -> "pix"
+            "pix_manual", "transferencia_pix", "transferencia pix", "transferÃªncia pix" -> "pix_manual"
             "dinheiro", "cash" -> "dinheiro"
             "store_credit", "credito_loja", "credito loja", "storecredit" -> "store_credit"
             else -> rawType.orEmpty().trim().lowercase()
@@ -22,20 +23,6 @@ object PaymentTypeRules {
         return when (normalize(rawType)) {
             "dinheiro", "store_credit" -> true
             else -> false
-        }
-    }
-
-    fun requiresTerminalApproval(rawType: String?): Boolean {
-        return when (normalize(rawType)) {
-            "pix", "credito", "debito" -> true
-            else -> false
-        }
-    }
-
-    fun shouldPersistInMemory(rawType: String?): Boolean {
-        return when (normalize(rawType)) {
-            "pix", "credito", "debito" -> false
-            else -> true
         }
     }
 

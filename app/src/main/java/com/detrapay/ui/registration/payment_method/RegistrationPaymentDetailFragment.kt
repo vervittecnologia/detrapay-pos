@@ -1,4 +1,4 @@
-package com.detrapay.ui.registration.payment_method
+﻿package com.detrapay.ui.registration.payment_method
 
 import android.os.Bundle
 import android.text.Editable
@@ -279,8 +279,15 @@ class RegistrationPaymentDetailFragment : Fragment() {
 
         val baseMethods = registrationViewModel.getPaymentMethodsByType(paymentType)
         val method = baseMethods.firstOrNull { it.installments == fee.installmentNumber } 
-                     ?: baseMethods.firstOrNull() 
-                     ?: PaymentMethod(0, "Pagamento", fee.installmentNumber, 0.0, paymentType)
+                     ?: baseMethods.firstOrNull()
+                     ?: run {
+                         Toast.makeText(
+                             requireContext(),
+                             "Metodo de pagamento indisponivel. Atualize os meios de pagamento.",
+                             Toast.LENGTH_LONG,
+                         ).show()
+                         return
+                     }
 
         val payment = SimulationPayment(
             id = if (editingPaymentId != -1L) editingPaymentId else System.currentTimeMillis(),

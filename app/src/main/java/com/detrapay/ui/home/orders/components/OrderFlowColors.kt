@@ -1,0 +1,35 @@
+﻿package com.detrapay.ui.home.orders.components
+
+import androidx.compose.ui.graphics.Color
+
+internal object OrderFlowColors {
+    val Background = Color(0xFFF5F7FF)
+    val Ink = Color(0xFF0F172A)
+    val Text = Color(0xFF334155)
+    val Muted = Color(0xFF64748B)
+    val Faint = Color(0xFF94A3B8)
+    val Pale = Color(0xFFCBD5E1)
+    val Border = Color(0xFFE2E8F0)
+    val Track = Color(0xFFF1F5F9)
+    val Key = Color(0xFFF8FAFC)
+    val MutedSurface = Color(0xFFF1F5F9)
+    val Blue = Color(0xFF2563EB)
+    val BlueLight = Color(0xFF60A5FA)
+    val BlueSoft = Color(0xFFEFF6FF)
+    val BlueBorder = Color(0xFFDBEAFE)
+    val BlueOnSoft = Color(0xFFBFDBFE)
+    val IndigoSoft = Color(0xFFEEF2FF)
+    val Amber = Color(0xFFFBBF24)
+    val AmberSoft = Color(0xFFFFFBEB)
+    val AmberText = Color(0xFFD97706)
+    val Warning = Color(0xFFDB9101)
+    val WarningSoft = Color(0xFFFEF3C7)
+    val WarningText = Color(0xFF92400E)
+    val Green = Color(0xFF10B981)
+    val GreenSoft = Color(0xFFECFDF5)
+    val Red = Color(0xFFCA170B)
+    val RedSoft = Color(0xFFFEE2E2)
+    val Teal = Color(0xFF0D9488)
+    val Purple = Color(0xFF7C3AED)
+    val WhatsappGreen = Color(0xFF25D366)
+}

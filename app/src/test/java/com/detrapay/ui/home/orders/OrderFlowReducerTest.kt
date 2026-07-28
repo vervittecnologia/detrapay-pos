@@ -1,0 +1,370 @@
+﻿package com.detrapay.ui.home.orders
+
+import com.detrapay.data.model.Order
+import com.detrapay.data.model.OrderCustomer
+import com.detrapay.data.model.OrderItem
+import com.detrapay.data.model.OrderReceivableItem
+import com.detrapay.data.model.OrderReceivableItemStatus
+import com.detrapay.data.model.OrderStatus
+import com.detrapay.data.model.PaymentMethod
+import com.detrapay.data.model.Salesman
+import com.detrapay.data.model.VehicleType
+import com.detrapay.data.model.remote.InstallmentFee
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class OrderFlowReducerTest {
+
+    @Test
+    fun `startPayment selects order and opens keypad with zero amount`() {
+        val order = order(total = 2570.18, paidAmount = 1200.0)
+
+        val state = OrderFlowReducer.startPayment(OrderFlowLocalState(), order)
+
+        assertEquals(order, state.selectedOrder)
+        assertEquals(OrderFlowStep.Keypad, state.step)
+        assertEquals("", state.paymentDigits)
+        assertNull(state.selectedPaymentMethod)
+        assertEquals(1, state.selectedInstallment)
+        assertFalse(state.showSimulator)
+    }
+
+    @Test
+    fun `pending amount fills digits only after explicit shortcut`() {
+        val order = order(total = 2570.18, paidAmount = 1200.0)
+        val started = OrderFlowReducer.startPayment(OrderFlowLocalState(), order)
+
+        val filled = OrderFlowReducer.usePendingAmount(started, order)
+
+        assertEquals("137018", filled.paymentDigits)
+    }
+
+    @Test
+    fun `showDetail selects order and opens detail`() {
+        val order = order()
+
+        val state = OrderFlowReducer.showDetail(OrderFlowLocalState(), order)
+
+        assertEquals(order, state.selectedOrder)
+        assertEquals(OrderFlowStep.Detail, state.step)
+    }
+
+    @Test
+    fun `payment key delegates to presentation rules`() {
+        val state = OrderFlowLocalState(paymentDigits = "12")
+
+        val next = OrderFlowReducer.applyPaymentKey(state, "DEL")
+
+        assertEquals("1", next.paymentDigits)
+    }
+
+    @Test
+    fun `open methods moves from keypad to method`() {
+        val state = OrderFlowLocalState(step = OrderFlowStep.Keypad)
+
+        val next = OrderFlowReducer.openMethods(state)
+
+        assertEquals(OrderFlowStep.Method, next.step)
+    }
+
+    @Test
+    fun `select credit resets installment and opens credit`() {
+        val state = OrderFlowLocalState(selectedInstallment = 4)
+
+        val next = OrderFlowReducer.selectPaymentMethod(state, paymentMethod("credito", true))
+
+        assertEquals("credito", next.selectedPaymentMethod?.paymentType)
+        assertEquals(1, next.selectedInstallment)
+        assertEquals(OrderFlowStep.Credit, next.step)
+        assertEquals(OrderFeeRequestTarget.CheckoutCredit, next.feeRequestTarget)
+    }
+
+    @Test
+    fun `select debit opens debit`() {
+        val state = OrderFlowLocalState()
+
+        val next = OrderFlowReducer.selectPaymentMethod(state, paymentMethod("debito", true))
+
+        assertEquals("debito", next.selectedPaymentMethod?.paymentType)
+        assertEquals(OrderFlowStep.Debit, next.step)
+    }
+
+    @Test
+    fun `select online pix opens waiting`() {
+        val state = OrderFlowLocalState()
+
+        val next = OrderFlowReducer.selectPaymentMethod(state, paymentMethod("pix", true))
+
+        assertEquals("pix", next.selectedPaymentMethod?.paymentType)
+        assertEquals(OrderFlowStep.Waiting, next.step)
+    }
+
+    @Test
+    fun `select record only method never opens waiting`() {
+        val next = OrderFlowReducer.selectPaymentMethod(
+            OrderFlowLocalState(),
+            paymentMethod("pix_manual", false),
+        )
+
+        assertEquals(OrderFlowStep.Method, next.step)
+    }
+
+    @Test
+    fun `back follows current order flow step order`() {
+        assertEquals(
+            OrderFlowStep.Orders,
+            OrderFlowReducer.back(OrderFlowLocalState(step = OrderFlowStep.Detail)).step,
+        )
+        assertEquals(
+            OrderFlowStep.Orders,
+            OrderFlowReducer.back(OrderFlowLocalState(step = OrderFlowStep.Keypad)).step,
+        )
+        assertEquals(
+            OrderFlowStep.Keypad,
+            OrderFlowReducer.back(OrderFlowLocalState(step = OrderFlowStep.Method)).step,
+        )
+        assertEquals(
+            OrderFlowStep.Method,
+            OrderFlowReducer.back(OrderFlowLocalState(step = OrderFlowStep.Credit)).step,
+        )
+        assertEquals(
+            OrderFlowStep.Method,
+            OrderFlowReducer.back(OrderFlowLocalState(step = OrderFlowStep.Debit)).step,
+        )
+        assertEquals(
+            OrderFlowStep.Method,
+            OrderFlowReducer.back(OrderFlowLocalState(step = OrderFlowStep.Waiting)).step,
+        )
+    }
+
+    @Test
+    fun `simulator state opens closes and updates amount`() {
+        val opened = OrderFlowReducer.openSimulator(
+            OrderFlowLocalState(simulatorAmountDigits = "123", simulatorSelectedInstallment = 2),
+        )
+
+        assertEquals(true, opened.showSimulator)
+        assertEquals("", opened.simulatorAmountDigits)
+        assertNull(opened.simulatorSelectedInstallment)
+
+        val updated = OrderFlowReducer.updateSimulatorAmount(opened, "R$ 45,67")
+
+        assertEquals("4567", updated.simulatorAmountDigits)
+        assertEquals(emptyList<Any>(), updated.simulatorInstallments)
+        assertNull(updated.simulatorSelectedInstallment)
+
+        val closed = OrderFlowReducer.closeSimulator(updated)
+
+        assertFalse(closed.showSimulator)
+        assertNull(closed.feeRequestTarget)
+    }
+
+    @Test
+    fun `simulator fee request is marked and cleared when response is consumed`() {
+        val loading = OrderFlowReducer.startSimulatorLoading(OrderFlowLocalState())
+
+        assertEquals(OrderFeeRequestTarget.Simulator, loading.feeRequestTarget)
+
+        val loaded = OrderFlowReducer.simulatorLoaded(loading, emptyList(), "No installments")
+
+        assertNull(loaded.feeRequestTarget)
+    }
+
+    @Test
+    fun `checkout credit fee request is cleared when response fails`() {
+        val requested = OrderFlowReducer.selectPaymentMethod(
+            OrderFlowLocalState(),
+            paymentMethod("credito", true),
+        )
+
+        val failed = OrderFlowReducer.feesFailed(requested, "Unable to load installments")
+
+        assertNull(failed.feeRequestTarget)
+    }
+
+    @Test
+    fun `closing simulator discards its late fee response`() {
+        val loading = OrderFlowReducer.startSimulatorLoading(OrderFlowLocalState(showSimulator = true))
+        val closed = OrderFlowReducer.closeSimulator(loading)
+
+        val staleResponse = OrderFlowReducer.simulatorLoaded(closed, emptyList(), "No installments")
+
+        assertFalse(staleResponse.showSimulator)
+        assertFalse(staleResponse.simulatorLoading)
+        assertNull(staleResponse.feeRequestTarget)
+        assertTrue(closed.feeRequestInFlight)
+        assertFalse(staleResponse.feeRequestInFlight)
+    }
+
+    @Test
+    fun `changing simulator amount discards its late fee error`() {
+        val loading = OrderFlowReducer.startSimulatorLoading(OrderFlowLocalState(showSimulator = true))
+        val changed = OrderFlowReducer.updateSimulatorAmount(loading, "R$ 45,67")
+
+        val staleResponse = OrderFlowReducer.simulatorFailed(changed, "Unable to load installments")
+
+        assertEquals("4567", staleResponse.simulatorAmountDigits)
+        assertFalse(staleResponse.simulatorLoading)
+        assertNull(staleResponse.feeRequestTarget)
+        assertNull(staleResponse.simulatorError)
+        assertTrue(changed.feeRequestInFlight)
+        assertFalse(staleResponse.feeRequestInFlight)
+    }
+
+    @Test
+    fun `simulator request is blocked while checkout credit fees are loading`() {
+        val checkoutLoading = OrderFlowReducer.selectPaymentMethod(
+            OrderFlowLocalState(),
+            paymentMethod("credito", true),
+        )
+
+        val blocked = OrderFlowReducer.startSimulatorLoading(checkoutLoading)
+
+        assertEquals(OrderFeeRequestTarget.CheckoutCredit, blocked.feeRequestTarget)
+        assertTrue(blocked.feesLoading)
+        assertFalse(blocked.simulatorLoading)
+        assertEquals(
+            OrderFlowReducer.SIMULATOR_REQUEST_BLOCKED_MESSAGE,
+            blocked.simulatorError,
+        )
+    }
+
+    @Test
+    fun `checkout credit request is blocked while simulator fees are loading`() {
+        val simulatorLoading = OrderFlowReducer.startSimulatorLoading(OrderFlowLocalState())
+
+        val blocked = OrderFlowReducer.selectPaymentMethod(
+            simulatorLoading,
+            paymentMethod("credito", true),
+        )
+
+        assertEquals(OrderFeeRequestTarget.Simulator, blocked.feeRequestTarget)
+        assertTrue(blocked.simulatorLoading)
+        assertFalse(blocked.feesLoading)
+        assertEquals(
+            OrderFlowReducer.CHECKOUT_REQUEST_BLOCKED_MESSAGE,
+            blocked.feesError,
+        )
+    }
+
+    @Test
+    fun `cancelling checkout fee request keeps it in flight and blocks simulator request`() {
+        val requested = OrderFlowReducer.selectPaymentMethod(
+            OrderFlowLocalState(),
+            paymentMethod("credito", true),
+        )
+        val cancelled = OrderFlowReducer.back(requested)
+
+        assertTrue(cancelled.feeRequestInFlight)
+        assertNull(cancelled.feeRequestTarget)
+        assertFalse(cancelled.feesLoading)
+
+        val blocked = OrderFlowReducer.startSimulatorLoading(cancelled)
+
+        assertTrue(blocked.feeRequestInFlight)
+        assertNull(blocked.feeRequestTarget)
+        assertFalse(blocked.simulatorLoading)
+        assertEquals(OrderFlowReducer.SIMULATOR_REQUEST_BLOCKED_MESSAGE, blocked.simulatorError)
+    }
+
+    @Test
+    fun `stale checkout fee success clears in flight without applying installments`() {
+        val cancelled = OrderFlowReducer.back(
+            OrderFlowReducer.selectPaymentMethod(
+                OrderFlowLocalState(),
+                paymentMethod("credito", true),
+            ),
+        )
+
+        val consumed = OrderFlowReducer.feesLoaded(
+            cancelled,
+            installments = listOf(installmentFee()),
+            emptyMessage = "No installments",
+        )
+
+        assertFalse(consumed.feeRequestInFlight)
+        assertNull(consumed.feeRequestTarget)
+        assertTrue(consumed.creditInstallments.isEmpty())
+        assertEquals(1, consumed.selectedInstallment)
+    }
+
+    @Test
+    fun `stale fee error without target is detected for session expiration routing`() {
+        val cancelled = OrderFlowReducer.back(
+            OrderFlowReducer.selectPaymentMethod(
+                OrderFlowLocalState(),
+                paymentMethod("credito", true),
+            ),
+        )
+
+        assertTrue(OrderFlowReducer.isStaleFeeResponse(cancelled))
+    }
+
+    private fun installmentFee() = InstallmentFee(
+        installmentNumber = 2,
+        installmentValue = "50.00",
+        totalValue = "100.00",
+        interestValue = "0.00",
+        noInterest = true,
+    )
+
+    private fun order(
+        total: Double = 100.0,
+        paidAmount: Double = 0.0,
+    ): Order {
+        val receivables = if (paidAmount > 0.0) {
+            listOf(
+                OrderReceivableItem(
+                    id = 1,
+                    documentId = "rec-1",
+                    amountOriginal = paidAmount,
+                    amountFinal = paidAmount,
+                    installments = 1,
+                    status = OrderReceivableItemStatus.PAID,
+                    paymentMethod = PaymentMethod(1, "Pix", 1, 0.0, "pix", true),
+                    paymentDate = null,
+                    refundDate = null,
+                    cardLast4 = null,
+                    cardHolder = null,
+                    tax = null,
+                    cardBrand = null,
+                    authorizationId = null,
+                    authorizationCode = null,
+                    pixTxIdCode = null,
+                )
+            )
+        } else {
+            emptyList()
+        }
+
+        return Order(
+            id = 10,
+            serviceName = "Servico",
+            status = OrderStatus.PENDING,
+            creationDate = "2026-07-22T10:00:00",
+            vehiclePrice = total,
+            billingDate = "2026-07-22",
+            originalAmount = total,
+            currentAmount = total - paidAmount,
+            isVehicleFinanced = false,
+            isVehicleSpecialPlate = false,
+            customer = OrderCustomer(10, "Cliente", "12345678901", "11999999999", null),
+            vehicleType = VehicleType(1, "Carro"),
+            items = listOf(OrderItem(1, total, 0.0, null, "Item", total)),
+            receivables = receivables,
+            salesman = Salesman(1, "Vendedor"),
+        )
+    }
+
+    private fun paymentMethod(type: String, online: Boolean) = PaymentMethod(
+        id = 1,
+        name = type,
+        installments = 1,
+        interestTax = 0.0,
+        paymentType = type,
+        isOnlinePayment = online,
+    )
+}

@@ -1,4 +1,4 @@
-package com.detrapay.ui.order_details
+﻿package com.detrapay.ui.order_details
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.detrapay.data.Result
@@ -147,7 +147,8 @@ class OrderDetailsViewModelTest {
                 name = "Pix",
                 installments = 1,
                 interestTax = 0.0,
-                paymentType = "pix"
+                paymentType = "pix",
+                isOnlinePayment = true,
             )
         )
         coEvery { orderRepository.cancelPendingReceivable(0, receivable) } returns Result.Success(updatedOrder)
@@ -169,7 +170,8 @@ class OrderDetailsViewModelTest {
                 name = "Dinheiro",
                 installments = 1,
                 interestTax = 0.0,
-                paymentType = "cash"
+                paymentType = "cash",
+                isOnlinePayment = false,
             )
         )
         coEvery { orderRepository.cancelPendingReceivable(0, receivable) } returns Result.Success(updatedOrder)
@@ -190,7 +192,8 @@ class OrderDetailsViewModelTest {
                 name = "Credito Loja",
                 installments = 1,
                 interestTax = 0.0,
-                paymentType = "store_credit"
+                paymentType = "store_credit",
+                isOnlinePayment = false,
             )
         )
         viewModel.cancelPendingItem(receivable)
@@ -204,9 +207,9 @@ class OrderDetailsViewModelTest {
     @Test
     fun `loadPaymentMethods groups and exposes available payment types`() {
         val methods = listOf(
-            PaymentMethod(id = 1, name = "Credito 1x", installments = 1, interestTax = 0.0, paymentType = "credit"),
-            PaymentMethod(id = 2, name = "Credito 12x", installments = 12, interestTax = 0.0, paymentType = "credito"),
-            PaymentMethod(id = 3, name = "Pix", installments = 1, interestTax = 0.0, paymentType = "pix"),
+            PaymentMethod(id = 1, name = "Credito 1x", installments = 1, interestTax = 0.0, paymentType = "credit", isOnlinePayment = true),
+            PaymentMethod(id = 2, name = "Credito 12x", installments = 12, interestTax = 0.0, paymentType = "credito", isOnlinePayment = true),
+            PaymentMethod(id = 3, name = "Pix", installments = 1, interestTax = 0.0, paymentType = "pix", isOnlinePayment = true),
         )
         coEvery { registrationRepository.loadPaymentMethods() } returns Result.Success(methods)
 
@@ -221,8 +224,8 @@ class OrderDetailsViewModelTest {
     @Test
     fun `resolvePaymentMethod prioritizes exact installment match`() {
         val methods = listOf(
-            PaymentMethod(id = 1, name = "Credito 1x", installments = 1, interestTax = 0.0, paymentType = "credito"),
-            PaymentMethod(id = 2, name = "Credito 12x", installments = 12, interestTax = 0.0, paymentType = "credito"),
+            PaymentMethod(id = 1, name = "Credito 1x", installments = 1, interestTax = 0.0, paymentType = "credito", isOnlinePayment = true),
+            PaymentMethod(id = 2, name = "Credito 12x", installments = 12, interestTax = 0.0, paymentType = "credito", isOnlinePayment = true),
         )
         coEvery { registrationRepository.loadPaymentMethods() } returns Result.Success(methods)
 
@@ -317,7 +320,8 @@ class OrderDetailsViewModelTest {
             name = "Credito",
             installments = 12,
             interestTax = 0.02,
-            paymentType = "credit"
+            paymentType = "credit",
+            isOnlinePayment = true,
         )
     ) = OrderReceivableItem(
         id = 20,

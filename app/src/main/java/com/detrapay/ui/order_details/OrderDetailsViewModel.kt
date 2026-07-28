@@ -1,4 +1,4 @@
-package com.detrapay.ui.order_details
+﻿package com.detrapay.ui.order_details
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -80,7 +80,7 @@ class OrderDetailsViewModel @Inject constructor(
             if (salesman.id == null) {
                 _orderState.postValue(
                     UIState.Error(
-                        message = "Ops! O vendedor selecionado não possui um ID."
+                        message = "Ops! O vendedor selecionado nÃ£o possui um ID."
                     )
                 )
                 return@launch
@@ -171,14 +171,13 @@ class OrderDetailsViewModel @Inject constructor(
         _calculateFeesState.postValue(UIState.Idle())
     }
 
-    fun addPendingReceivable(paymentMethod: PaymentMethod, amountOriginal: Double, shouldPersistInMemory: Boolean = false) {
+    fun addPendingReceivable(paymentMethod: PaymentMethod, amountOriginal: Double) {
         _orderState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
             val result = orderRepository.addPendingReceivable(
                 orderId = orderId,
                 paymentMethod = paymentMethod,
                 amountOriginal = amountOriginal,
-                shouldPersistInMemory = shouldPersistInMemory,
             )
             if (result is Result.Success) {
                 _orderState.postValue(UIState.Success(result.data))
@@ -206,7 +205,7 @@ class OrderDetailsViewModel @Inject constructor(
                     val error = result as Result.Error
                     _orderState.postValue(
                         UIState.Error(
-                            message = error.exception.message ?: "Algo deu errado na atualização do pagamento do pedido, tente novamente.",
+                            message = error.exception.message ?: "Algo deu errado na atualizaÃ§Ã£o do pagamento do pedido, tente novamente.",
                             exception = error.exception,
                             retryData = RetryDataModel(receivable, paymentData)
                         )
@@ -215,7 +214,7 @@ class OrderDetailsViewModel @Inject constructor(
             } catch (e:Exception) {
                 _orderState.postValue(
                     UIState.Error(
-                        message = e.message ?:  "Algo deu errado na atualização do pagamento do pedido, tente novamente.",
+                        message = e.message ?:  "Algo deu errado na atualizaÃ§Ã£o do pagamento do pedido, tente novamente.",
                         exception = e,
                         retryData = RetryDataModel(receivable, paymentData)
                     )

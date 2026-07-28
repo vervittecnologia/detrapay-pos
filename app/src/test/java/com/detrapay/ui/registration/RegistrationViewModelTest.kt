@@ -1,4 +1,4 @@
-package com.detrapay.ui.registration
+﻿package com.detrapay.ui.registration
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import br.com.uol.pagseguro.plugpagservice.wrapper.IPlugPagWrapper
@@ -205,15 +205,15 @@ class RegistrationViewModelTest {
     fun `calculateFees caches result using normalized key`() {
         val response = mockk<com.detrapay.data.model.remote.CalculateFeesResponse>()
         coEvery {
-            registrationRepository.calculateFees(100.004, "Crédito", "visa")
+            registrationRepository.calculateFees(100.004, "CrÃ©dito", "visa")
         } returns Result.Success(response)
 
-        viewModel.calculateFees(100.004, "Crédito", "visa")
+        viewModel.calculateFees(100.004, "CrÃ©dito", "visa")
 
         val state = viewModel.calculateFeesState.getOrAwaitValueMatching {
             it is UIState.Success<*>
         }
-        val cached = viewModel.getCachedFees(100.0, "crédito", "VISA")
+        val cached = viewModel.getCachedFees(100.0, "crÃ©dito", "VISA")
 
         assertTrue(state is UIState.Success)
         assertNotNull(cached)
@@ -376,10 +376,11 @@ class RegistrationViewModelTest {
         id = 1L,
         paymentMethod = PaymentMethod(
             id = 7,
-            name = "Cartão de crédito",
+            name = "CartÃ£o de crÃ©dito",
             installments = 1,
             interestTax = 0.04,
             paymentType = "credito",
+            isOnlinePayment = true,
         ),
         amountOriginal = amountOriginal,
         amountFinal = amountFinal,
@@ -389,7 +390,7 @@ class RegistrationViewModelTest {
     private fun loggedUser() = LoggedInUser(
         id = "user-1",
         sessionToken = "token",
-        displayName = "Usuário",
+        displayName = "UsuÃ¡rio",
         username = "user",
         cpfCnpj = "12345678000190",
         email = "user@example.com",

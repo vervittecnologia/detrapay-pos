@@ -1,25 +1,21 @@
-package com.detrapay.ui.util
+﻿package com.detrapay.ui.util
 
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class PaymentTypeRulesTest {
+    @Test
+    fun `pix and manual pix transfer remain distinct after normalization`() {
+        assertEquals("pix", PaymentTypeRules.normalize("pix"))
+        assertEquals("pix_manual", PaymentTypeRules.normalize("pix_manual"))
+        assertEquals("pix_manual", PaymentTypeRules.normalize("transferencia_pix"))
+    }
 
     @Test
-    fun `terminal approval is required only for pix credit and debit`() {
-        assertTrue(PaymentTypeRules.requiresTerminalApproval("pix"))
-        assertTrue(PaymentTypeRules.requiresTerminalApproval("credito"))
-        assertTrue(PaymentTypeRules.requiresTerminalApproval("crédito"))
-        assertTrue(PaymentTypeRules.requiresTerminalApproval("credit"))
-        assertTrue(PaymentTypeRules.requiresTerminalApproval("debito"))
-        assertTrue(PaymentTypeRules.requiresTerminalApproval("débito"))
-        assertTrue(PaymentTypeRules.requiresTerminalApproval("debit"))
-
-        assertFalse(PaymentTypeRules.requiresTerminalApproval("dinheiro"))
-        assertFalse(PaymentTypeRules.requiresTerminalApproval("store_credit"))
-        assertFalse(PaymentTypeRules.requiresTerminalApproval("boleto"))
-        assertFalse(PaymentTypeRules.requiresTerminalApproval("transferencia"))
-        assertFalse(PaymentTypeRules.requiresTerminalApproval(null))
+    fun `normalization keeps display aliases without deciding payment flow`() {
+        assertEquals("credito", PaymentTypeRules.normalize("credit"))
+        assertEquals("debito", PaymentTypeRules.normalize("debit"))
+        assertEquals("dinheiro", PaymentTypeRules.normalize("cash"))
+        assertEquals("store_credit", PaymentTypeRules.normalize("credito loja"))
     }
 }
