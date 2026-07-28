@@ -261,7 +261,7 @@ object OrderFlowReducer {
             feeRequestTarget = null,
             feeRequestInFlight = false,
             simulatorInstallments = installments,
-            simulatorSelectedInstallment = installments.lastOrNull()?.installmentNumber,
+            simulatorSelectedInstallment = null,
             simulatorError = if (installments.isEmpty()) emptyMessage else null,
         )
     }

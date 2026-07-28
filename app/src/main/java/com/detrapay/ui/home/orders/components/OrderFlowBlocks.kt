@@ -298,14 +298,12 @@ fun currencyText(value: String): String {
     return if (value.trim().startsWith("R$")) value.trim() else "R$ ${value.trim()}"
 }
 
-fun simulatorShareText(amount: Double, installments: List<InstallmentFee>): String {
-    val lines = installments.joinToString("\n") { installment ->
-        val presentation = InstallmentQuotePresenter.present(amount, installment)
-        listOf(
-            presentation.originalLabel,
-            presentation.installmentLabel,
-            presentation.totalLabel,
-        ).joinToString(" | ")
-    }
-    return "Simulação de Crédito - ${OrderPresentation.formatCurrency(amount)}\n\n$lines"
+fun simulatorShareText(amount: Double, installment: InstallmentFee): String {
+    val presentation = InstallmentQuotePresenter.present(amount, installment)
+    val details = listOf(
+        presentation.originalLabel,
+        presentation.installmentLabel,
+        presentation.totalLabel,
+    ).joinToString(" | ")
+    return "Simulação de Crédito - ${OrderPresentation.formatCurrency(amount)}\n\n$details"
 }

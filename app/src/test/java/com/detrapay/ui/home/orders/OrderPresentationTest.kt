@@ -142,20 +142,19 @@ class OrderPresentationTest {
     fun `share text includes original total and installments with interest`() {
         val text = simulatorShareText(
             amount = 100.0,
-            installments = listOf(
-                InstallmentFee(
-                    installmentNumber = 3,
-                    installmentValue = "36.00",
-                    totalValue = "108.00",
-                    interestValue = "8.00",
-                    noInterest = false,
-                ),
+            installment = InstallmentFee(
+                installmentNumber = 3,
+                installmentValue = "36.00",
+                totalValue = "108.00",
+                interestValue = "8.00",
+                noInterest = false,
             ),
         )
 
         assertTrue(text.contains("Valor original: R$ 100,00"))
         assertTrue(text.contains("Total com juros: R$ 108,00"))
         assertTrue(text.contains("3x de R$ 36,00 com juros"))
+        assertEquals(1, Regex("""\dx de R\$""").findAll(text).count())
     }
 
     @Test

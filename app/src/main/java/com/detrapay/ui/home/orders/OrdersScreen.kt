@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.Modifier
 import com.detrapay.ui.home.orders.components.OrderFlowColors
 import com.detrapay.ui.home.orders.screens.DetailScreen
@@ -119,19 +121,27 @@ fun OrdersScreen(
                 }
 
                 if (local.showSimulator) {
-                    InstallmentSimulatorScreen(
-                        amountDigits = local.simulatorAmountDigits,
-                        installments = local.simulatorInstallments,
-                        selectedInstallment = local.simulatorSelectedInstallment,
-                        isLoading = local.simulatorLoading,
-                        errorMessage = local.simulatorError,
-                        onClose = { onAction(OrderFlowAction.CloseSimulator) },
-                        onAmountChange = { onAction(OrderFlowAction.SimulatorAmountChange(it)) },
-                        onConsult = { onAction(OrderFlowAction.ConsultSimulator) },
-                        onSelectInstallment = { onAction(OrderFlowAction.SelectSimulatorInstallment(it)) },
-                        onCopy = { onAction(OrderFlowAction.CopySimulator(it)) },
-                        onShare = { onAction(OrderFlowAction.ShareSimulator(it)) },
-                    )
+                    Dialog(
+                        onDismissRequest = { onAction(OrderFlowAction.CloseSimulator) },
+                        properties = DialogProperties(
+                            usePlatformDefaultWidth = false,
+                            decorFitsSystemWindows = false,
+                        ),
+                    ) {
+                        InstallmentSimulatorScreen(
+                            amountDigits = local.simulatorAmountDigits,
+                            installments = local.simulatorInstallments,
+                            selectedInstallment = local.simulatorSelectedInstallment,
+                            isLoading = local.simulatorLoading,
+                            errorMessage = local.simulatorError,
+                            onClose = { onAction(OrderFlowAction.CloseSimulator) },
+                            onAmountChange = { onAction(OrderFlowAction.SimulatorAmountChange(it)) },
+                            onConsult = { onAction(OrderFlowAction.ConsultSimulator) },
+                            onSelectInstallment = { onAction(OrderFlowAction.SelectSimulatorInstallment(it)) },
+                            onCopy = { onAction(OrderFlowAction.CopySimulator(it)) },
+                            onShare = { onAction(OrderFlowAction.ShareSimulator(it)) },
+                        )
+                    }
                 }
             }
         }

@@ -243,9 +243,14 @@ class OrderFlowReducerTest {
 
         assertEquals(OrderFeeRequestTarget.Simulator, loading.feeRequestTarget)
 
-        val loaded = OrderFlowReducer.simulatorLoaded(loading, emptyList(), "No installments")
+        val loaded = OrderFlowReducer.simulatorLoaded(
+            loading,
+            listOf(installmentFee()),
+            "No installments",
+        )
 
         assertNull(loaded.feeRequestTarget)
+        assertNull(loaded.simulatorSelectedInstallment)
     }
 
     @Test

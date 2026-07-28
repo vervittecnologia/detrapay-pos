@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Share
@@ -30,14 +29,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import com.detrapay.data.model.remote.InstallmentFee
 import com.detrapay.ui.home.orders.components.OrderFlowColors
 import com.detrapay.ui.home.orders.components.*
@@ -60,7 +63,10 @@ fun InstallmentSimulatorScreen(
 ) {
     val amount = OrderPresentation.currencyInputAmount(amountDigits)
     val formattedAmount = OrderPresentation.formatCurrencyInput(amountDigits)
-    val shareText = simulatorShareText(amount, installments)
+    val selected = installments.firstOrNull { it.installmentNumber == selectedInstallment }
+    val shareText = selected?.let { simulatorShareText(amount, it) }.orEmpty()
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     Column(
         modifier = Modifier
@@ -87,9 +93,7 @@ fun InstallmentSimulatorScreen(
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
             )
-            IconButton(onClick = onClose, modifier = Modifier.size(44.dp)) {
-                Icon(Icons.Default.Close, contentDescription = "Fechar", tint = OrderFlowColors.Text)
-            }
+            Spacer(modifier = Modifier.size(44.dp))
         }
 
         LazyColumn(modifier = Modifier.weight(1f)) {
@@ -118,10 +122,16 @@ fun InstallmentSimulatorScreen(
                         modifier = Modifier.fillMaxWidth(),
                         value = formattedAmount,
                         onValueChange = onAmountChange,
-                        leadingIcon = { Text("R$", color = OrderFlowColors.Muted, fontWeight = FontWeight.Medium) },
                         placeholder = { Text("0,00") },
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                            },
+                        ),
                     )
 
                     when {
@@ -131,7 +141,11 @@ fun InstallmentSimulatorScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
-                            onClick = onConsult,
+                            onClick = {
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                                onConsult()
+                            },
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = OrderFlowColors.Blue.copy(alpha = 0.10f),
@@ -174,6 +188,7 @@ fun InstallmentSimulatorScreen(
                             .weight(1f)
                             .height(40.dp),
                         onClick = { onCopy(shareText) },
+                        enabled = selected != null,
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = OrderFlowColors.MutedSurface,
@@ -189,6 +204,7 @@ fun InstallmentSimulatorScreen(
                             .weight(1f)
                             .height(40.dp),
                         onClick = { onShare(shareText) },
+                        enabled = selected != null,
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = OrderFlowColors.WhatsappGreen),
                     ) {
@@ -196,6 +212,15 @@ fun InstallmentSimulatorScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("WhatsApp", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     }
+                }
+                if (selected == null) {
+                    Text(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = "Selecione uma opção para compartilhar",
+                        color = OrderFlowColors.Muted,
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center,
+                    )
                 }
             }
             Text(
