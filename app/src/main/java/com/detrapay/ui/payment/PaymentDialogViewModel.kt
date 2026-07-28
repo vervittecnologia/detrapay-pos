@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Log
 import br.com.uol.pagseguro.plugpagservice.wrapper.IPlugPagWrapper
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPag
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagCustomPrinterLayout
@@ -77,6 +78,16 @@ class PaymentDialogViewModel @Inject constructor(
             return
         }
 
+        val confirmedAmountCents = if (request.amountFinal.isFinite()) {
+            amountInCents(request.amountFinal)
+        } else {
+            0
+        }
+        if (confirmedAmountCents <= 0) {
+            finishWithError("O valor confirmado para o pagamento e invalido.")
+            return
+        }
+
         val retry = pendingCompletion
         if (retry?.idempotencyKey == request.idempotencyKey) {
             retryApprovedPayment(retry)
@@ -101,16 +112,16 @@ class PaymentDialogViewModel @Inject constructor(
                 )
                 is Result.Success -> {
                     val preparedAmount = prepared.data.amountFinal
-                    val preparedAmountCents = if (preparedAmount.isFinite()) {
-                        amountInCents(preparedAmount)
-                    } else {
-                        0
+                    if (!preparedAmount.isFinite() ||
+                        kotlin.math.abs(preparedAmount - request.amountFinal) > 0.01
+                    ) {
+                        Log.w(
+                            "PaymentDialogVM",
+                            "Prepared total differs from confirmed total: " +
+                                "prepared=$preparedAmount confirmed=${request.amountFinal}",
+                        )
                     }
-                    if (preparedAmountCents <= 0) {
-                        finishWithError("O backend retornou um valor final invalido para o pagamento.")
-                    } else {
-                        startPagBank(request, prepared.data.id, preparedAmountCents, serial)
-                    }
+                    startPagBank(request, prepared.data.id, confirmedAmountCents, serial)
                 }
             }
         }

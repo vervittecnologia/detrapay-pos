@@ -50,6 +50,7 @@ class OrderPaymentRouterTest {
                 isOnlinePayment = online,
             ),
             amount = 100.0,
+            amountFinal = 100.0,
             installments = 1,
             idempotencyKey = "test-$paymentType-$online",
         )

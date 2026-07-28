@@ -26,6 +26,7 @@ data class OrderPaymentRequest(
     val order: Order,
     val paymentMethod: PaymentMethod,
     val amount: Double,
+    val amountFinal: Double = amount,
     val installments: Int,
     val idempotencyKey: String = UUID.randomUUID().toString(),
 )
