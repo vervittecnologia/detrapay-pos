@@ -672,7 +672,7 @@ class OrderRepositoryTest {
     }
 
     @Test
-    fun `cancelPendingReceivable allows paid pix receivable`() = runTest {
+    fun `cancelPendingReceivable rejects paid pix receivable`() = runTest {
         val receivable = receivable(
             status = OrderReceivableItemStatus.PAID,
             paymentMethod = PaymentMethod(
@@ -684,29 +684,15 @@ class OrderRepositoryTest {
                 isOnlinePayment = true,
             )
         )
-        coEvery { remoteDataSource.deleteOrderReceivableItem("abc") } returns Result.Success(
-            OrderResponse(
-                id = 123,
-                status = "pending",
-                createdAt = "2026-03-10T16:30:00Z",
-                billingDate = "2026-03-10",
-                currentAmount = 0.0,
-                originalAmount = 1299.9,
-                customer = FlatCustomerResponse(
-                    id = 88,
-                    name = "Joao Silva",
-                    cpfCnpj = "12345678901"
-                ),
-                vehicleType = FlatVehicleTypeResponse(id = 3, name = "Carro"),
-                salesman = FlatSalesmanResponse(id = 4, name = "Maria"),
-                receivables = emptyList()
-            )
-        )
 
         val result = repository.cancelPendingReceivable(123, receivable)
 
-        assertTrue(result is Result.Success)
-        coVerify(exactly = 1) { remoteDataSource.deleteOrderReceivableItem("abc") }
+        assertTrue(result is Result.Error)
+        assertEquals(
+            "Este pagamento nao pode ser excluido no status atual.",
+            (result as Result.Error).exception.message
+        )
+        coVerify(exactly = 0) { remoteDataSource.deleteOrderReceivableItem(any()) }
     }
 
     private fun simulation() = Simulation(
