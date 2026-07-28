@@ -246,7 +246,10 @@ class RegistrationPaymentConfigBottomSheet : BottomSheetDialogFragment() {
         binding.rvInstallments.isVisible = true
         binding.cardSimpleSummary.isVisible = false
         binding.btnReset.visibility = View.GONE
-        adapter?.submitList(fees)
+        adapter?.submitList(
+            fees,
+            Mask.doubleValue(binding.etPaymentValue.text.toString()),
+        )
         binding.tvActionHint.isVisible = false
         binding.btnPrimaryAction.isVisible = false
         binding.btnConfirm.isVisible = true

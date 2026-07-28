@@ -215,7 +215,10 @@ class RegistrationPaymentDetailFragment : Fragment() {
         binding.btnAlterarDados.visibility = View.VISIBLE
         binding.tvConsultHint.text = getString(R.string.registration_payment_detail_consult_hint_select_installment)
         
-        adapter?.submitList(fees)
+        adapter?.submitList(
+            fees,
+            Mask.doubleValue(binding.etCardValue.text.toString()),
+        )
         
         // If editing, try to select the current installment
         if (editingPaymentId != -1L && selectedFee == null) {

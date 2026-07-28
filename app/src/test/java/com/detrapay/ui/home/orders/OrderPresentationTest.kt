@@ -10,6 +10,7 @@ import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.Salesman
 import com.detrapay.data.model.VehicleType
 import com.detrapay.data.model.remote.InstallmentFee
+import com.detrapay.ui.home.orders.components.simulatorShareText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -111,6 +112,26 @@ class OrderPresentationTest {
         assertEquals("R$ 8,56", presentation.installmentValueLabel)
         assertEquals("R$ 25,67", presentation.totalValueLabel)
         assertEquals("Taxas por conta da loja", presentation.feePayerLabel)
+    }
+
+    @Test
+    fun `share text includes original total and installments with interest`() {
+        val text = simulatorShareText(
+            amount = 100.0,
+            installments = listOf(
+                InstallmentFee(
+                    installmentNumber = 3,
+                    installmentValue = "36.00",
+                    totalValue = "108.00",
+                    interestValue = "8.00",
+                    noInterest = false,
+                ),
+            ),
+        )
+
+        assertTrue(text.contains("Valor original: R$ 100,00"))
+        assertTrue(text.contains("Total com juros: R$ 108,00"))
+        assertTrue(text.contains("3x de R$ 36,00 com juros"))
     }
 
     @Test

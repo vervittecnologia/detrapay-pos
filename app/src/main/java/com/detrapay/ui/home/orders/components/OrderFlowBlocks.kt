@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import com.detrapay.data.model.remote.InstallmentFee
 import com.detrapay.ui.home.orders.components.OrderFlowColors
 import com.detrapay.ui.home.orders.OrderPresentation
+import com.detrapay.ui.util.InstallmentQuotePresenter
 
 @Composable
 fun NavBar(title: String, onBack: () -> Unit) {
@@ -169,10 +170,7 @@ fun InstallmentRow(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
-    val presentation = OrderPresentation.storePaidInstallment(
-        amount = amount,
-        installments = installment.installmentNumber,
-    )
+    val presentation = InstallmentQuotePresenter.present(amount, installment)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -191,19 +189,10 @@ fun InstallmentRow(
             fontWeight = FontWeight.Black,
         )
         Column(modifier = Modifier.weight(1f)) {
-            Text(presentation.installmentValueLabel, color = OrderFlowColors.Ink, fontWeight = FontWeight.Bold)
-            Text("Total ${presentation.totalValueLabel}", color = OrderFlowColors.Faint, fontSize = 12.sp)
+            Text(presentation.installmentLabel, color = OrderFlowColors.Ink, fontWeight = FontWeight.Bold)
+            Text(presentation.originalLabel, color = OrderFlowColors.Faint, fontSize = 12.sp)
+            Text(presentation.totalLabel, color = OrderFlowColors.Faint, fontSize = 12.sp)
         }
-        Text(
-            presentation.feePayerLabel,
-            modifier = Modifier
-                .clip(RoundedCornerShape(999.dp))
-                .background(OrderFlowColors.GreenSoft)
-                .padding(horizontal = 10.dp, vertical = 5.dp),
-            color = OrderFlowColors.Green,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-        )
     }
 }
 
@@ -311,7 +300,12 @@ fun currencyText(value: String): String {
 
 fun simulatorShareText(amount: Double, installments: List<InstallmentFee>): String {
     val lines = installments.joinToString("\n") { installment ->
-        "${installment.installmentNumber}x de ${currencyText(installment.installmentValue)} - Total ${currencyText(installment.totalValue)}"
+        val presentation = InstallmentQuotePresenter.present(amount, installment)
+        listOf(
+            presentation.originalLabel,
+            presentation.installmentLabel,
+            presentation.totalLabel,
+        ).joinToString(" | ")
     }
     return "Simulação de Crédito - ${OrderPresentation.formatCurrency(amount)}\n\n$lines"
 }

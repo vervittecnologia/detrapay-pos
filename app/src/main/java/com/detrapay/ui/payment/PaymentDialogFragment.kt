@@ -23,6 +23,7 @@ import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.PaymentData
 import com.detrapay.databinding.PaymentDialogBinding
 import com.detrapay.ui.state.UIState
+import com.detrapay.ui.util.InstallmentQuotePresenter
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import java.util.Locale
@@ -116,15 +117,19 @@ class PaymentDialogFragment(
     private fun setupView(orderId: Int, receivableItem: OrderReceivableItem) {
         val paymentMethodName = receivableItem.paymentMethod.name
 
-        val amountFinalFormatted = "%,.2f".format(locale, receivableItem.amountFinal)
-        binding.paymentAmount.text = "R$ $amountFinalFormatted"
-
         if (receivableItem.installments > 1) {
-            val installmentAmount = receivableItem.amountFinal / receivableItem.installments
-            val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
+            val presentation = InstallmentQuotePresenter.present(
+                amountOriginal = receivableItem.amountOriginal,
+                amountFinal = receivableItem.amountFinal,
+                installments = receivableItem.installments,
+            )
+            binding.paymentAmount.text = presentation.totalLabel
             binding.paymentInstallments.visibility = View.VISIBLE
-            binding.paymentInstallments.text = "em ${receivableItem.installments}x de R$ $installmentFormattedValue"
+            binding.paymentInstallments.text =
+                "${presentation.originalLabel}\n${presentation.installmentLabel}"
         } else {
+            val amountFinalFormatted = "%,.2f".format(locale, receivableItem.amountFinal)
+            binding.paymentAmount.text = "R$ $amountFinalFormatted"
             binding.paymentInstallments.visibility = View.GONE
         }
 

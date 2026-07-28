@@ -14,6 +14,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 
 class InstallmentsBottomSheet(
     private val installments: List<InstallmentFee>,
+    private val amountOriginal: Double,
     private val onSelected: (InstallmentFee) -> Unit
 ) : BottomSheetDialogFragment() {
 
@@ -51,7 +52,7 @@ class InstallmentsBottomSheet(
         }
         binding.rvInstallmentsBottomSheet.layoutManager = LinearLayoutManager(requireContext())
         binding.rvInstallmentsBottomSheet.adapter = adapter
-        adapter.submitList(installments)
+        adapter.submitList(installments, amountOriginal)
     }
 
     companion object {

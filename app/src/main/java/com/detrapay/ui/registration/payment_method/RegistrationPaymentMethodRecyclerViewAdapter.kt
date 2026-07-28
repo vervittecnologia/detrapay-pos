@@ -15,6 +15,8 @@ import com.detrapay.R
 import com.detrapay.data.model.SimulationPayment
 import com.detrapay.databinding.RegistrationPaymentLaunchedItemBinding
 import com.detrapay.ui.registration.RegistrationViewModel
+import com.detrapay.ui.util.InstallmentQuotePresenter
+import com.detrapay.ui.util.Mask
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -76,9 +78,20 @@ class RegistrationPaymentMethodRecyclerViewAdapter(
             binding.tvMethodName.text = formatMethodName(normalizedType)
 
             val amount = parseAmount(item.amountFinal)
-            binding.tvAmount.text = formatCurrency(amount)
+            val installmentPresentation = item
+                .takeIf { it.installment > 1 }
+                ?.let {
+                    InstallmentQuotePresenter.present(
+                        amountOriginal = parseAmount(it.amountOriginal),
+                        amountFinal = amount,
+                        installments = it.installment,
+                    )
+                }
+            binding.tvAmount.text = installmentPresentation?.totalLabel ?: formatCurrency(amount)
 
-            val detailText = buildInstallmentText(item)
+            val detailText = installmentPresentation?.let {
+                "${it.originalLabel}\n${it.installmentLabel}"
+            } ?: buildInstallmentText(item)
             if (detailText == null) {
                 binding.tvInstallmentDetail.visibility = View.GONE
             } else {
@@ -97,31 +110,6 @@ class RegistrationPaymentMethodRecyclerViewAdapter(
         private fun buildInstallmentText(item: SimulationPayment): CharSequence? {
             val amount = parseAmount(item.amountFinal)
             return when {
-                item.installment > 1 -> {
-                    val prefix = "${item.installment}x de "
-                    val amountText = formatCurrency(amount / item.installment)
-                    val builder = SpannableStringBuilder(prefix + amountText)
-                    builder.setSpan(
-                        ForegroundColorSpan(ContextCompat.getColor(binding.root.context, R.color.neutral_500)),
-                        0,
-                        prefix.length,
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-                    )
-                    builder.setSpan(
-                        ForegroundColorSpan(ContextCompat.getColor(binding.root.context, R.color.neutral_900)),
-                        prefix.length,
-                        builder.length,
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-                    )
-                    builder.setSpan(
-                        StyleSpan(android.graphics.Typeface.BOLD),
-                        prefix.length,
-                        builder.length,
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-                    )
-                    builder
-                }
-
                 parseAmount(item.amountOriginal) != amount -> {
                     val prefix = "Total final "
                     val amountText = formatCurrency(amount)
@@ -163,10 +151,7 @@ class RegistrationPaymentMethodRecyclerViewAdapter(
         }
 
         private fun parseAmount(amount: String): Double {
-            return amount
-                .replace(".", "")
-                .replace(",", ".")
-                .toDoubleOrNull() ?: 0.0
+            return Mask.toSafeDouble(amount)
         }
 
         private fun formatCurrency(amount: Double): String {

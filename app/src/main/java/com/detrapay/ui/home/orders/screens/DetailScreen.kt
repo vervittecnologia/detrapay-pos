@@ -43,6 +43,7 @@ import com.detrapay.data.model.canBeDeleted
 import com.detrapay.ui.home.orders.components.OrderFlowColors
 import com.detrapay.ui.home.orders.components.*
 import com.detrapay.ui.home.orders.OrderPresentation
+import com.detrapay.ui.util.InstallmentQuotePresenter
 
 @Composable
 fun DetailScreen(
@@ -126,12 +127,26 @@ fun DetailScreen(
                     }
                 } else {
                     order.receivables.forEach { receivable ->
+                        val installmentPresentation = receivable
+                            .takeIf { it.installments > 1 }
+                            ?.let {
+                                InstallmentQuotePresenter.present(
+                                    amountOriginal = it.amountOriginal,
+                                    amountFinal = it.amountFinal,
+                                    installments = it.installments,
+                                )
+                            }
                         Column {
                             SummaryRow(
                                 receivable.paymentMethod.name,
-                                OrderPresentation.formatCurrency(receivable.amountFinal),
+                                installmentPresentation?.originalLabel
+                                    ?: OrderPresentation.formatCurrency(receivable.amountFinal),
                                 subtitle = OrderPresentation.receivableStatusLabel(receivable),
                             )
+                            installmentPresentation?.let { presentation ->
+                                SummaryRow("Parcelamento", presentation.installmentLabel)
+                                SummaryRow("Total", presentation.totalLabel, strong = true)
+                            }
                             if (receivable.canBeDeleted()) {
                                 TextButton(
                                     modifier = Modifier.align(Alignment.End),

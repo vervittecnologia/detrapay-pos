@@ -19,6 +19,7 @@ import com.detrapay.data.model.OrderReceivableItemStatus.PENDING
 import com.detrapay.data.model.OrderReceivableItemStatus.REFUNDED
 import com.detrapay.data.model.canBeDeleted
 import com.detrapay.databinding.OrderPaymentListItemBinding
+import com.detrapay.ui.util.InstallmentQuotePresenter
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import java.util.Locale
@@ -178,16 +179,18 @@ class OrderDetailsPaymentsRecyclerViewAdapter(
             val amountOriginalFormatted = "%,.2f".format(locale, item.amountOriginal)
             val amountFinalFormatted = "%,.2f".format(locale, item.amountFinal)
             val installments = item.installments.coerceAtLeast(1)
-            val installmentBase = if (isCardSummaryPayment) item.amountOriginal else item.amountFinal
-            val installmentAmount = installmentBase / installments
-            val installmentFormattedValue = "%,.2f".format(locale, installmentAmount)
 
             return if (isCardSummaryPayment) {
-                if (installments > 1) {
-                    Triple("R$ $amountOriginalFormatted", "${installments}x de R$ $installmentFormattedValue", "")
-                } else {
-                    Triple("R$ $amountOriginalFormatted", "", "")
-                }
+                val presentation = InstallmentQuotePresenter.present(
+                    amountOriginal = item.amountOriginal,
+                    amountFinal = item.amountFinal,
+                    installments = installments,
+                )
+                Triple(
+                    presentation.originalLabel,
+                    presentation.installmentLabel,
+                    presentation.totalLabel,
+                )
             } else if (isManualPayment) {
                 val receivedInfo = if (item.status == PAID) "Recebido: R$ $amountFinalFormatted" else ""
                 val difference = item.amountFinal - item.amountOriginal

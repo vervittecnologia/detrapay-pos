@@ -4,7 +4,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import android.util.Log
 import br.com.uol.pagseguro.plugpagservice.wrapper.IPlugPagWrapper
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPag
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagCustomPrinterLayout
@@ -113,15 +112,15 @@ class PaymentDialogViewModel @Inject constructor(
                 is Result.Success -> {
                     val preparedAmount = prepared.data.amountFinal
                     if (!preparedAmount.isFinite() ||
-                        kotlin.math.abs(preparedAmount - request.amountFinal) > 0.01
+                        amountInCents(preparedAmount) != confirmedAmountCents
                     ) {
-                        Log.w(
-                            "PaymentDialogVM",
-                            "Prepared total differs from confirmed total: " +
-                                "prepared=$preparedAmount confirmed=${request.amountFinal}",
+                        finishWithError(
+                            "O backend preparou um total diferente do exibido. " +
+                                "Atualize a configuracao antes de tentar novamente.",
                         )
+                    } else {
+                        startPagBank(request, prepared.data.id, confirmedAmountCents, serial)
                     }
-                    startPagBank(request, prepared.data.id, confirmedAmountCents, serial)
                 }
             }
         }

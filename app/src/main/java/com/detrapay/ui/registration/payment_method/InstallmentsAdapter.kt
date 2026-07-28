@@ -8,8 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.detrapay.R
 import com.detrapay.data.model.remote.InstallmentFee
 import com.detrapay.databinding.RegistrationPaymentInstallmentItemBinding
-import com.detrapay.ui.util.Mask
-import java.util.Locale
+import com.detrapay.ui.util.InstallmentQuotePresenter
 
 class InstallmentsAdapter(
     private val showRadioButton: Boolean = true,
@@ -17,10 +16,12 @@ class InstallmentsAdapter(
 ) : RecyclerView.Adapter<InstallmentsAdapter.ViewHolder>() {
 
     private var items: List<InstallmentFee> = emptyList()
+    private var amountOriginal: Double = 0.0
     private var selectedPos = -1
 
-    fun submitList(newItems: List<InstallmentFee>) {
+    fun submitList(newItems: List<InstallmentFee>, amountOriginal: Double) {
         items = newItems
+        this.amountOriginal = amountOriginal
         notifyDataSetChanged()
     }
 
@@ -45,14 +46,12 @@ class InstallmentsAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
-        val installmentValue = Mask.toSafeDouble(item.installmentValue)
-        val totalValue = Mask.toSafeDouble(item.totalValue)
+        val presentation = InstallmentQuotePresenter.present(amountOriginal, item)
         val isSelected = position == selectedPos
 
-        holder.binding.tvInstallmentName.text =
-            "${item.installmentNumber}x de R$ ${"%,.2f".format(Locale("pt", "BR"), installmentValue)}"
+        holder.binding.tvInstallmentName.text = presentation.installmentLabel
         holder.binding.tvInstallmentDescription.text =
-            "Total R$ ${"%,.2f".format(Locale("pt", "BR"), totalValue)}${if (item.noInterest) "" else " com juros"}"
+            "${presentation.originalLabel}\n${presentation.totalLabel}"
         holder.binding.rbSelected.visibility = if (showRadioButton) View.VISIBLE else View.GONE
         holder.binding.rbSelected.isChecked = isSelected
         holder.binding.root.strokeColor = ContextCompat.getColor(

@@ -42,6 +42,7 @@ import com.detrapay.data.model.remote.InstallmentFee
 import com.detrapay.ui.home.orders.components.OrderFlowColors
 import com.detrapay.ui.home.orders.components.*
 import com.detrapay.ui.home.orders.OrderPresentation
+import com.detrapay.ui.util.InstallmentQuotePresenter
 
 @Composable
 fun InstallmentSimulatorScreen(
@@ -147,6 +148,7 @@ fun InstallmentSimulatorScreen(
                         Text("Parcelas", color = OrderFlowColors.Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                         installments.forEach { installment ->
                             SimulatorInstallmentRow(
+                                amount = amount,
                                 installment = installment,
                                 isSelected = selectedInstallment == installment.installmentNumber,
                                 onClick = { onSelectInstallment(installment.installmentNumber) },
@@ -207,31 +209,34 @@ fun InstallmentSimulatorScreen(
     }
 }
 @Composable
-private fun SimulatorInstallmentRow(installment: InstallmentFee, isSelected: Boolean, onClick: () -> Unit) {
+private fun SimulatorInstallmentRow(
+    amount: Double,
+    installment: InstallmentFee,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    val presentation = InstallmentQuotePresenter.present(amount, installment)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(if (isSelected) OrderFlowColors.Blue.copy(alpha = 0.05f) else Color.White)
             .border(1.dp, if (isSelected) OrderFlowColors.Blue else OrderFlowColors.Border, RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            modifier = Modifier.weight(1f),
-            text = "${installment.installmentNumber}x de ${currencyText(installment.installmentValue)}${if (installment.noInterest) " sem juros" else ""}",
-            color = if (isSelected) OrderFlowColors.Blue else OrderFlowColors.Ink,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = "Total ${currencyText(installment.totalValue)}",
-            color = if (isSelected) OrderFlowColors.Blue.copy(alpha = 0.72f) else OrderFlowColors.Muted,
-            fontSize = 12.sp,
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = presentation.installmentLabel,
+                color = if (isSelected) OrderFlowColors.Blue else OrderFlowColors.Ink,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(presentation.originalLabel, color = OrderFlowColors.Muted, fontSize = 12.sp)
+            Text(presentation.totalLabel, color = OrderFlowColors.Muted, fontSize = 12.sp)
+        }
     }
 }

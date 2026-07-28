@@ -36,6 +36,7 @@ fun ReviewScreen(
     onBack: () -> Unit,
     onConfirm: () -> Unit,
 ) {
+    val hasInterest = review.feeAmount > 0.0
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
             Column(modifier = Modifier.background(Color.White)) {
@@ -55,15 +56,21 @@ fun ReviewScreen(
                     fontWeight = FontWeight.Bold,
                 )
                 SummaryRow("Forma de pagamento", paymentMethod.name)
-                SummaryRow("Valor informado", OrderPresentation.formatCurrency(review.amountOriginal))
-                SummaryRow("Taxas", OrderPresentation.formatCurrency(review.feeAmount))
+                SummaryRow("Valor original", OrderPresentation.formatCurrency(review.amountOriginal))
+                SummaryRow("Juros", OrderPresentation.formatCurrency(review.feeAmount))
                 if (review.installments > 1) {
                     SummaryRow(
                         "Parcelamento",
-                        "${review.installments}x de ${OrderPresentation.formatCurrency(review.installmentValue)}",
+                        "${review.installments}x de ${OrderPresentation.formatCurrency(review.installmentValue)} ${
+                            if (hasInterest) "com juros" else "sem juros"
+                        }",
                     )
                 }
-                SummaryRow("Total a cobrar", OrderPresentation.formatCurrency(review.amountFinal), strong = true)
+                SummaryRow(
+                    if (hasInterest) "Total com juros" else "Total",
+                    OrderPresentation.formatCurrency(review.amountFinal),
+                    strong = true,
+                )
                 Button(
                     modifier = Modifier.fillMaxWidth().height(58.dp),
                     onClick = onConfirm,

@@ -246,7 +246,10 @@ class OrderDetailsPaymentConfigBottomSheet : BottomSheetDialogFragment() {
         binding.btnConfirm.isVisible = true
         binding.btnConfirm.isEnabled = false
         updateButtonVisualState(binding.btnConfirm, false)
-        installmentsAdapter?.submitList(fees)
+        installmentsAdapter?.submitList(
+            fees,
+            Mask.doubleValue(binding.etPaymentValue.text.toString()),
+        )
         installmentsAdapter?.clearSelection()
     }
 

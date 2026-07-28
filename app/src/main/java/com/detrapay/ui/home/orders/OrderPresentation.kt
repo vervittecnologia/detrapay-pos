@@ -7,6 +7,7 @@ import com.detrapay.data.model.OrderStatus
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.remote.InstallmentFee
 import com.detrapay.ui.order_details.OrderPaymentTotals
+import com.detrapay.ui.util.InstallmentQuotePresenter
 import com.detrapay.ui.util.PaymentTypeRules
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -108,13 +109,13 @@ object OrderPresentation {
         amountOriginal: Double,
         installment: InstallmentFee,
     ): OrderPaymentReview {
-        val amountFinal = parseDecimal(installment.totalValue)
+        val quote = InstallmentQuotePresenter.present(amountOriginal, installment)
         return OrderPaymentReview(
             amountOriginal = amountOriginal,
-            amountFinal = amountFinal,
-            feeAmount = roundMoney((amountFinal - amountOriginal).coerceAtLeast(0.0)),
+            amountFinal = quote.totalValue,
+            feeAmount = roundMoney((quote.totalValue - amountOriginal).coerceAtLeast(0.0)),
             installments = installment.installmentNumber.coerceAtLeast(1),
-            installmentValue = parseDecimal(installment.installmentValue),
+            installmentValue = quote.installmentValue,
         )
     }
 
@@ -238,10 +239,6 @@ object OrderPresentation {
                 status = "Comunicando..."
             )
         }
-    }
-
-    private fun parseDecimal(value: String): Double {
-        return value.replace(',', '.').toDoubleOrNull() ?: 0.0
     }
 
     private fun roundMoney(value: Double): Double = round(value * 100.0) / 100.0
