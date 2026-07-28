@@ -36,6 +36,12 @@ data class WaitingPresentation(
     val status: String,
 )
 
+data class StorePaidInstallmentPresentation(
+    val installmentValueLabel: String,
+    val totalValueLabel: String,
+    val feePayerLabel: String,
+)
+
 object OrderPresentation {
     private const val PROGRESS_MAX = 1000
     private val locale = Locale("pt", "BR")
@@ -85,6 +91,15 @@ object OrderPresentation {
             PaymentTypeRules.normalize(method.paymentType) == normalizedType &&
                 method.installments == installments
         }
+    }
+
+    fun storePaidInstallment(amount: Double, installments: Int): StorePaidInstallmentPresentation {
+        val count = installments.coerceAtLeast(1)
+        return StorePaidInstallmentPresentation(
+            installmentValueLabel = formatCurrency(amount / count),
+            totalValueLabel = formatCurrency(amount),
+            feePayerLabel = "Taxas por conta da loja",
+        )
     }
 
     fun formatCurrency(value: Double): String {

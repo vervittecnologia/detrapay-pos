@@ -50,6 +50,7 @@ fun CreditScreen(
                     installments.isEmpty() -> Text("Nenhuma parcela disponível.", color = OrderFlowColors.Muted)
                     else -> installments.forEach { installment ->
                         InstallmentRow(
+                            amount = amount,
                             installment = installment,
                             isSelected = selectedInstallment == installment.installmentNumber,
                             onClick = { onSelectInstallment(installment.installmentNumber) },

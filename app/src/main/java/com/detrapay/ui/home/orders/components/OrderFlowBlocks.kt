@@ -163,7 +163,16 @@ fun MethodIcon(icon: ImageVector, color: Color) {
 }
 
 @Composable
-fun InstallmentRow(installment: InstallmentFee, isSelected: Boolean, onClick: () -> Unit) {
+fun InstallmentRow(
+    amount: Double,
+    installment: InstallmentFee,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    val presentation = OrderPresentation.storePaidInstallment(
+        amount = amount,
+        installments = installment.installmentNumber,
+    )
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -182,16 +191,16 @@ fun InstallmentRow(installment: InstallmentFee, isSelected: Boolean, onClick: ()
             fontWeight = FontWeight.Black,
         )
         Column(modifier = Modifier.weight(1f)) {
-            Text(currencyText(installment.installmentValue), color = OrderFlowColors.Ink, fontWeight = FontWeight.Bold)
-            Text("Total ${currencyText(installment.totalValue)}", color = OrderFlowColors.Faint, fontSize = 12.sp)
+            Text(presentation.installmentValueLabel, color = OrderFlowColors.Ink, fontWeight = FontWeight.Bold)
+            Text("Total ${presentation.totalValueLabel}", color = OrderFlowColors.Faint, fontSize = 12.sp)
         }
         Text(
-            if (installment.noInterest) "sem juros" else "taxa incl.",
+            presentation.feePayerLabel,
             modifier = Modifier
                 .clip(RoundedCornerShape(999.dp))
-                .background(if (installment.noInterest) OrderFlowColors.GreenSoft else OrderFlowColors.Key)
+                .background(OrderFlowColors.GreenSoft)
                 .padding(horizontal = 10.dp, vertical = 5.dp),
-            color = if (installment.noInterest) OrderFlowColors.Green else OrderFlowColors.Muted,
+            color = OrderFlowColors.Green,
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
         )

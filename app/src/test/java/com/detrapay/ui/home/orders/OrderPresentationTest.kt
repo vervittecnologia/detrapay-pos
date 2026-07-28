@@ -103,6 +103,15 @@ class OrderPresentationTest {
         assertEquals(null, OrderPresentation.exactPaymentMethod(methods, "pix", 6))
     }
 
+    @Test
+    fun `store paid installment keeps displayed total equal to checkout amount`() {
+        val presentation = OrderPresentation.storePaidInstallment(amount = 25.67, installments = 3)
+
+        assertEquals("R$ 8,56", presentation.installmentValueLabel)
+        assertEquals("R$ 25,67", presentation.totalValueLabel)
+        assertEquals("Taxas por conta da loja", presentation.feePayerLabel)
+    }
+
     private fun order(
         id: Int,
         total: Double,
