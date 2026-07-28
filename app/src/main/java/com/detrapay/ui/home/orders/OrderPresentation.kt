@@ -12,6 +12,7 @@ import com.detrapay.ui.util.PaymentTypeRules
 import java.util.Locale
 import kotlin.math.roundToInt
 import kotlin.math.round
+import kotlin.math.roundToLong
 
 data class OrderSummary(
     val registeredAmount: Double,
@@ -158,9 +159,11 @@ object OrderPresentation {
     }
 
     fun paymentAmountError(amount: Double, pendingAmount: Double): String? {
+        val amountCents = (amount * 100).roundToLong()
+        val pendingCents = (pendingAmount * 100).roundToLong()
         return when {
-            amount <= 0.0 -> "Informe um valor maior que zero."
-            amount > pendingAmount ->
+            amountCents <= 0L -> "Informe um valor maior que zero."
+            amountCents > pendingCents ->
                 "O valor não pode ser maior que o saldo pendente de ${formatCurrency(pendingAmount)}."
             else -> null
         }

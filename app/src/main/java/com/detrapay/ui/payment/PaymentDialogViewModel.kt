@@ -52,6 +52,8 @@ class PaymentDialogViewModel @Inject constructor(
 
     @Volatile
     private var terminalPaymentActive = false
+    @Volatile
+    private var cancellationRequested = false
     private var pendingCompletion: PendingCompletion? = null
 
     fun init() {
@@ -72,6 +74,7 @@ class PaymentDialogViewModel @Inject constructor(
     }
 
     fun payOrder(request: OrderPaymentRequest, serial: String) {
+        cancellationRequested = false
         if (!request.paymentMethod.isOnlinePayment) {
             _paymentState.postValue(UIState.Error("Este pagamento deve ser apenas registrado."))
             return
@@ -285,20 +288,33 @@ class PaymentDialogViewModel @Inject constructor(
 
     private fun finishWithError(message: String, exception: Exception? = null) {
         terminalPaymentActive = false
+        cancellationRequested = false
         _paymentState.postValue(UIState.Error(message, exception))
     }
 
     fun abortPayment() {
-        terminalPaymentActive = false
+        cancellationRequested = true
+        _paymentState.postValue(UIState.Loading("Cancelando pagamento na maquininha..."))
         viewModelScope.launch(Dispatchers.Default) {
-            plugPag.abort()
-            plugPag.disposeSubscriber()
+            runCatching {
+                plugPag.abort()
+                plugPag.disposeSubscriber()
+            }.onFailure {
+                finishWithError(
+                    "Não foi possível confirmar o cancelamento. Verifique a maquininha antes de tentar novamente.",
+                    it as? Exception,
+                )
+            }
         }
     }
 
     override fun onEvent(data: PlugPagEventData) {
         if (!terminalPaymentActive) return
-        val message = data.customMessage.orEmpty().trim()
+        val message = if (cancellationRequested) {
+            "Cancelando pagamento na maquininha..."
+        } else {
+            data.customMessage.orEmpty().trim()
+        }
         _paymentState.postValue(
             UIState.Loading(message.ifBlank { PaymentStep.PROCESSING.message }),
         )

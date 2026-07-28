@@ -42,6 +42,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -233,7 +234,8 @@ fun OrdersListScreen(
                     items(filtered, key = { it.id }) { order ->
                         SellerOrderCard(
                             order = order,
-                            onClick = { onOrderDetail(order) },
+                            onPay = { onOrderPay(order) },
+                            onDetail = { onOrderDetail(order) },
                         )
                     }
                 }
@@ -277,14 +279,15 @@ fun OrdersListScreen(
 }
 
 @Composable
-private fun SellerOrderCard(order: Order, onClick: () -> Unit) {
+private fun SellerOrderCard(order: Order, onPay: () -> Unit, onDetail: () -> Unit) {
     val card = OrderPresentation.sellerCardSummary(order)
+    val canPay = OrderPresentation.shouldStartPayment(order)
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onDetail),
         shape = RoundedCornerShape(14.dp),
         color = Color.White,
         border = BorderStroke(1.dp, OrderFlowColors.Border),
@@ -346,6 +349,16 @@ private fun SellerOrderCard(order: Order, onClick: () -> Unit) {
                     Modifier.weight(1f),
                     showFallingIcon = card.balanceTitle == "Falta" && !card.isFullyPaid,
                 )
+            }
+            if (canPay) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(onClick = onPay) {
+                        Text("Pagar agora", color = OrderFlowColors.Blue, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
     }

@@ -187,9 +187,8 @@ object OrderFlowReducer {
 
     fun confirmPaymentCancel(state: OrderFlowLocalState): OrderFlowLocalState {
         return state.copy(
-            step = OrderFlowStep.Review,
             showPaymentCancelConfirmation = false,
-            paymentSubmissionInFlight = false,
+            paymentSubmissionInFlight = true,
         )
     }
 
@@ -220,7 +219,7 @@ object OrderFlowReducer {
             } else {
                 OrderFlowStep.Amount
             }
-            OrderFlowStep.Waiting -> OrderFlowStep.Review
+            OrderFlowStep.Waiting -> OrderFlowStep.Waiting
             OrderFlowStep.Result -> OrderFlowStep.Orders
         }
         val cancelCheckoutFeeRequest =

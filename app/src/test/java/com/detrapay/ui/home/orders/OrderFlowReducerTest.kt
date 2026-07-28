@@ -211,7 +211,7 @@ class OrderFlowReducerTest {
             ).step,
         )
         assertEquals(
-            OrderFlowStep.Review,
+            OrderFlowStep.Waiting,
             OrderFlowReducer.back(OrderFlowLocalState(step = OrderFlowStep.Waiting)).step,
         )
     }
@@ -224,6 +224,21 @@ class OrderFlowReducerTest {
 
         assertEquals(OrderFlowStep.Waiting, next.step)
         assertTrue(next.showPaymentCancelConfirmation)
+    }
+
+    @Test
+    fun `confirming cancellation stays blocked in waiting until terminal result`() {
+        val next = OrderFlowReducer.confirmPaymentCancel(
+            OrderFlowLocalState(
+                step = OrderFlowStep.Waiting,
+                paymentSubmissionInFlight = true,
+                showPaymentCancelConfirmation = true,
+            ),
+        )
+
+        assertEquals(OrderFlowStep.Waiting, next.step)
+        assertTrue(next.paymentSubmissionInFlight)
+        assertFalse(next.showPaymentCancelConfirmation)
     }
 
     @Test

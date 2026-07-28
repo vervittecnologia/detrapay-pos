@@ -58,4 +58,18 @@ class OrdersUxContractTest {
 
         assertTrue(source.contains("val Faint = Color(0xFF475569)"))
     }
+
+    @Test
+    fun `physical back and order payment action remain explicit`() {
+        val screen = File(
+            "src/main/java/com/detrapay/ui/home/orders/OrdersScreen.kt",
+        ).readText()
+        val list = File(
+            "src/main/java/com/detrapay/ui/home/orders/screens/OrdersListScreen.kt",
+        ).readText()
+
+        assertTrue(screen.contains("OnBackPressedCallback("))
+        assertTrue(list.contains("onPay = { onOrderPay(order) }"))
+        assertTrue(list.contains("""Text("Pagar agora""""))
+    }
 }

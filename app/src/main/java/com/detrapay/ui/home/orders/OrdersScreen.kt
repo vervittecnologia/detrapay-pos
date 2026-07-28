@@ -1,10 +1,14 @@
 ﻿package com.detrapay.ui.home.orders
 
+import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.Modifier
@@ -34,6 +38,21 @@ fun OrdersScreen(
         OrderPresentation.paymentAmountError(amount, pendingAmount)
     } else {
         null
+    }
+
+    val activity = LocalContext.current as? ComponentActivity
+    DisposableEffect(activity, local.step) {
+        val callback = object : OnBackPressedCallback(local.step != OrderFlowStep.Orders) {
+            override fun handleOnBackPressed() {
+                if (local.step == OrderFlowStep.Waiting) {
+                    onAction(OrderFlowAction.RequestPaymentCancel)
+                } else {
+                    onAction(OrderFlowAction.Back)
+                }
+            }
+        }
+        activity?.onBackPressedDispatcher?.addCallback(callback)
+        onDispose { callback.remove() }
     }
 
     MaterialTheme {

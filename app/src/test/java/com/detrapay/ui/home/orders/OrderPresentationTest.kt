@@ -186,6 +186,13 @@ class OrderPresentationTest {
         assertEquals(1, review.installments)
     }
 
+    @Test
+    fun `amount equal to a calculated decimal balance is accepted in cents`() {
+        val pendingAmount = 0.30 - 0.20
+
+        assertEquals(null, OrderPresentation.paymentAmountError(0.10, pendingAmount))
+    }
+
     private fun order(
         id: Int,
         total: Double,
