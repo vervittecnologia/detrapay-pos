@@ -10,7 +10,10 @@
 
 ## Global Constraints
 
-- Preserve the current device UI and copy; this work is a structural consolidation, not a redesign.
+- Preserve the current device UI and copy except for the explicitly specified payment-entry correction below; this work is not a general redesign.
+- Detail must show `Resumo financeiro`; when the order has pending balance, its action is a plain `Pagar` button with no amount and no `Pagar saldo` label.
+- Every payment entry must open at `R$ 0,00`; show the pending balance only through `Text("Valor pendente: $pendingAmountLabel")` and provide the explicit shortcut `Usar valor pendente`.
+- Never use the pending balance as the initial primary amount. Enable `Pagar` only after the user enters a value greater than zero or taps the pending-balance shortcut.
 - Support exactly one Home surface: Pedidos.
 - Do not select, persist, normalize, or branch on `complete`, `simplified`, `direct_checkout`, or any equivalent mode.
 - Preserve new-order, detail, payment, installment simulation, refresh, search, report, and logout journeys reachable from Pedidos.
@@ -42,7 +45,7 @@ These wireframes preserve the current device screens. They are acceptance refere
    |                         |
    |                         +--> [Simular parcelas] --> [Simulador]
    |
-   +--> [Cartao do pedido] --> [Detalhes] --> [Pagar saldo]
+   +--> [Cartao do pedido] --> [Detalhes] --> [Pagar]
                                                   |
                                                   v
                                           [Digitar valor]
@@ -84,16 +87,34 @@ These wireframes preserve the current device screens. They are acceptance refere
 ```
 
 ```text
++------------------------------------------------+
+| [<] Pedido #544                                |
++------------------------------------------------+
+| Resumo financeiro                              |
+| Total          Pago             Pendente       |
+| R$ 2.570,18    R$ 0,00          R$ 2.570,18    |
++------------------------------------------------+
+| Pagamentos registrados                    0    |
+|          Nenhum pagamento registrado          |
++------------------------------------------------+
+|                   [ Pagar ]                    |
++------------------------------------------------+
+```
+
+```text
 +-----------------------+  +-----------------------+
 | [<] PAGAMENTO         |  | [<] R$ 1.000,00       |
 | DIGITE O VALOR        |  | Escolha a forma      |
-| R$ 1.000,00           |  | de pagamento         |
+| R$ 0,00               |  | de pagamento         |
 | Pedido #544           |  |                       |
-| [1] [2] [3]           |  | [ Credito           ] |
-| [4] [5] [6]           |  | [ Debito            ] |
-| [7] [8] [9]           |  | [ Pix               ] |
-| [,] [0] [apagar]      |  | [Pix] [Loja] [Dinheiro]|
-| [       Pagar       ] |  |                       |
+| Valor pendente:       |  | [ Credito           ] |
+| R$ 2.570,18           |  | [ Debito            ] |
+| [Usar valor pendente] |  | [ Pix               ] |
+| [1] [2] [3]           |  |                       |
+| [4] [5] [6]           |  | Outras formas        |
+| [7] [8] [9]           |  | [Pix] [Loja] [Dinheiro]|
+| [,] [0] [apagar]      |  |                       |
+| [   Pagar (inativo) ] |  |                       |
 +-----------------------+  +-----------------------+
 ```
 
@@ -113,7 +134,9 @@ These wireframes preserve the current device screens. They are acceptance refere
 
 Flow examples to verify during implementation:
 
-- Open order `#544`, enter `R$ 1.000,00`, choose credit, select an installment, complete, and return to Pedidos.
+- Open order `#544`, confirm `Resumo financeiro` and the plain `Pagar` button, then confirm payment entry starts at `R$ 0,00`.
+- Confirm `Valor pendente: R$ 2.570,18` is secondary information; tap `Usar valor pendente` and verify only that explicit action fills the primary amount.
+- Clear the amount back to zero and verify `Pagar` becomes disabled; enter `R$ 1.000,00`, continue with credit, select an installment, complete, and return to Pedidos.
 - Choose Pix, generate/copy its code, and return to Pedidos without losing the root navigation state.
 - Open `+`, enter `RegistrationActivity`, cancel or finish, and return to the canonical list.
 - Open `+`, simulate `R$ 2.570,18`, select an installment, and exercise copy/share.
@@ -401,6 +424,22 @@ DirectCheckoutOrderPresentation
   -> OrderPresentation
 ```
 
+Add these payment-entry assertions to the moved test:
+
+```kotlin
+@Test
+fun `blank payment input is zero and never falls back to pending balance`() {
+    assertEquals(0.0, OrderPresentation.paymentAmount(""), 0.0)
+    assertEquals("R$ 0,00", OrderPresentation.paymentDisplayAmount(""))
+}
+
+@Test
+fun `typed payment input uses only the entered digits`() {
+    assertEquals(1_000.0, OrderPresentation.paymentAmount("100000"), 0.0)
+    assertEquals("R$ 1.000,00", OrderPresentation.paymentDisplayAmount("100000"))
+}
+```
+
 - [ ] **Step 2: Run the moved test and verify the target object is missing**
 
 ```powershell
@@ -433,6 +472,20 @@ data class OrderSummary(
     val hasPendingBalance: Boolean,
 )
 ```
+
+Replace the pending-balance fallback functions with:
+
+```kotlin
+fun paymentAmount(digits: String): Double {
+    return digits.toDoubleOrNull()?.let { it / 100.0 } ?: 0.0
+}
+
+fun paymentDisplayAmount(digits: String): String {
+    return formatCurrency(paymentAmount(digits))
+}
+```
+
+There must be no overload that accepts `pendingAmount`; the pending balance is separate presentation data.
 
 - [ ] **Step 4: Create the canonical Orders ViewModel**
 
@@ -597,6 +650,31 @@ TestDirectCheckoutFixtures           -> TestOrderFixtures
 DirectCheckoutPendingPayment         -> PendingOrderPayment
 ```
 
+Replace the old auto-filled start-payment test and add the explicit shortcut test:
+
+```kotlin
+@Test
+fun `start payment opens keypad with zero amount`() {
+    val order = order(total = 2570.18, paidAmount = 1200.0)
+
+    val state = OrderFlowReducer.startPayment(OrderFlowLocalState(), order)
+
+    assertEquals(order, state.selectedOrder)
+    assertEquals(OrderFlowStep.Keypad, state.step)
+    assertEquals("", state.paymentDigits)
+}
+
+@Test
+fun `pending balance is filled only by explicit shortcut`() {
+    val order = order(total = 2570.18, paidAmount = 1200.0)
+    val initial = OrderFlowReducer.startPayment(OrderFlowLocalState(), order)
+
+    val filled = OrderFlowReducer.usePendingAmount(initial, order)
+
+    assertEquals("137018", filled.paymentDigits)
+}
+```
+
 - [ ] **Step 3: Run the new tests and verify both navigation and symbols fail**
 
 ```powershell
@@ -654,6 +732,7 @@ sealed interface OrderFlowAction {
     data class OrderDetail(val order: Order) : OrderFlowAction
     data object Back : OrderFlowAction
     data class Key(val value: String) : OrderFlowAction
+    data object UsePendingAmount : OrderFlowAction
     data object OpenMethods : OrderFlowAction
     data class SelectPaymentType(val paymentType: String) : OrderFlowAction
     data class SelectInstallment(val installment: Int) : OrderFlowAction
@@ -720,7 +799,87 @@ DirectCheckoutPaymentRouter     -> OrderPaymentRouter
 DirectCheckoutColors            -> OrderFlowColors
 ```
 
-Rename parameters `directCheckoutErrorMessage` to `ordersErrorMessage`; keep every user-visible string unchanged.
+Rename parameters `directCheckoutErrorMessage` to `ordersErrorMessage`; keep user-visible strings unchanged except for the explicit `Pagar`, `Text("Valor pendente: $pendingAmountLabel")`, and `Usar valor pendente` requirements.
+
+Implement the payment-entry correction in `OrderFlowReducer` exactly as follows:
+
+```kotlin
+fun startPayment(state: OrderFlowLocalState, order: Order): OrderFlowLocalState {
+    return state.copy(
+        selectedOrder = order,
+        paymentDigits = "",
+        selectedPaymentType = "",
+        selectedInstallment = 1,
+        creditInstallments = emptyList(),
+        feesLoading = false,
+        feesError = null,
+        showSimulator = false,
+        feeRequestTarget = null,
+        step = OrderFlowStep.Keypad,
+    )
+}
+
+fun usePendingAmount(state: OrderFlowLocalState, order: Order): OrderFlowLocalState {
+    val pendingAmount = OrderPresentation.summary(order).missingAmount
+    return state.copy(paymentDigits = (pendingAmount * 100).roundToLong().toString())
+}
+```
+
+In `OrdersRoute`, handle the shortcut and calculate payments only from entered digits:
+
+```kotlin
+OrderFlowAction.UsePendingAmount -> {
+    localState.selectedOrder?.let { order ->
+        localState = OrderFlowReducer.usePendingAmount(localState, order)
+    }
+}
+
+private fun currentPaymentAmount(state: OrderFlowLocalState): Double {
+    return OrderPresentation.paymentAmount(state.paymentDigits)
+}
+```
+
+In `OrdersScreen`, keep `pendingAmount` separate, pass it to the keypad only as formatted secondary information, and use entered digits as the primary amount:
+
+```kotlin
+val pendingAmount = currentOrder?.let { OrderPresentation.summary(it).missingAmount } ?: 0.0
+val amount = OrderPresentation.paymentAmount(local.paymentDigits)
+
+KeypadScreen(
+    order = currentOrder,
+    displayAmount = OrderPresentation.paymentDisplayAmount(local.paymentDigits),
+    pendingAmountLabel = OrderPresentation.formatCurrency(pendingAmount),
+    canPay = amount > 0.0,
+    onBack = { onAction(OrderFlowAction.Back) },
+    onKey = { onAction(OrderFlowAction.Key(it)) },
+    onUsePendingAmount = { onAction(OrderFlowAction.UsePendingAmount) },
+    onPay = { onAction(OrderFlowAction.OpenMethods) },
+)
+```
+
+`DetailScreen` must preserve `Resumo financeiro` and use this button content:
+
+```kotlin
+Text("Pagar", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+```
+
+`KeypadScreen` must expose these parameters and UI rules:
+
+```kotlin
+@Composable
+fun KeypadScreen(
+    order: Order,
+    displayAmount: String,
+    pendingAmountLabel: String,
+    canPay: Boolean,
+    onBack: () -> Unit,
+    onKey: (String) -> Unit,
+    onUsePendingAmount: () -> Unit,
+    onPay: () -> Unit,
+)
+```
+
+Under the primary `displayAmount`, render `Text("Valor pendente: $pendingAmountLabel")` and an `OutlinedButton(onClick = onUsePendingAmount)` containing `Text("Usar valor pendente")`. Set the primary `Button(enabled = canPay, onClick = onPay, ...)`. Do not render the pending balance inside the primary amount or the Detail action label.
 
 - [ ] **Step 6: Make Orders the static Home root**
 
@@ -991,11 +1150,14 @@ Using `android layout` for coordinates and `adb shell input tap`, verify without
 
 ```text
 1. Open and clear search.
-2. Open order #544 and return.
-3. Open the + menu and confirm Novo Pedido and Simular Parcelas.
-4. Open the simulator, enter R$ 2.570,18, and close it.
-5. Open Novo Pedido and cancel/back to Pedidos.
-6. Confirm root back opens the logout confirmation.
+2. Open order #544; confirm `Resumo financeiro` and a plain `Pagar` button with no amount.
+3. Tap `Pagar`; confirm the primary value is `R$ 0,00`, the hint is `Valor pendente: R$ 2.570,18`, and `Pagar` is disabled.
+4. Tap `Usar valor pendente`; confirm the primary value becomes `R$ 2.570,18` only after this action and `Pagar` becomes enabled.
+5. Delete the filled amount; confirm it returns to `R$ 0,00` and disables `Pagar`, then return to Pedidos.
+6. Open the + menu and confirm Novo Pedido and Simular Parcelas.
+7. Open the simulator, enter R$ 2.570,18, and close it.
+8. Open Novo Pedido and cancel/back to Pedidos.
+9. Confirm root back opens the logout confirmation.
 ```
 
 Expected: every transition follows the reference flow, returns to Pedidos, and never reveals an alternate Home.

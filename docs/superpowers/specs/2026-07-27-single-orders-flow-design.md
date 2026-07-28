@@ -17,6 +17,7 @@ O fluxo canonico inicia na tela **Pedidos** e preserva as jornadas hoje acessive
 - Renomear componentes ainda identificados como `simplified` quando fizerem parte do fluxo atual.
 - Remover destinos, fragments, menus e recursos da Home antiga que nao sejam alcancaveis pelo fluxo atual.
 - Preservar as Activities e componentes usados pelas jornadas atuais de cadastro, detalhes, pagamento e relatorio.
+- Ajustar a entrada de pagamento para sempre iniciar em `R$ 0,00`, sem preencher automaticamente o saldo pendente.
 - Atualizar testes e referencias para refletir o fluxo unico.
 - Validar compilacao, testes e execucao no device conectado.
 
@@ -58,7 +59,9 @@ O pacote sera `com.detrapay.ui.home.orders`. `OrderFlowContract` reunira `OrderF
 - Serao removidos do grafo `registrationFragment`, `orderListFragment`, `profileFragment`, `paymentHistoryFragment` e `notificationsActivity`.
 - Serao removidas as implementacoes exclusivas desses destinos: `ui.home.registration`, `ui.home.order_list`, `ui.home.profile`, `ui.home.payment_history` e `ui.notification`, junto de seus layouts e do registro de `NotificationActivity` no manifest.
 - A criacao de pedido continuara abrindo `RegistrationActivity` a partir da acao de novo pedido.
-- Detalhes, pagamento, simulacao, relatorio e logout manterao o comportamento atual.
+- Detalhes continuara exibindo o resumo financeiro e os pagamentos registrados. Quando houver saldo pendente, seu botao de acao sera apenas `Pagar`, sem valor e sem o texto `Pagar saldo`.
+- A tela de pagamento exibira o saldo pendente como informacao secundaria e oferecera o atalho `Usar valor pendente`, sem transformar esse saldo no valor principal.
+- Simulacao, relatorio e logout manterao o comportamento atual.
 - Voltar a partir da raiz de Pedidos continuara oferecendo a confirmacao de logout, conforme o comportamento atual.
 
 ## Remocao do conceito de modo
@@ -80,6 +83,8 @@ Os campos antigos de modo serao removidos dos DTOs do app. Caso o backend contin
 O carregamento da Home continuara fornecendo nome e documento da empresa, dados de operador e vendedores necessarios ao fluxo. O estado deixa de carregar qualquer indicador de modo.
 
 A lista de Pedidos continua vindo do repositorio atual. Atualizacao manual, loading, vazio e erro permanecem representados no estado da rota. A apresentacao de totais, valor pago, saldo e status preserva as regras atuais.
+
+Ao iniciar um pagamento, `paymentDigits` sera vazio e o valor principal exibido sera `R$ 0,00`. O saldo pendente sera calculado separadamente e usado somente na dica formada por `Valor pendente:` mais o saldo formatado e no atalho `Usar valor pendente`. Esse atalho preenchera `paymentDigits` com o saldo atual; ele nunca sera acionado automaticamente. O botao `Pagar` permanecera desabilitado enquanto o valor principal for zero.
 
 Os dados de pagamento, parcelas e pagamentos pendentes continuam usando os repositorios e ViewModels existentes. Renomeacoes nao alterarao endpoints, payloads ou contratos.
 
@@ -132,7 +137,7 @@ O plano de implementacao devera repetir este mapa e estes wireframes como refere
              |
              +--> [Detalhes]
                      |
-                     +--> [Pagar saldo]
+                     +--> [Pagar]
                               |
                               v
                       [Digitar valor]
@@ -203,7 +208,7 @@ Ao tocar no botao flutuante:
 |          Nenhum pagamento registrado          |
 |                                                |
 +------------------------------------------------+
-|            [ Pagar R$ 2.570,18 ]               |
+|                   [ Pagar ]                    |
 +------------------------------------------------+
 ```
 
@@ -214,17 +219,21 @@ Ao tocar no botao flutuante:
 | [<] PAGAMENTO         |  | [<] R$ 1.000,00       |
 |                       |  |                       |
 | DIGITE O VALOR        |  | Escolha a forma      |
-| R$ 1.000,00           |  | de pagamento         |
+| R$ 0,00               |  | de pagamento         |
 | Pedido #544           |  |                       |
-|                       |  | [ Credito           ] |
-| [1] [2] [3]           |  | [ Debito            ] |
-| [4] [5] [6]           |  | [ Pix               ] |
+| Valor pendente:       |  | [ Credito           ] |
+| R$ 2.570,18           |  | [ Debito            ] |
+| [Usar valor pendente] |  | [ Pix               ] |
+| [1] [2] [3]           |  |                       |
+| [4] [5] [6]           |  |                       |
 | [7] [8] [9]           |  |                       |
 | [,] [0] [apagar]      |  | Outras formas        |
 |                       |  | [Pix] [Loja] [Dinheiro]|
-| [       Pagar       ] |  |                       |
+| [   Pagar (inativo) ] |  |                       |
 +-----------------------+  +-----------------------+
 ```
+
+Depois que o usuario digitar qualquer valor maior que zero, ou tocar em `Usar valor pendente`, o botao `Pagar` sera habilitado. Digitar e apagar todo o valor deve retornar a `R$ 0,00` e desabilitar o botao novamente.
 
 ### Credito, debito e resultado
 
@@ -279,7 +288,8 @@ Para Pix, o estado de resultado substitui a area de status pelo codigo gerado, c
 
 ### Exemplos de verificacao do fluxo
 
-- Pedido pendente: abrir `#544`, pagar `R$ 1.000,00`, escolher credito e selecionar uma parcela; ao concluir, voltar para Pedidos e atualizar os totais.
+- Pedido pendente: abrir `#544`, confirmar `Resumo financeiro` e o botao `Pagar`, entrar com `R$ 0,00`, digitar `R$ 1.000,00`, escolher credito e selecionar uma parcela; ao concluir, voltar para Pedidos e atualizar os totais.
+- Atalho de saldo: abrir `#544`, confirmar a dica `Valor pendente: R$ 2.570,18`, tocar em `Usar valor pendente` e verificar que somente entao o valor principal muda de `R$ 0,00` para `R$ 2.570,18`.
 - Pix: informar um valor, escolher Pix, gerar o codigo, copiar e voltar para Pedidos sem perder a navegacao raiz.
 - Novo pedido: abrir o menu `+`, entrar em `RegistrationActivity`, concluir ou cancelar e retornar para a lista canonica.
 - Simulacao: abrir o menu `+`, consultar parcelas para `R$ 2.570,18`, selecionar uma opcao e testar copiar/compartilhar.
@@ -306,5 +316,8 @@ Para Pix, o estado de resultado substitui a area de status pelo codigo gerado, c
 - Nao existe Home simplificada, completa, checkout direto ou outra superficie alternativa.
 - A barra inferior e as rotas antigas inacessiveis nao fazem parte da Home.
 - Novo pedido, detalhes, recebimento, simulacao, atualizacao e logout continuam funcionando a partir de Pedidos.
-- O comportamento visual e as regras de negocio das telas atuais permanecem inalterados.
+- Para pedidos com saldo pendente, Detalhes exibe `Resumo financeiro` e um botao `Pagar` sem valor embutido.
+- Todo novo pagamento inicia em `R$ 0,00`; o saldo pendente aparece apenas como dica e pode ser aplicado pelo atalho `Usar valor pendente`.
+- `Pagar` fica desabilitado em zero e habilita somente para um valor digitado ou aplicado pelo atalho.
+- Fora desse ajuste explicito de entrada de pagamento, o comportamento visual e as regras de negocio das telas atuais permanecem inalterados.
 - Build, testes relevantes, instalacao e verificacao de logs concluem sem falhas introduzidas pela migracao.
