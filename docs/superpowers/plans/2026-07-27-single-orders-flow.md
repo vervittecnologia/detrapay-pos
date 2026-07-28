@@ -212,6 +212,16 @@ The following production packages are removed completely: `ui.home.registration`
 - Keep `GET /payment-methods` backward compatible and return a reliable `is_online_payment` value: `true` for all Credit installments (including 13x-18x), Debit, and Pix; `false` for Store Credit, Pix Transfer (`pix_manual`), and Cash.
 - Before correcting shared catalog values, run contract/consumer tests for every production client known to use them. If a released client would change behavior unsafely, expose the corrected catalog through an additive versioned/client-scoped contract and retain the legacy response for that client.
 
+**Exact additive contract candidate (implemented locally; deployment gate still closed):**
+
+- `POST /orders/{orderId}/payment-attempts` accepts `payment_method_id`, `amount_original`, `installments`, and `idempotency_key`. It accepts only `is_online_payment=true`, returns a separate `payment_attempt` with status `prepared`, and never creates an order receivable.
+- `POST /update-split-config` additively accepts `{ "payment_attempt_id": "<uuid>", "serial": "<device serial>" }`. The released payload `{ "receivable_id": <id>, "serial": "<device serial>" }` remains supported.
+- `POST /payment-attempts/{attemptId}/complete` accepts the approved PagBank `transaction_id` plus optional authorization/card/transaction log fields. It idempotently creates the order receivable directly as `paid` with `payment_origin=pagbank` and returns `{ data, updatedOrder }`.
+- `POST /orders/{orderId}/manual-payments` accepts the common payment fields plus optional `transaction_log`. It accepts only `is_online_payment=false`, idempotently creates the order receivable directly as `paid` with `payment_origin=manual`, and returns `{ data, updatedOrder }` without PagBank or a waiting state.
+- Every new write requires a nonblank client-generated `idempotency_key`. Repetition for the same order returns the existing result; reuse against another order returns a conflict. Online completion additionally requires the stable PagBank `transaction_id`.
+- The full request/response and retry contract is recorded in backend document `docs/MOBILE_ATOMIC_PAYMENT_CONTRACT.md` on branch `codex/single-orders-flow-backend`, commit `5dcb589a`.
+- Current gate status: unit tests and Deno type-check pass locally; PostgreSQL migration execution, legacy endpoint smoke tests, new endpoint idempotency tests, and Edge Function publication are still pending in an authorized non-production environment. Tasks 2 and 3 must not add Android network calls until these checks pass.
+
 - [ ] **Step 1: Verify the existing production contract is retained**
 
 Capture contract tests or API evidence that the current receivable, confirm-payment, generate-pix, and split-config endpoints still accept the payloads used by released Android versions.
