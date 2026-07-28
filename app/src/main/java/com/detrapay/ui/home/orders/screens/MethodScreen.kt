@@ -51,17 +51,17 @@ fun MethodScreen(
             }
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Escolha a forma de pagamento", color = OrderFlowColors.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                Text("Pagamentos online", color = OrderFlowColors.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                Text("Cobrar na maquininha", color = OrderFlowColors.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                 PaymentMethodRow("Crédito", "Parcelado ou à vista", Icons.Default.CreditCard, OrderFlowColors.Blue, credit != null) {
                     credit?.let(onSelectPaymentMethod)
                 }
-                PaymentMethodRow("Débito", "Pagamento imediato com taxa", Icons.Default.CreditCard, OrderFlowColors.Green, debit != null) {
+                PaymentMethodRow("Débito", "Pagamento imediato; revise o total", Icons.Default.CreditCard, OrderFlowColors.Green, debit != null) {
                     debit?.let(onSelectPaymentMethod)
                 }
                 PaymentMethodRow("Pix", "Recebimento rápido", Icons.Default.Bolt, OrderFlowColors.Teal, pix != null) {
                     pix?.let(onSelectPaymentMethod)
                 }
-                Text("Pagamentos para registro", modifier = Modifier.padding(top = 12.dp), color = OrderFlowColors.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                Text("Apenas registrar no pedido", modifier = Modifier.padding(top = 12.dp), color = OrderFlowColors.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     SmallMethod(Modifier.weight(1f), "Transferência\nPix", Icons.Default.Bolt, OrderFlowColors.Teal, pixTransfer != null) {
                         pixTransfer?.let(onSelectPaymentMethod)

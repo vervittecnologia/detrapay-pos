@@ -38,6 +38,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -52,8 +53,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -81,11 +80,9 @@ fun OrdersListScreen(
     onOrderDetail: (Order) -> Unit,
     initialShowSearch: Boolean = false,
     initialQuery: String = "",
-    initialShowFabMenu: Boolean = false,
 ) {
     var query by remember { mutableStateOf(initialQuery) }
     var showSearch by remember { mutableStateOf(initialShowSearch || initialQuery.isNotBlank()) }
-    var showFabMenu by remember { mutableStateOf(initialShowFabMenu) }
     val filtered = remember(query, orders) {
         val digits = query.filter(Char::isDigit)
         orders.filter { order ->
@@ -242,102 +239,57 @@ fun OrdersListScreen(
                 }
             }
 
-            item { Spacer(modifier = Modifier.height(112.dp)) }
+            item { Spacer(modifier = Modifier.height(88.dp)) }
         }
 
-        if (showFabMenu) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.20f))
-                    .clickable { showFabMenu = false },
-            )
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 20.dp, bottom = 152.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.End,
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            OutlinedButton(
+                onClick = onOpenSimulator,
+                modifier = Modifier.weight(1f).height(52.dp),
+                shape = RoundedCornerShape(14.dp),
             ) {
-                FabMenuButton("Novo Pedido", Icons.Default.Receipt) {
-                    showFabMenu = false
-                    onNewOrder()
-                }
-                FabMenuButton("Simular Parcelas", Icons.Default.CreditCard) {
-                    showFabMenu = false
-                    onOpenSimulator()
-                }
+                Icon(Icons.Default.CreditCard, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text("Simular parcelas", modifier = Modifier.padding(start = 6.dp), fontSize = 13.sp)
+            }
+            Button(
+                onClick = onNewOrder,
+                modifier = Modifier.weight(1f).height(52.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = OrderFlowColors.Blue),
+            ) {
+                Icon(Icons.Default.Receipt, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text(
+                    "Novo pedido",
+                    modifier = Modifier.padding(start = 6.dp),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                )
             }
         }
-
-        Button(
-            onClick = { showFabMenu = !showFabMenu },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 22.dp, bottom = 96.dp)
-                .size(72.dp),
-            shape = CircleShape,
-            colors = ButtonDefaults.buttonColors(containerColor = OrderFlowColors.Blue),
-            contentPadding = PaddingValues(0.dp),
-        ) {
-            Icon(
-                Icons.Default.Add,
-                contentDescription = "Abrir ações",
-                modifier = Modifier
-                    .size(36.dp)
-                    .graphicsLayer(rotationZ = if (showFabMenu) 45f else 0f),
-            )
-        }
-    }
-}
-
-@Composable
-private fun FabMenuButton(label: String, icon: ImageVector, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .width(200.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color.White)
-            .border(1.dp, OrderFlowColors.Border, RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(OrderFlowColors.Blue.copy(alpha = 0.10f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(icon, contentDescription = null, tint = OrderFlowColors.Blue, modifier = Modifier.size(18.dp))
-        }
-        Text(
-            modifier = Modifier.padding(start = 12.dp),
-            text = label,
-            color = OrderFlowColors.Ink,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-        )
     }
 }
 
 @Composable
 private fun SellerOrderCard(order: Order, onClick: () -> Unit) {
     val card = OrderPresentation.sellerCardSummary(order)
-    val progress = card.progressPercent.coerceIn(0, 100) / 100f
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = 16.dp, vertical = 4.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(14.dp),
         color = Color.White,
         border = BorderStroke(1.dp, OrderFlowColors.Border),
-        shadowElevation = 1.dp,
     ) {
-        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -349,19 +301,19 @@ private fun SellerOrderCard(order: Order, onClick: () -> Unit) {
                     Text(
                         text = "#${order.id}",
                         color = OrderFlowColors.Blue,
-                        fontSize = 24.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Black,
                     )
                     Row(
                         modifier = Modifier.padding(start = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Default.CalendarToday, contentDescription = null, tint = OrderFlowColors.Muted, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.CalendarToday, contentDescription = null, tint = OrderFlowColors.Muted, modifier = Modifier.size(14.dp))
                         Text(
                             modifier = Modifier.padding(start = 5.dp),
                             text = OrderPresentation.sellerDateLabel(order.creationDate.ifBlank { order.billingDate }),
                             color = OrderFlowColors.Muted,
-                            fontSize = 16.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                         )
                     }
@@ -370,56 +322,29 @@ private fun SellerOrderCard(order: Order, onClick: () -> Unit) {
             }
 
             Text(
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = 4.dp),
                 text = order.customer.name.ifBlank { order.customer.cpfCnpj.ifBlank { "-" } },
                 color = OrderFlowColors.Ink,
-                fontSize = 22.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Black,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 10.dp)
-                    .height(1.dp)
-                    .background(OrderFlowColors.Border),
-            )
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp),
+                    .padding(top = 6.dp),
                 verticalAlignment = Alignment.Top,
             ) {
                 SellerMetric("Total", card.totalLabel, OrderFlowColors.Ink, Modifier.weight(1f))
                 VerticalMetricDivider()
-                SellerMetric("Pago", card.paidLabel, if (card.isFullyPaid) OrderFlowColors.Green else OrderFlowColors.Ink, Modifier.weight(1f))
-                VerticalMetricDivider()
                 SellerMetric(
-                    card.balanceTitle,
-                    card.balanceLabel,
-                    if (card.balanceTitle == "Falta" && !card.isFullyPaid) OrderFlowColors.Red else OrderFlowColors.Ink,
+                    if (card.isFullyPaid) "Pago" else card.balanceTitle,
+                    if (card.isFullyPaid) card.paidLabel else card.balanceLabel,
+                    if (card.isFullyPaid) OrderFlowColors.Green else OrderFlowColors.Red,
                     Modifier.weight(1f),
                     showFallingIcon = card.balanceTitle == "Falta" && !card.isFullyPaid,
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(999.dp))
-                    .background(OrderFlowColors.Track),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(progress)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(999.dp))
-                        .background(if (card.isFullyPaid) OrderFlowColors.Green else OrderFlowColors.Warning),
                 )
             }
         }
@@ -441,7 +366,7 @@ private fun SellerStatusBadge(label: String) {
 
     Row(
         modifier = Modifier
-            .widthIn(min = 164.dp)
+            .widthIn(min = 96.dp)
             .clip(RoundedCornerShape(999.dp))
             .background(bg)
             .padding(horizontal = 10.dp, vertical = 6.dp),
@@ -453,7 +378,7 @@ private fun SellerStatusBadge(label: String) {
             modifier = Modifier.padding(start = 6.dp),
             text = label.uppercase(),
             color = fg,
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

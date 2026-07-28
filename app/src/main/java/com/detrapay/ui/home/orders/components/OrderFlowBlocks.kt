@@ -109,8 +109,8 @@ fun PaymentMethodRow(
             .clip(RoundedCornerShape(18.dp))
             .background(Color.White)
             .border(
-                if (title == "Crédito" && enabled) 2.dp else 1.dp,
-                if (title == "Crédito" && enabled) OrderFlowColors.Blue else OrderFlowColors.Border,
+                1.dp,
+                OrderFlowColors.Border,
                 RoundedCornerShape(18.dp),
             )
             .clickable(enabled = enabled, onClick = onClick)
@@ -120,7 +120,11 @@ fun PaymentMethodRow(
         MethodIcon(icon, color)
         Column(modifier = Modifier.weight(1f).padding(start = 14.dp)) {
             Text(title, color = OrderFlowColors.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Text(subtitle, color = OrderFlowColors.Muted, fontSize = 12.sp)
+            Text(
+                if (enabled) subtitle else "$subtitle • Indisponível",
+                color = OrderFlowColors.Muted,
+                fontSize = 12.sp,
+            )
         }
         Text("›", color = OrderFlowColors.Faint, fontSize = 28.sp)
     }
