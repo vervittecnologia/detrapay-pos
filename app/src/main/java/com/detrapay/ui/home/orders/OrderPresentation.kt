@@ -5,10 +5,12 @@ import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.OrderReceivableItemStatus
 import com.detrapay.data.model.OrderStatus
 import com.detrapay.data.model.PaymentMethod
+import com.detrapay.data.model.remote.InstallmentFee
 import com.detrapay.ui.order_details.OrderPaymentTotals
 import com.detrapay.ui.util.PaymentTypeRules
 import java.util.Locale
 import kotlin.math.roundToInt
+import kotlin.math.round
 
 data class OrderSummary(
     val registeredAmount: Double,
@@ -99,6 +101,30 @@ object OrderPresentation {
             installmentValueLabel = formatCurrency(amount / count),
             totalValueLabel = formatCurrency(amount),
             feePayerLabel = "Taxas por conta da loja",
+        )
+    }
+
+    fun paymentReview(
+        amountOriginal: Double,
+        installment: InstallmentFee,
+    ): OrderPaymentReview {
+        val amountFinal = parseDecimal(installment.totalValue)
+        return OrderPaymentReview(
+            amountOriginal = amountOriginal,
+            amountFinal = amountFinal,
+            feeAmount = roundMoney((amountFinal - amountOriginal).coerceAtLeast(0.0)),
+            installments = installment.installmentNumber.coerceAtLeast(1),
+            installmentValue = parseDecimal(installment.installmentValue),
+        )
+    }
+
+    fun directPaymentReview(amount: Double): OrderPaymentReview {
+        return OrderPaymentReview(
+            amountOriginal = amount,
+            amountFinal = amount,
+            feeAmount = 0.0,
+            installments = 1,
+            installmentValue = amount,
         )
     }
 
@@ -213,4 +239,10 @@ object OrderPresentation {
             )
         }
     }
+
+    private fun parseDecimal(value: String): Double {
+        return value.replace(',', '.').toDoubleOrNull() ?: 0.0
+    }
+
+    private fun roundMoney(value: Double): Double = round(value * 100.0) / 100.0
 }

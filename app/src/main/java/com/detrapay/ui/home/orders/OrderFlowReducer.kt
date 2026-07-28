@@ -26,9 +26,10 @@ object OrderFlowReducer {
             creditInstallments = emptyList(),
             feesLoading = false,
             feesError = null,
+            paymentReview = null,
             showSimulator = false,
             feeRequestTarget = null,
-            step = OrderFlowStep.Keypad,
+            step = OrderFlowStep.Method,
         )
     }
 
@@ -40,6 +41,10 @@ object OrderFlowReducer {
     fun applyPaymentKey(state: OrderFlowLocalState, key: String): OrderFlowLocalState {
         return state.copy(
             paymentDigits = OrderPresentation.nextPaymentDigits(state.paymentDigits, key),
+            creditInstallments = emptyList(),
+            selectedInstallment = 1,
+            paymentReview = null,
+            feesError = null,
         )
     }
 
@@ -48,54 +53,108 @@ object OrderFlowReducer {
     }
 
     fun selectPaymentMethod(state: OrderFlowLocalState, paymentMethod: PaymentMethod): OrderFlowLocalState {
-        val normalized = PaymentTypeRules.normalize(paymentMethod.paymentType)
-        return when (normalized) {
-            OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CREDIT -> {
-                if (state.feeRequestInFlight) {
-                    state.copy(
-                        selectedPaymentMethod = paymentMethod,
-                        selectedInstallment = 1,
-                        creditInstallments = emptyList(),
-                        feesLoading = state.feeRequestTarget == OrderFeeRequestTarget.CheckoutCredit,
-                        feesError = if (state.feeRequestTarget == OrderFeeRequestTarget.CheckoutCredit) {
-                            state.feesError
-                        } else {
-                            state.feesError ?: CHECKOUT_REQUEST_BLOCKED_MESSAGE
-                        },
-                        step = OrderFlowStep.Credit,
-                    )
-                } else {
-                    state.copy(
-                        selectedPaymentMethod = paymentMethod,
-                        selectedInstallment = 1,
-                        creditInstallments = emptyList(),
-                        feesLoading = true,
-                        feesError = null,
-                        feeRequestTarget = OrderFeeRequestTarget.CheckoutCredit,
-                        feeRequestInFlight = true,
-                        step = OrderFlowStep.Credit,
-                    )
-                }
-            }
-            OrderDetailsPaymentMethodPickerBottomSheet.TYPE_DEBIT -> state.copy(
-                selectedPaymentMethod = paymentMethod,
-                selectedInstallment = 1,
-                creditInstallments = emptyList(),
+        return state.copy(
+            selectedPaymentMethod = paymentMethod,
+            paymentDigits = "",
+            selectedInstallment = 1,
+            creditInstallments = emptyList(),
+            feesLoading = false,
+            feesError = null,
+            paymentReview = null,
+            feeRequestTarget = state.feeRequestTarget,
+            step = OrderFlowStep.Amount,
+        )
+    }
+
+    fun startCheckoutQuote(state: OrderFlowLocalState): OrderFlowLocalState {
+        if (state.feeRequestInFlight) {
+            return state.copy(
                 feesLoading = false,
-                feesError = null,
-                feeRequestTarget = null,
-                step = OrderFlowStep.Debit,
-            )
-            else -> state.copy(
-                selectedPaymentMethod = paymentMethod,
-                selectedInstallment = 1,
-                creditInstallments = emptyList(),
-                feesLoading = false,
-                feesError = null,
-                feeRequestTarget = null,
-                step = if (paymentMethod.isOnlinePayment) OrderFlowStep.Waiting else OrderFlowStep.Method,
+                feesError = CHECKOUT_REQUEST_BLOCKED_MESSAGE,
             )
         }
+
+        return state.copy(
+            feesLoading = true,
+            feesError = null,
+            paymentReview = null,
+            creditInstallments = emptyList(),
+            selectedInstallment = 1,
+            feeRequestTarget = OrderFeeRequestTarget.CheckoutCredit,
+            feeRequestInFlight = true,
+        )
+    }
+
+    fun quoteLoaded(
+        state: OrderFlowLocalState,
+        installments: List<InstallmentFee>,
+        emptyMessage: String,
+    ): OrderFlowLocalState {
+        if (state.feeRequestTarget == null) return discardFeeResponse(state)
+        if (state.feeRequestTarget != OrderFeeRequestTarget.CheckoutCredit) return state
+
+        if (installments.isEmpty()) {
+            return state.copy(
+                feesLoading = false,
+                feeRequestTarget = null,
+                feeRequestInFlight = false,
+                creditInstallments = emptyList(),
+                paymentReview = null,
+                feesError = emptyMessage,
+            )
+        }
+
+        val amount = OrderPresentation.paymentAmount(state.paymentDigits)
+        val isCredit = PaymentTypeRules.normalize(state.selectedPaymentMethod?.paymentType) ==
+            OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CREDIT
+        return if (isCredit) {
+            state.copy(
+                step = OrderFlowStep.Installments,
+                feesLoading = false,
+                feeRequestTarget = null,
+                feeRequestInFlight = false,
+                creditInstallments = installments,
+                selectedInstallment = installments.first().installmentNumber,
+                paymentReview = null,
+                feesError = null,
+            )
+        } else {
+            state.copy(
+                step = OrderFlowStep.Review,
+                feesLoading = false,
+                feeRequestTarget = null,
+                feeRequestInFlight = false,
+                creditInstallments = installments,
+                selectedInstallment = installments.first().installmentNumber,
+                paymentReview = OrderPresentation.paymentReview(amount, installments.first()),
+                feesError = null,
+            )
+        }
+    }
+
+    fun openDirectReview(state: OrderFlowLocalState): OrderFlowLocalState {
+        val amount = OrderPresentation.paymentAmount(state.paymentDigits)
+        return state.copy(
+            step = OrderFlowStep.Review,
+            selectedInstallment = 1,
+            paymentReview = OrderPresentation.directPaymentReview(amount),
+            feesLoading = false,
+            feesError = null,
+        )
+    }
+
+    fun openInstallmentReview(state: OrderFlowLocalState): OrderFlowLocalState {
+        val installment = state.creditInstallments.firstOrNull {
+            it.installmentNumber == state.selectedInstallment
+        } ?: return state.copy(feesError = "Selecione uma opcao de parcelamento.")
+        return state.copy(
+            step = OrderFlowStep.Review,
+            paymentReview = OrderPresentation.paymentReview(
+                OrderPresentation.paymentAmount(state.paymentDigits),
+                installment,
+            ),
+            feesError = null,
+        )
     }
 
     fun selectInstallment(state: OrderFlowLocalState, installment: Int): OrderFlowLocalState {
@@ -106,14 +165,21 @@ object OrderFlowReducer {
         val nextStep = when (state.step) {
             OrderFlowStep.Orders -> OrderFlowStep.Orders
             OrderFlowStep.Detail -> OrderFlowStep.Orders
-            OrderFlowStep.Keypad -> OrderFlowStep.Orders
-            OrderFlowStep.Method -> OrderFlowStep.Keypad
-            OrderFlowStep.Credit,
-            OrderFlowStep.Debit -> OrderFlowStep.Method
-            OrderFlowStep.Waiting -> OrderFlowStep.Method
+            OrderFlowStep.Method -> OrderFlowStep.Orders
+            OrderFlowStep.Amount -> OrderFlowStep.Method
+            OrderFlowStep.Installments -> OrderFlowStep.Amount
+            OrderFlowStep.Review -> if (
+                PaymentTypeRules.normalize(state.selectedPaymentMethod?.paymentType) ==
+                OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CREDIT
+            ) {
+                OrderFlowStep.Installments
+            } else {
+                OrderFlowStep.Amount
+            }
+            OrderFlowStep.Waiting -> OrderFlowStep.Review
         }
         val cancelCheckoutFeeRequest =
-            state.step == OrderFlowStep.Credit &&
+            state.step == OrderFlowStep.Amount &&
                 state.feeRequestTarget == OrderFeeRequestTarget.CheckoutCredit
         return state.copy(
             step = nextStep,
@@ -210,17 +276,7 @@ object OrderFlowReducer {
         installments: List<InstallmentFee>,
         emptyMessage: String,
     ): OrderFlowLocalState {
-        if (state.feeRequestTarget == null) return discardFeeResponse(state)
-        if (state.feeRequestTarget != OrderFeeRequestTarget.CheckoutCredit) return state
-
-        return state.copy(
-            feesLoading = false,
-            feeRequestTarget = null,
-            feeRequestInFlight = false,
-            creditInstallments = installments,
-            selectedInstallment = installments.firstOrNull()?.installmentNumber ?: 1,
-            feesError = if (installments.isEmpty()) emptyMessage else null,
-        )
+        return quoteLoaded(state, installments, emptyMessage)
     }
 
     fun feesFailed(state: OrderFlowLocalState, message: String): OrderFlowLocalState {

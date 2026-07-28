@@ -11,12 +11,20 @@ import com.detrapay.ui.state.UIState
 enum class OrderFlowStep {
     Orders,
     Detail,
-    Keypad,
     Method,
-    Credit,
-    Debit,
+    Amount,
+    Installments,
+    Review,
     Waiting,
 }
+
+data class OrderPaymentReview(
+    val amountOriginal: Double,
+    val amountFinal: Double,
+    val feeAmount: Double,
+    val installments: Int,
+    val installmentValue: Double,
+)
 
 enum class OrderFeeRequestTarget {
     CheckoutCredit,
@@ -32,6 +40,7 @@ data class OrderFlowLocalState(
     val creditInstallments: List<InstallmentFee> = emptyList(),
     val feesLoading: Boolean = false,
     val feesError: String? = null,
+    val paymentReview: OrderPaymentReview? = null,
     val showSimulator: Boolean = false,
     val simulatorAmountDigits: String = "",
     val simulatorInstallments: List<InstallmentFee> = emptyList(),
@@ -67,9 +76,10 @@ sealed interface OrderFlowAction {
     data object UsePendingAmount : OrderFlowAction
     data object OpenMethods : OrderFlowAction
     data class SelectPaymentMethod(val paymentMethod: PaymentMethod) : OrderFlowAction
+    data object ContinueAmount : OrderFlowAction
     data class SelectInstallment(val installment: Int) : OrderFlowAction
-    data object ContinueCredit : OrderFlowAction
-    data object ContinueDebit : OrderFlowAction
+    data object ContinueInstallments : OrderFlowAction
+    data object ConfirmPayment : OrderFlowAction
     data object RetryInPagePayment : OrderFlowAction
     data object FinishInPagePayment : OrderFlowAction
     data class CopyPaymentCode(val text: String) : OrderFlowAction
@@ -85,7 +95,6 @@ sealed interface OrderFlowAction {
 sealed interface OrderFlowEffect {
     data object ShowLogoutConfirmation : OrderFlowEffect
     data object NavigateToRegistration : OrderFlowEffect
-    data class ConfirmRecordOnlyPayment(val request: OrderPaymentRequest) : OrderFlowEffect
     data class CopyPaymentText(val text: String) : OrderFlowEffect
     data class CopySimulatorText(val text: String) : OrderFlowEffect
     data class ShareSimulatorText(val text: String) : OrderFlowEffect
