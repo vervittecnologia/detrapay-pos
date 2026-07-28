@@ -12,6 +12,7 @@ import com.detrapay.R
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.OrderStatus
 import com.detrapay.databinding.HomeRecentSaleCardBinding
+import com.detrapay.ui.home.simplified.DirectCheckoutOrderPresentation
 import java.util.Locale
 
 class OrderRecyclerViewAdapter(
@@ -36,6 +37,21 @@ class OrderRecyclerViewAdapter(
     fun swapData(newList: List<Order>) {
         this.values = newList
         this.filteredValues = newList.sortedByDescending { it.id }.toMutableList()
+        notifyDataSetChanged()
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    fun swapDataSortedByStatus(newList: List<Order>) {
+        this.values = newList
+        this.filteredValues = newList.sortedWith(
+            compareByDescending<Order> {
+                when (it.status) {
+                OrderStatus.COMPLETED, OrderStatus.PAID, OrderStatus.AUTHORIZED -> 0
+                OrderStatus.CANCELLED -> 1
+                else -> 2
+                }
+            }.thenByDescending { it.id }
+        ).toMutableList()
         notifyDataSetChanged()
     }
 
@@ -113,13 +129,8 @@ class OrderRecyclerViewAdapter(
             }
         }
 
-        private fun statusLabel(status: OrderStatus): String = when (status) {
-            OrderStatus.PENDING -> "Pendente"
-            OrderStatus.PAID -> "Pago"
-            OrderStatus.AUTHORIZED -> "Autorizado"
-            OrderStatus.COMPLETED -> "Finalizado"
-            OrderStatus.CANCELLED -> "Cancelado"
-        }
+        private fun statusLabel(status: OrderStatus): String =
+            DirectCheckoutOrderPresentation.statusLabel(status)
 
         private fun formatCpfCnpj(cpfCnpj: String): String {
             if (cpfCnpj.length == 11) {

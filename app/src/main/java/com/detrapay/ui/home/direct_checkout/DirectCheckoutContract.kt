@@ -4,6 +4,7 @@ import com.detrapay.data.model.Order
 import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.remote.InstallmentFee
 import com.detrapay.ui.home.simplified.DirectCheckoutPendingPayment
+import com.detrapay.ui.state.UIState
 
 enum class DirectCheckoutStep {
     Orders,
@@ -37,6 +38,7 @@ data class DirectCheckoutLocalState(
     val simulatorError: String? = null,
     val feeRequestTarget: DirectCheckoutFeeRequestTarget? = null,
     val feeRequestInFlight: Boolean = false,
+    val activePendingPayment: DirectCheckoutPendingPayment? = null,
 )
 
 data class DirectCheckoutUiState(
@@ -44,9 +46,11 @@ data class DirectCheckoutUiState(
     val companyDocument: String,
     val orders: List<Order>,
     val isLoading: Boolean,
+    val isRefreshing: Boolean = false,
     val errorMessage: String?,
     val availablePaymentTypes: List<String>,
     val local: DirectCheckoutLocalState,
+    val inPagePaymentState: UIState<PaymentData> = UIState.Idle(),
 )
 
 sealed interface DirectCheckoutAction {
@@ -62,6 +66,9 @@ sealed interface DirectCheckoutAction {
     data class SelectInstallment(val installment: Int) : DirectCheckoutAction
     data object ContinueCredit : DirectCheckoutAction
     data object ContinueDebit : DirectCheckoutAction
+    data object RetryInPagePayment : DirectCheckoutAction
+    data object FinishInPagePayment : DirectCheckoutAction
+    data class CopyPaymentCode(val text: String) : DirectCheckoutAction
     data object OpenSimulator : DirectCheckoutAction
     data object CloseSimulator : DirectCheckoutAction
     data class SimulatorAmountChange(val raw: String) : DirectCheckoutAction
@@ -74,14 +81,11 @@ sealed interface DirectCheckoutAction {
 sealed interface DirectCheckoutEffect {
     data object ShowLogoutConfirmation : DirectCheckoutEffect
     data object NavigateToRegistration : DirectCheckoutEffect
-    data class OpenPaymentDialog(
-        val pendingPayment: DirectCheckoutPendingPayment,
-        val onResult: (PaymentData?) -> Unit,
-    ) : DirectCheckoutEffect
     data class ConfirmManualPayment(
         val pendingPayment: DirectCheckoutPendingPayment,
         val paymentData: PaymentData,
     ) : DirectCheckoutEffect
+    data class CopyPaymentText(val text: String) : DirectCheckoutEffect
     data class CopySimulatorText(val text: String) : DirectCheckoutEffect
     data class ShareSimulatorText(val text: String) : DirectCheckoutEffect
     data class ShowToast(val message: String, val long: Boolean = true) : DirectCheckoutEffect

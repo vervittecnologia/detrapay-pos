@@ -12,7 +12,6 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.setupWithNavController
 import com.detrapay.R
 import com.detrapay.databinding.ActivityHomeBinding
 import com.detrapay.ui.login.LoginActivity
@@ -28,7 +27,7 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var navController: NavController
     private lateinit var navHostFragment: NavHostFragment
     private lateinit var appBarConfiguration: AppBarConfiguration
-    private var simplifiedModeApplied = false
+    private var directCheckoutModeApplied = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,50 +63,24 @@ class HomeActivity : AppCompatActivity() {
         navController = navHostFragment.navController
 
         val bottomNavView: BottomNavigationView = binding.bottomAppBar
-
-        bottomNavView.setupWithNavController(navController)
+        bottomNavView.visibility = android.view.View.GONE
     }
 
     private fun observeHomeMode() {
         viewModel.homeState.observe(this) { state ->
-            val homeState = (state as? UIState.Success)?.data ?: return@observe
-            Logger.d("HomeActivity - App Mode: ${homeState.sellerAppMode}")
-            
-            val shouldHideNav = HomeModeRouter.shouldHideBottomNavigation(homeState.sellerAppMode)
-            binding.bottomAppBar.visibility = if (shouldHideNav) android.view.View.GONE else android.view.View.VISIBLE
-
-            when {
-                HomeModeRouter.shouldUseSimplifiedSurface(homeState.sellerAppMode) -> {
-                    Logger.d("HomeActivity - Routing to Simplified")
-                    showSimplifiedMode()
-                }
-                HomeModeRouter.shouldUseDirectCheckoutSurface(homeState.sellerAppMode) -> {
-                    Logger.d("HomeActivity - Routing to Direct Checkout")
-                    showDirectCheckoutMode()
-                }
-                else -> {
-                    Logger.d("HomeActivity - Staying in Complete Mode")
-                }
-            }
+            (state as? UIState.Success) ?: return@observe
+            showDirectCheckoutMode()
         }
     }
 
-    private fun showSimplifiedMode() {
-        if (simplifiedModeApplied) return
-
-        simplifiedModeApplied = true
-        navController.navigate(R.id.simplifiedReceivableListFragment)
-    }
-
     private fun showDirectCheckoutMode() {
-        if (simplifiedModeApplied) return
+        if (directCheckoutModeApplied) return
 
-        simplifiedModeApplied = true
+        directCheckoutModeApplied = true
         navController.navigate(R.id.directCheckoutFragment)
     }
 
     private fun showLogoutDialog() {
-        Logger.d("Loggout button pressed on HomeActivity")
         AlertDialog.Builder(this)
             .setTitle(R.string.logout_dialog_title)
             .setMessage(R.string.logout_dialog_message)

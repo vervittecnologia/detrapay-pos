@@ -21,6 +21,7 @@ import com.detrapay.ui.home.simplified.DirectCheckoutOrderPresentation
 fun DirectCheckoutScreen(
     state: DirectCheckoutUiState,
     onAction: (DirectCheckoutAction) -> Unit,
+    onRefresh: () -> Unit = {},
 ) {
     val local = state.local
     val currentOrder = local.selectedOrder
@@ -39,9 +40,11 @@ fun DirectCheckoutScreen(
                         companyDocument = state.companyDocument,
                         orders = state.orders,
                         isLoading = state.isLoading,
+                        isRefreshing = state.isRefreshing,
                         errorMessage = state.errorMessage,
                         onLogout = { onAction(DirectCheckoutAction.Logout) },
                         onReload = { onAction(DirectCheckoutAction.Reload) },
+                        onRefresh = onRefresh,
                         onNewOrder = { onAction(DirectCheckoutAction.NewOrder) },
                         onOpenSimulator = { onAction(DirectCheckoutAction.OpenSimulator) },
                         onOrderPay = { onAction(DirectCheckoutAction.OrderPay(it)) },
@@ -93,7 +96,11 @@ fun DirectCheckoutScreen(
                     DirectCheckoutStep.Waiting -> WaitingScreen(
                         total = amount,
                         paymentType = local.selectedPaymentType,
+                        paymentState = state.inPagePaymentState,
                         onBack = { onAction(DirectCheckoutAction.Back) },
+                        onRetry = { onAction(DirectCheckoutAction.RetryInPagePayment) },
+                        onDone = { onAction(DirectCheckoutAction.FinishInPagePayment) },
+                        onCopyPixCode = { onAction(DirectCheckoutAction.CopyPaymentCode(it)) },
                     )
                 }
 

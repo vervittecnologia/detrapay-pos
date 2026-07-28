@@ -1,18 +1,23 @@
 package com.detrapay.ui.home.direct_checkout
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.PaymentData
 import com.detrapay.ui.home.HomeViewModel
 import com.detrapay.ui.home.simplified.DirectCheckoutOrderPresentation
 import com.detrapay.ui.home.simplified.SimplifiedReceivableListViewModel
 import com.detrapay.ui.order_details.OrderDetailsPaymentMethodPickerBottomSheet
+import com.detrapay.ui.payment.PaymentDialogViewModel
 import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.PaymentTypeRules
 import java.text.SimpleDateFormat
@@ -23,6 +28,8 @@ import java.util.Locale
 fun DirectCheckoutRoute(
     homeViewModel: HomeViewModel,
     viewModel: SimplifiedReceivableListViewModel,
+    paymentViewModel: PaymentDialogViewModel,
+    terminalSerial: String,
     defaultCompanyName: String,
     defaultCompanyDocument: String,
     directCheckoutErrorMessage: String,
@@ -35,6 +42,7 @@ fun DirectCheckoutRoute(
     var localState by remember { mutableStateOf(DirectCheckoutLocalState()) }
     var orders by remember { mutableStateOf<List<Order>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
+    var isRefreshing by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var availableTypes by remember { mutableStateOf<List<String>>(emptyList()) }
     var companyName by remember { mutableStateOf(defaultCompanyName) }
@@ -46,8 +54,10 @@ fun DirectCheckoutRoute(
     val feesState by viewModel.calculateFeesState.observeAsState()
     val pendingPaymentState by viewModel.pendingPaymentState.observeAsState()
     val manualPaymentState by viewModel.manualPaymentState.observeAsState()
+    val inPagePaymentState by paymentViewModel.paymentState.observeAsState(UIState.Idle())
 
     LaunchedEffect(Unit) {
+        paymentViewModel.init()
         viewModel.loadDirectCheckoutOrders(forceRefresh = false)
         viewModel.prefetchRegistrationData()
     }
@@ -61,16 +71,20 @@ fun DirectCheckoutRoute(
     LaunchedEffect(orderState) {
         when (val state = orderState) {
             is UIState.Loading -> {
-                isLoading = true
-                errorMessage = null
+                if (!isRefreshing) {
+                    isLoading = true
+                    errorMessage = null
+                }
             }
             is UIState.Success -> {
                 isLoading = false
+                isRefreshing = false
                 errorMessage = null
                 orders = state.data.orEmpty()
             }
             is UIState.Error -> {
                 isLoading = false
+                isRefreshing = false
                 orders = emptyList()
                 errorMessage = state.message ?: directCheckoutErrorMessage
                 state.exception?.let { onEffect(DirectCheckoutEffect.ShowSessionExpired(it)) }
@@ -148,26 +162,28 @@ fun DirectCheckoutRoute(
         when (val state = pendingPaymentState) {
             is UIState.Success -> {
                 val pendingPayment = viewModel.consumeDirectCheckoutPendingPayment() ?: return@LaunchedEffect
-                if (PaymentTypeRules.requiresTerminalApproval(pendingPayment.paymentType)) {
-                    onEffect(
-                        DirectCheckoutEffect.OpenPaymentDialog(pendingPayment) { paymentData ->
-                            localState = localState.copy(
-                                step = if (paymentData != null) {
-                                    DirectCheckoutStep.Orders
-                                } else {
-                                    DirectCheckoutStep.Method
-                                },
-                            )
-                            viewModel.loadDirectCheckoutOrders(forceRefresh = true)
-                        },
-                    )
-                } else {
-                    onEffect(
-                        DirectCheckoutEffect.ConfirmManualPayment(
-                            pendingPayment = pendingPayment,
-                            paymentData = buildManualPaymentData(pendingPayment.amount),
-                        ),
-                    )
+                when (val route = DirectCheckoutPaymentRouter.routeFor(pendingPayment)) {
+                    is DirectCheckoutPaymentRoute.StartInPagePayment -> {
+                        localState = localState.copy(
+                            selectedOrder = route.pendingPayment.order,
+                            selectedPaymentType = route.pendingPayment.paymentType,
+                            activePendingPayment = route.pendingPayment,
+                            step = DirectCheckoutStep.Waiting,
+                        )
+                        paymentViewModel.payOrder(
+                            orderId = route.pendingPayment.order.id,
+                            receivable = route.pendingPayment.receivable,
+                            serial = terminalSerial,
+                        )
+                    }
+                    is DirectCheckoutPaymentRoute.ConfirmManually -> {
+                        onEffect(
+                            DirectCheckoutEffect.ConfirmManualPayment(
+                                pendingPayment = route.pendingPayment,
+                                paymentData = buildManualPaymentData(route.pendingPayment.amount),
+                            ),
+                        )
+                    }
                 }
             }
             is UIState.Error -> {
@@ -182,12 +198,34 @@ fun DirectCheckoutRoute(
         }
     }
 
+    LaunchedEffect(inPagePaymentState) {
+        when (val state = inPagePaymentState) {
+            is UIState.Success -> {
+                if (state.data?.pendingConfirmation == true) return@LaunchedEffect
+                onEffect(DirectCheckoutEffect.ShowToast(paymentSuccessMessage, long = false))
+                localState = localState.copy(
+                    step = DirectCheckoutStep.Orders,
+                    activePendingPayment = null,
+                )
+                viewModel.clearDirectCheckoutPaymentState()
+                isRefreshing = true
+                viewModel.loadDirectCheckoutOrders(forceRefresh = true)
+            }
+            is UIState.Error -> {
+                state.exception?.let { onEffect(DirectCheckoutEffect.ShowSessionExpired(it)) }
+            }
+            is UIState.Loading,
+            is UIState.Idle -> Unit
+        }
+    }
+
     LaunchedEffect(manualPaymentState) {
         when (val state = manualPaymentState) {
             is UIState.Success -> {
                 onEffect(DirectCheckoutEffect.ShowToast(paymentSuccessMessage, long = false))
                 localState = localState.copy(step = DirectCheckoutStep.Orders)
                 viewModel.clearDirectCheckoutPaymentState()
+                isRefreshing = true
                 viewModel.loadDirectCheckoutOrders(forceRefresh = true)
             }
             is UIState.Error -> {
@@ -202,15 +240,33 @@ fun DirectCheckoutRoute(
         }
     }
 
+    var isFirstResume by remember { mutableStateOf(true) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (!isFirstResume) {
+                    isRefreshing = true
+                    viewModel.loadDirectCheckoutOrders(forceRefresh = true)
+                }
+                isFirstResume = false
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     DirectCheckoutScreen(
         state = DirectCheckoutUiState(
             companyName = companyName,
             companyDocument = companyDocument,
             orders = orders,
             isLoading = isLoading,
+            isRefreshing = isRefreshing,
             errorMessage = errorMessage,
             availablePaymentTypes = availableTypes,
             local = localState,
+            inPagePaymentState = inPagePaymentState,
         ),
         onAction = { action ->
             when (action) {
@@ -226,6 +282,10 @@ fun DirectCheckoutRoute(
                     localState = DirectCheckoutReducer.showDetail(localState, action.order)
                 }
                 DirectCheckoutAction.Back -> {
+                    if (localState.step == DirectCheckoutStep.Waiting) {
+                        paymentViewModel.abortPayment()
+                        localState = localState.copy(activePendingPayment = null)
+                    }
                     localState = DirectCheckoutReducer.back(localState)
                 }
                 is DirectCheckoutAction.Key -> {
@@ -286,6 +346,27 @@ fun DirectCheckoutRoute(
                             installments = 1,
                         )
                     }
+                }
+                DirectCheckoutAction.RetryInPagePayment -> {
+                    localState.activePendingPayment?.let { pendingPayment ->
+                        paymentViewModel.payOrder(
+                            orderId = pendingPayment.order.id,
+                            receivable = pendingPayment.receivable,
+                            serial = terminalSerial,
+                        )
+                    }
+                }
+                DirectCheckoutAction.FinishInPagePayment -> {
+                    localState = localState.copy(
+                        step = DirectCheckoutStep.Orders,
+                        activePendingPayment = null,
+                    )
+                    viewModel.clearDirectCheckoutPaymentState()
+                    isRefreshing = true
+                    viewModel.loadDirectCheckoutOrders(forceRefresh = true)
+                }
+                is DirectCheckoutAction.CopyPaymentCode -> {
+                    onEffect(DirectCheckoutEffect.CopyPaymentText(action.text))
                 }
                 DirectCheckoutAction.OpenSimulator -> {
                     localState = DirectCheckoutReducer.openSimulator(localState)

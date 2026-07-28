@@ -19,12 +19,10 @@ import androidx.navigation.fragment.findNavController
 import com.detrapay.BuildConfig
 import com.detrapay.R
 import com.detrapay.data.UnauthorizedException
-import com.detrapay.data.model.PaymentData
 import com.detrapay.ui.home.HomeViewModel
-import com.detrapay.ui.home.simplified.DirectCheckoutPendingPayment
 import com.detrapay.ui.home.simplified.SimplifiedReceivableListViewModel
 import com.detrapay.ui.login.LoginActivity
-import com.detrapay.ui.payment.PaymentDialogFragment
+import com.detrapay.ui.payment.PaymentDialogViewModel
 import com.detrapay.ui.session_expired_dialog.SessionExpiredDialog
 import com.detrapay.ui.util.DebugConstants
 import com.detrapay.ui.util.DeviceUtils
@@ -35,6 +33,7 @@ class DirectCheckoutFragment : Fragment() {
 
     private val homeViewModel: HomeViewModel by activityViewModels()
     private val viewModel: SimplifiedReceivableListViewModel by viewModels()
+    private val paymentViewModel: PaymentDialogViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -47,6 +46,8 @@ class DirectCheckoutFragment : Fragment() {
                 DirectCheckoutRoute(
                     homeViewModel = homeViewModel,
                     viewModel = viewModel,
+                    paymentViewModel = paymentViewModel,
+                    terminalSerial = getSerialForPrePay(),
                     defaultCompanyName = getString(R.string.home_default_company_name),
                     defaultCompanyDocument = getString(R.string.home_company_document_preview),
                     directCheckoutErrorMessage = getString(R.string.direct_checkout_error),
@@ -64,10 +65,10 @@ class DirectCheckoutFragment : Fragment() {
         when (effect) {
             DirectCheckoutEffect.ShowLogoutConfirmation -> showLogoutConfirmation()
             DirectCheckoutEffect.NavigateToRegistration -> openNewOrderFlow()
-            is DirectCheckoutEffect.OpenPaymentDialog -> openPaymentDialog(effect.pendingPayment, effect.onResult)
             is DirectCheckoutEffect.ConfirmManualPayment -> {
                 viewModel.confirmDirectCheckoutManualPayment(effect.pendingPayment, effect.paymentData)
             }
+            is DirectCheckoutEffect.CopyPaymentText -> copyPaymentText(effect.text)
             is DirectCheckoutEffect.CopySimulatorText -> copySimulatorText(effect.text)
             is DirectCheckoutEffect.ShareSimulatorText -> shareSimulatorText(effect.text)
             is DirectCheckoutEffect.ShowToast -> Toast.makeText(
@@ -79,21 +80,10 @@ class DirectCheckoutFragment : Fragment() {
         }
     }
 
-    private fun openPaymentDialog(
-        pendingPayment: DirectCheckoutPendingPayment,
-        onResult: (PaymentData?) -> Unit,
-    ) {
-        viewModel.clearDirectCheckoutPaymentState()
-        PaymentDialogFragment(
-            listener = object : PaymentDialogFragment.PaymentListener {
-                override fun onResult(paymentData: PaymentData?) {
-                    onResult(paymentData)
-                }
-            },
-            orderId = pendingPayment.order.id,
-            receivableItem = pendingPayment.receivable,
-            serial = getSerialForPrePay(),
-        ).show(parentFragmentManager, "PaymentDialogFragment")
+    private fun copyPaymentText(text: String) {
+        val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText("pix_code", text))
+        Toast.makeText(requireContext(), getString(R.string.payment_dialog_pix_copied), Toast.LENGTH_SHORT).show()
     }
 
     private fun copySimulatorText(text: String) {

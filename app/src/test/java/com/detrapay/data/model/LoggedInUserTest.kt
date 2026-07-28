@@ -1,25 +1,21 @@
 package com.detrapay.data.model
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class LoggedInUserTest {
 
     @Test
-    fun `active seller mode uses dealership mode instead of legacy user app mode`() {
+    fun `active seller mode is always direct checkout`() {
         val user = loggedInUser(
             companies = listOf(Company(id = 39, name = "CONCESSIONARIA TESTE", sellerAppMode = "standard")),
-            appMode = LoggedInUser.APP_MODE_SIMPLIFIED,
         )
 
-        assertEquals(SellerAppMode.COMPLETE, user.activeSellerAppMode)
-        assertFalse(user.isSimplifiedMode)
+        assertEquals(SellerAppMode.DIRECT_CHECKOUT, user.activeSellerAppMode)
     }
 
     private fun loggedInUser(
         companies: List<Company>,
-        appMode: String,
     ) = LoggedInUser(
         id = "user-1",
         sessionToken = "token",
@@ -30,6 +26,6 @@ class LoggedInUserTest {
         companies = companies,
         dispatchers = emptyList(),
         salesmen = emptyList(),
-        appMode = appMode,
+        appMode = LoggedInUser.APP_MODE_DIRECT_CHECKOUT,
     )
 }

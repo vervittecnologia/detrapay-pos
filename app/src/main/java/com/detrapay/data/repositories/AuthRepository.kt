@@ -6,7 +6,6 @@ import com.detrapay.data.model.Company
 import com.detrapay.data.model.Dispatcher
 import com.detrapay.data.model.LoggedInUser
 import com.detrapay.data.model.Salesman
-import com.detrapay.data.model.SellerAppMode
 import com.detrapay.data.model.remote.AuthResponse
 import com.detrapay.data.model.remote.SessionRefreshResponse
 import com.detrapay.data.model.local.User
@@ -54,9 +53,7 @@ class AuthRepository @Inject constructor(
             expiresIn = authResponse.expiresIn,
             expiresAt = authResponse.expiresAt,
             tokenType = authResponse.tokenType,
-            appMode = authResponse.appMode?.takeIf { it.isNotBlank() } ?: SellerAppMode.mostSpecific(
-                authResponse.companies.map { SellerAppMode.from(it.sellerAppMode) }
-            ).apiValue,
+            appMode = LoggedInUser.APP_MODE_DIRECT_CHECKOUT,
         )
         updateCachedUser(localUser)
     }
@@ -159,14 +156,14 @@ class AuthRepository @Inject constructor(
             .putString(KEY_REFRESH_TOKEN, refreshToken)
             .putString(KEY_TOKEN_TYPE, tokenType ?: DEFAULT_TOKEN_TYPE)
             .putLong(KEY_EXPIRES_AT, computedExpiresAt ?: NO_EXPIRATION)
-            .putString(KEY_APP_MODE, appMode?.takeIf { it.isNotBlank() } ?: LoggedInUser.APP_MODE_COMPLETE)
+            .putString(KEY_APP_MODE, appMode?.takeIf { it.isNotBlank() } ?: LoggedInUser.APP_MODE_DIRECT_CHECKOUT)
             .apply()
     }
 
     private fun currentAppMode(): String {
-        return preferences.getString(KEY_APP_MODE, LoggedInUser.APP_MODE_COMPLETE)
+        return preferences.getString(KEY_APP_MODE, LoggedInUser.APP_MODE_DIRECT_CHECKOUT)
             ?.takeIf { it.isNotBlank() }
-            ?: LoggedInUser.APP_MODE_COMPLETE
+            ?: LoggedInUser.APP_MODE_DIRECT_CHECKOUT
     }
 
     private fun saveLastLoggedCnpj(cnpj: String) {

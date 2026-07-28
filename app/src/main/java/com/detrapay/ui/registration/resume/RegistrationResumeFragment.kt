@@ -383,7 +383,7 @@ class RegistrationResumeFragment : Fragment() {
         )
         orderDetailsActivityIntent.putExtra("order", order)
         orderDetailsActivityIntent.putExtra("orderId", order.id)
-        orderDetailsActivityIntent.putExtra("isSuccess", false)
+        orderDetailsActivityIntent.putExtra("isSuccess", true)
         startActivity(orderDetailsActivityIntent)
         requireActivity().finish()
     }

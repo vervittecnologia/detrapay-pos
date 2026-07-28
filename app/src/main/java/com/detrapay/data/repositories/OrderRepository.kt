@@ -88,7 +88,7 @@ class OrderRepository @Inject constructor(
                             null
                         }
                     }
-                    val parsedOrders = orders.filterNotNull()
+                    val parsedOrders = orders.filterNotNull().sortedByDescending { it.id }
                     updateOrdersCache(parsedOrders)
                     return Result.Success(parsedOrders)
                 } catch (e: Exception) {

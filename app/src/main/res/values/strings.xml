@@ -272,11 +272,6 @@
     <string name="payment_history_no_results_title">Nenhum pagamento encontrado</string>
     <string name="payment_history_no_results_subtitle">Troque o filtro para revisar outros pagamentos processados neste aparelho.</string>
     <string name="payment_history_error_message">Nao foi possivel carregar o historico de pagamentos.</string>
-    <string name="simplified_receivables_search_hint">Pedido, cliente ou CPF</string>
-    <string name="simplified_receivables_pay_action">Pagar</string>
-    <string name="simplified_receivables_empty_title">Nenhum pagamento pendente</string>
-    <string name="simplified_receivables_empty_subtitle">Os pagamentos disponiveis para receber aparecerao aqui.</string>
-    <string name="simplified_receivables_error">Nao foi possivel carregar os pagamentos.</string>
     <string name="direct_checkout_title">Pedidos Aguardando Pagamento</string>
     <string name="direct_checkout_subtitle">Pedidos pendentes para receber por Pix, credito ou debito.</string>
     <string name="direct_checkout_pending_orders">Pedidos pendentes</string>

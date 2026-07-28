@@ -82,9 +82,7 @@ class LoginRepository @Inject constructor(
                         dispatchers = Gson().toJson(dispatchers),
                         salesmen = Gson().toJson(salesmen)
                     )
-                    val appMode = SellerAppMode.mostSpecific(
-                        companies.map { it.normalizedSellerAppMode }
-                    ).apiValue
+                    val appMode = SellerAppMode.DIRECT_CHECKOUT.apiValue
 
                     userLocalDataSource.insertUser(user)
                     authRepository.saveLoginSession(result.data, user)

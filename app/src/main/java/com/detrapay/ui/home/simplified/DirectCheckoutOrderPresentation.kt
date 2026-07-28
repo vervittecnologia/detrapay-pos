@@ -66,9 +66,9 @@ object DirectCheckoutOrderPresentation {
     fun summary(order: Order): DirectCheckoutOrderSummary {
         val totals = OrderPaymentTotals.from(order.receivables)
         val registered = totals.declaredAmount.coerceAtLeast(0.0)
-        val missing = (order.originalAmount - registered).coerceAtLeast(0.0)
+        val missing = (order.originalAmount - totals.paidAmount).coerceAtLeast(0.0)
         val progress = if (order.originalAmount > 0.0) {
-            ((registered / order.originalAmount).coerceIn(0.0, 1.0) * PROGRESS_MAX).roundToInt()
+            ((totals.paidAmount / order.originalAmount).coerceIn(0.0, 1.0) * PROGRESS_MAX).roundToInt()
         } else {
             0
         }
@@ -162,7 +162,7 @@ object DirectCheckoutOrderPresentation {
 
     fun statusLabel(status: OrderStatus): String {
         return when (status) {
-            OrderStatus.PAID, OrderStatus.AUTHORIZED -> "Pago"
+            OrderStatus.PAID, OrderStatus.AUTHORIZED -> "Quitado"
             OrderStatus.COMPLETED -> "Concluído"
             OrderStatus.CANCELLED -> "Cancelado"
             else -> "Pendente"
@@ -179,10 +179,10 @@ object DirectCheckoutOrderPresentation {
 
     fun receivableStatusLabel(status: OrderReceivableItemStatus): String {
         return when (status) {
-            OrderReceivableItemStatus.PAID -> "Pago"
+            OrderReceivableItemStatus.PAID -> "Quitado"
             OrderReceivableItemStatus.CANCELLED -> "Cancelado"
             OrderReceivableItemStatus.PENDING -> "Pendente"
-            OrderReceivableItemStatus.REFUNDED -> "Reembolsado"
+            OrderReceivableItemStatus.REFUNDED -> "Estornado"
             else -> status.name.lowercase().replaceFirstChar { it.uppercase() }
         }
     }
@@ -192,8 +192,8 @@ object DirectCheckoutOrderPresentation {
         return SellerCardSummary(
             totalLabel = formatCurrency(order.originalAmount),
             paidLabel = formatCurrency(summary.registeredAmount),
-            balanceLabel = formatCurrency(summary.missingAmount),
-            balanceTitle = if (summary.hasPendingBalance) "Falta" else "Saldo",
+            balanceLabel = if (summary.hasPendingBalance) formatCurrency(summary.missingAmount) else "Quitado",
+            balanceTitle = if (summary.hasPendingBalance) "Falta" else "Status",
             progressPercent = paidPercent(order),
             isFullyPaid = !summary.hasPendingBalance,
         )
@@ -205,7 +205,9 @@ object DirectCheckoutOrderPresentation {
     }
 
     fun shouldStartPayment(order: Order): Boolean {
-        return summary(order).hasPendingBalance
+        return order.status != OrderStatus.CANCELLED &&
+            order.status != OrderStatus.COMPLETED &&
+            summary(order).hasPendingBalance
     }
 
     fun primaryActionLabel(order: Order): String {

@@ -43,12 +43,6 @@
         android:name="com.detrapay.ui.notification.NotificationActivity"
         tools:layout="@layout/activity_notification" />
     <fragment
-        android:id="@+id/simplifiedReceivableListFragment"
-        android:name="com.detrapay.ui.home.simplified.SimplifiedReceivableListFragment"
-        android:label="Pagamentos"
-        tools:layout="@layout/fragment_simplified_receivable_list" />
-
-    <fragment
         android:id="@+id/directCheckoutFragment"
         android:name="com.detrapay.ui.home.direct_checkout.DirectCheckoutFragment"
         android:label="Pedidos" />

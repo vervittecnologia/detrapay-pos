@@ -16,6 +16,7 @@ import com.detrapay.data.repositories.OrderRepository
 import com.detrapay.data.repositories.RegistrationRepository
 import com.detrapay.data.repositories.SalesmanRepository
 import com.detrapay.ui.state.UIState
+import com.detrapay.ui.util.Logger
 import com.detrapay.ui.util.PaymentTypeRules
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -58,9 +59,10 @@ class SimplifiedReceivableListViewModel @Inject constructor(
             when (val result = orderRepository.getReceivables(forceRefresh)) {
                 is Result.Success -> {
                     _receivableListState.postValue(
-                        UIState.Success(
-                            result.data.filter { it.receivable.status == OrderReceivableItemStatus.PENDING }
-                        )
+                        UIState.Success(result.data.sortedWith(
+                            compareByDescending<OrderReceivable> { it.receivable.status == OrderReceivableItemStatus.PENDING }
+                                .thenByDescending { it.order.id }
+                        ))
                     )
                 }
                 is Result.Error -> {
@@ -82,10 +84,9 @@ class SimplifiedReceivableListViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             when (val result = orderRepository.getOrders(forceRefresh)) {
                 is Result.Success -> {
+                    val pending = DirectCheckoutOrderPresentation.pendingOrders(result.data)
                     _directOrderListState.postValue(
-                        UIState.Success(
-                            DirectCheckoutOrderPresentation.pendingOrders(result.data)
-                        )
+                        UIState.Success(pending.sortedByDescending { it.id })
                     )
                 }
                 is Result.Error -> {

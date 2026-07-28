@@ -10,7 +10,4 @@ data class HomeState(
     val companyLogoKey: String?,
     val salesmen: List<Salesman>,
     val sellerAppMode: SellerAppMode
-) {
-    val isSimplifiedMode: Boolean
-        get() = sellerAppMode.usesSimplifiedHome
-}
+)

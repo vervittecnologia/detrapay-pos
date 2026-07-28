@@ -96,7 +96,7 @@ class OrderListFragment : Fragment(), OrderRecyclerViewAdapter.OnItemClickListen
                     binding.swipeRefreshLayout.isRefreshing = false
                     status.data?.let {
                         currentOrders = it
-                        orderRecyclerViewAdapter.swapData(it)
+                        orderRecyclerViewAdapter.swapDataSortedByStatus(it)
                         updateEmptyState()
                         binding.loadingView.apply {
                             stopShimmer()

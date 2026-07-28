@@ -171,37 +171,14 @@ class OrderDetailsViewModel @Inject constructor(
         _calculateFeesState.postValue(UIState.Idle())
     }
 
-    fun addPendingReceivable(paymentMethod: PaymentMethod, amountOriginal: Double, requiresPlugAndPag: Boolean = false) {
-        if (requiresPlugAndPag) {
-            val normalizedType = paymentMethod.paymentType.orEmpty().trim().lowercase()
-            val paymentName = paymentMethod.name.trim().lowercase()
-            val isCreditoDebitoPix = normalizedType.contains("credit") || 
-                                   normalizedType.contains("credito") || 
-                                   normalizedType.contains("debit") || 
-                                   normalizedType.contains("debito") || 
-                                   paymentName.contains("credito") || 
-                                   paymentName.contains("debito") || 
-                                   normalizedType == "pix"
-            
-            if (isCreditoDebitoPix) {
-                if (paymentMethod.paymentDate == null) {
-                    _orderState.postValue(
-                        UIState.Error(
-                            message = "Informar data de pagamento",
-                        )
-                    )
-                    return
-                }
-            }
-        }
-
+    fun addPendingReceivable(paymentMethod: PaymentMethod, amountOriginal: Double, shouldPersistInMemory: Boolean = false) {
         _orderState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
             val result = orderRepository.addPendingReceivable(
                 orderId = orderId,
                 paymentMethod = paymentMethod,
                 amountOriginal = amountOriginal,
-                requiresPlugAndPag = requiresPlugAndPag
+                shouldPersistInMemory = shouldPersistInMemory,
             )
             if (result is Result.Success) {
                 _orderState.postValue(UIState.Success(result.data))

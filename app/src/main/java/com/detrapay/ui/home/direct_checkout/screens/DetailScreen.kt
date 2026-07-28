@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -46,51 +45,7 @@ fun DetailScreen(order: Order, onBack: () -> Unit, onPay: () -> Unit) {
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
-            Column(modifier = Modifier.background(Color.White)) {
-                NavBar("Pedido #${order.id}", onBack)
-                Column(
-                    modifier = Modifier
-                        .padding(horizontal = 20.dp, vertical = 12.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(DirectCheckoutColors.Key)
-                        .border(1.dp, DirectCheckoutColors.Border, RoundedCornerShape(14.dp)),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .background(if (isPending) DirectCheckoutColors.Amber else DirectCheckoutColors.BlueLight),
-                    )
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(999.dp))
-                                .background(if (isPending) DirectCheckoutColors.AmberSoft else DirectCheckoutColors.BlueSoft)
-                                .padding(horizontal = 14.dp, vertical = 8.dp),
-                            text = status,
-                            color = if (isPending) DirectCheckoutColors.AmberText else DirectCheckoutColors.Blue,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        Text(displayDate(order.billingDate), color = DirectCheckoutColors.Muted, fontSize = 16.sp)
-                    }
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        DetailCell("Cliente", order.customer.name.ifBlank { "Cliente" }, Modifier.weight(1f))
-                        DetailCell("Vendedor", order.salesman?.name ?: "-", Modifier.weight(1f))
-                    }
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        DetailCell("WhatsApp", order.customer.phoneNumber.ifBlank { "-" }, Modifier.weight(1f))
-                        DetailCell("Faturamento", displayDate(order.billingDate), Modifier.weight(1f))
-                    }
-                    DetailCell("CPF / CNPJ", order.customer.cpfCnpj.ifBlank { "-" }, Modifier.fillMaxWidth())
-                }
-            }
+            NavBar("Pedido #${order.id}", onBack)
 
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Resumo financeiro", color = DirectCheckoutColors.Ink, fontSize = 21.sp, fontWeight = FontWeight.Bold)

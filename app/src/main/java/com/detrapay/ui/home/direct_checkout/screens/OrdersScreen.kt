@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -61,15 +63,18 @@ import com.detrapay.ui.home.direct_checkout.components.DirectCheckoutColors
 import com.detrapay.ui.home.direct_checkout.components.*
 import com.detrapay.ui.home.simplified.DirectCheckoutOrderPresentation
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrdersScreen(
     companyName: String,
     companyDocument: String,
     orders: List<Order>,
     isLoading: Boolean,
+    isRefreshing: Boolean = false,
     errorMessage: String?,
     onLogout: () -> Unit,
     onReload: () -> Unit,
+    onRefresh: () -> Unit = {},
     onNewOrder: () -> Unit,
     onOpenSimulator: () -> Unit,
     onOrderPay: (Order) -> Unit,
@@ -91,7 +96,11 @@ fun OrdersScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        modifier = Modifier.fillMaxSize(),
+    ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(0.dp),
@@ -357,7 +366,7 @@ private fun SellerOrderCard(order: Order, onClick: () -> Unit) {
                         )
                     }
                 }
-                SellerStatusBadge(order.status.name.lowercase())
+                SellerStatusBadge(DirectCheckoutOrderPresentation.sellerStatusLabel(order))
             }
 
             Text(
@@ -418,22 +427,15 @@ private fun SellerOrderCard(order: Order, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SellerStatusBadge(status: String) {
-    val label = when (status) {
-        "paid" -> "Pago"
-        "authorized" -> "Autorizado"
-        "completed" -> "Concluído"
-        "cancelled" -> "Cancelado"
-        else -> "Pendente Vendedor"
-    }
-    val bg = when (status) {
-        "paid", "authorized", "completed" -> DirectCheckoutColors.GreenSoft
-        "cancelled" -> DirectCheckoutColors.RedSoft
+private fun SellerStatusBadge(label: String) {
+    val bg = when (label) {
+        "Quitado", "Concluído" -> DirectCheckoutColors.GreenSoft
+        "Cancelado" -> DirectCheckoutColors.RedSoft
         else -> DirectCheckoutColors.WarningSoft
     }
-    val fg = when (status) {
-        "paid", "authorized", "completed" -> DirectCheckoutColors.Green
-        "cancelled" -> DirectCheckoutColors.Red
+    val fg = when (label) {
+        "Quitado", "Concluído" -> DirectCheckoutColors.Green
+        "Cancelado" -> DirectCheckoutColors.Red
         else -> DirectCheckoutColors.WarningText
     }
 

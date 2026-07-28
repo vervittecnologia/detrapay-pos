@@ -17,7 +17,8 @@ data class Order(
     val vehicleType: VehicleType,
     val items: List<OrderItem>,
     val receivables: List<OrderReceivableItem>,
-    val salesman: Salesman?
+    val salesman: Salesman?,
+    val isMemoryOnlyPayment: Boolean = false
 ) : Serializable
 
 enum class OrderStatus {
