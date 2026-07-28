@@ -40,11 +40,8 @@ object OrderPresentation {
     private const val PROGRESS_MAX = 1000
     private val locale = Locale("pt", "BR")
 
-    fun pendingOrders(orders: List<Order>): List<Order> {
-        return orders
-            .filter { it.status != OrderStatus.CANCELLED && it.status != OrderStatus.COMPLETED }
-            .filter { summary(it).hasPendingBalance }
-            .sortedByDescending { it.id }
+    fun allOrders(orders: List<Order>): List<Order> {
+        return orders.sortedByDescending { it.id }
     }
 
     fun summary(order: Order): OrderSummary {

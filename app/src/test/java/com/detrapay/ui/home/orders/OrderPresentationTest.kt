@@ -17,26 +17,18 @@ import org.junit.Test
 class OrderPresentationTest {
 
     @Test
-    fun `pending orders excludes cancelled completed and settled orders`() {
+    fun `all orders includes every status sorted by newest id`() {
         val orders = listOf(
             order(id = 1, total = 100.0, status = OrderStatus.PENDING),
             order(id = 2, total = 100.0, status = OrderStatus.CANCELLED),
             order(id = 3, total = 100.0, status = OrderStatus.COMPLETED),
-            order(
-                id = 4,
-                total = 100.0,
-                receivables = listOf(receivable(amount = 100.0, status = OrderReceivableItemStatus.PAID)),
-            ),
-            order(
-                id = 5,
-                total = 100.0,
-                receivables = listOf(receivable(amount = 60.0, status = OrderReceivableItemStatus.CANCELLED)),
-            ),
+            order(id = 4, total = 100.0, status = OrderStatus.PAID),
+            order(id = 5, total = 100.0, status = OrderStatus.AUTHORIZED),
         )
 
-        val pending = OrderPresentation.pendingOrders(orders)
+        val visible = OrderPresentation.allOrders(orders)
 
-        assertEquals(listOf(5, 1), pending.map { it.id })
+        assertEquals(listOf(5, 4, 3, 2, 1), visible.map { it.id })
     }
 
     @Test

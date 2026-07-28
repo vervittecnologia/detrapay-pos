@@ -50,7 +50,7 @@ class OrdersViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             when (val result = orderRepository.getOrders(forceRefresh)) {
                 is Result.Success -> _orderListState.postValue(
-                    UIState.Success(OrderPresentation.pendingOrders(result.data)),
+                    UIState.Success(OrderPresentation.allOrders(result.data)),
                 )
                 is Result.Error -> _orderListState.postValue(
                     UIState.Error("Nao foi possivel carregar os pedidos.", result.exception),
