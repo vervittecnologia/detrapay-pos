@@ -121,7 +121,7 @@ private fun Keypad(
         "7" to "PQRS",
         "8" to "TUV",
         "9" to "WXYZ",
-        "," to "",
+        "" to "",
         "0" to "",
         "DEL" to "",
     )
@@ -136,7 +136,7 @@ private fun Keypad(
                         modifier = Modifier
                             .weight(1f)
                             .height(keyHeight)
-                            .clickable(enabled = enabled) { onKey(key) },
+                            .clickable(enabled = enabled && key.isNotEmpty()) { onKey(key) },
                         shape = RoundedCornerShape(18.dp),
                         color = OrderFlowColors.Key,
                         border = BorderStroke(1.dp, OrderFlowColors.Border),
@@ -145,7 +145,7 @@ private fun Keypad(
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                             if (key == "DEL") {
                                 Icon(Icons.Default.Delete, contentDescription = "Apagar", tint = OrderFlowColors.Muted)
-                            } else {
+                            } else if (key.isNotEmpty()) {
                                 Text(key, color = OrderFlowColors.Text, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                                 if (sub.isNotBlank()) {
                                     Text(sub, color = OrderFlowColors.Faint, fontSize = 9.sp, fontWeight = FontWeight.Bold)

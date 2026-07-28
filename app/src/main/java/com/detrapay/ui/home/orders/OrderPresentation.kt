@@ -150,9 +150,19 @@ object OrderPresentation {
     }
 
     fun nextPaymentDigits(digits: String, key: String): String {
-        return when (key) {
-            "DEL" -> if (digits.isNotEmpty()) digits.dropLast(1) else ""
-            else -> if (digits.length < 10) digits + key else digits
+        return when {
+            key == "DEL" -> digits.dropLast(1)
+            key.length == 1 && key[0].isDigit() && digits.length < 10 -> digits + key
+            else -> digits
+        }
+    }
+
+    fun paymentAmountError(amount: Double, pendingAmount: Double): String? {
+        return when {
+            amount <= 0.0 -> "Informe um valor maior que zero."
+            amount > pendingAmount ->
+                "O valor não pode ser maior que o saldo pendente de ${formatCurrency(pendingAmount)}."
+            else -> null
         }
     }
 

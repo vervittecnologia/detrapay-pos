@@ -95,6 +95,30 @@ class OrderPresentationTest {
     }
 
     @Test
+    fun `payment input accepts only digits and delete`() {
+        assertEquals("123", OrderPresentation.nextPaymentDigits("12", "3"))
+        assertEquals("12", OrderPresentation.nextPaymentDigits("123", "DEL"))
+        assertEquals("12", OrderPresentation.nextPaymentDigits("12", ","))
+        assertEquals("12", OrderPresentation.nextPaymentDigits("12", "A"))
+    }
+
+    @Test
+    fun `payment amount validation rejects zero and amount above pending`() {
+        assertEquals(
+            "Informe um valor maior que zero.",
+            OrderPresentation.paymentAmountError(amount = 0.0, pendingAmount = 100.0),
+        )
+        assertEquals(
+            "O valor não pode ser maior que o saldo pendente de R$ 100,00.",
+            OrderPresentation.paymentAmountError(amount = 100.01, pendingAmount = 100.0),
+        )
+        assertEquals(
+            null,
+            OrderPresentation.paymentAmountError(amount = 100.0, pendingAmount = 100.0),
+        )
+    }
+
+    @Test
     fun `payment method selection requires exact installment match`() {
         val methods = listOf(
             paymentMethod(id = 1, installments = 1),

@@ -27,6 +27,11 @@ fun OrdersScreen(
     val currentOrder = local.selectedOrder
     val pendingAmount = currentOrder?.let { OrderPresentation.summary(it).missingAmount } ?: 0.0
     val amount = OrderPresentation.paymentAmount(local.paymentDigits)
+    val amountError = if (local.paymentDigits.isNotEmpty()) {
+        OrderPresentation.paymentAmountError(amount, pendingAmount)
+    } else {
+        null
+    }
 
     MaterialTheme {
         Surface(
@@ -66,9 +71,9 @@ fun OrdersScreen(
                             paymentMethodName = local.selectedPaymentMethod.name,
                             displayAmount = OrderPresentation.paymentDisplayAmount(local.paymentDigits),
                             pendingAmountLabel = OrderPresentation.formatCurrency(pendingAmount),
-                            canPay = amount > 0.0,
+                            canPay = amountError == null && amount > 0.0,
                             isLoading = local.feesLoading,
-                            errorMessage = local.feesError,
+                            errorMessage = local.feesError ?: amountError,
                             onBack = { onAction(OrderFlowAction.Back) },
                             onKey = { onAction(OrderFlowAction.Key(it)) },
                             onUsePendingAmount = { onAction(OrderFlowAction.UsePendingAmount) },

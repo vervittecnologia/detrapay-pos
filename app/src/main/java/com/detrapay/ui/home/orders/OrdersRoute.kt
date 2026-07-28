@@ -346,10 +346,14 @@ fun OrdersRoute(
                 OrderFlowAction.ContinueAmount -> {
                     val method = localState.selectedPaymentMethod
                     val amount = currentPaymentAmount(localState)
+                    val pendingAmount = localState.selectedOrder
+                        ?.let { OrderPresentation.summary(it).missingAmount }
+                        ?: 0.0
+                    val amountError = OrderPresentation.paymentAmountError(amount, pendingAmount)
                     when {
                         method == null -> Unit
-                        amount <= 0.0 -> {
-                            localState = localState.copy(feesError = "Informe um valor maior que zero.")
+                        amountError != null -> {
+                            localState = localState.copy(feesError = amountError)
                         }
                         PaymentTypeRules.isDirectNoFeePaymentType(method.paymentType) -> {
                             localState = OrderFlowReducer.openDirectReview(localState)
