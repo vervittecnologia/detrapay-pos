@@ -50,6 +50,7 @@ fun OrdersRoute(
     val paymentMethodsState by viewModel.paymentMethodsState.observeAsState()
     val feesState by viewModel.calculateFeesState.observeAsState()
     val paymentRecordState by viewModel.paymentRecordState.observeAsState()
+    val deletePaymentState by viewModel.deletePaymentState.observeAsState()
     val inPagePaymentState by paymentViewModel.paymentState.observeAsState(UIState.Idle())
 
     LaunchedEffect(Unit) {
@@ -196,6 +197,32 @@ fun OrdersRoute(
         }
     }
 
+    LaunchedEffect(deletePaymentState) {
+        when (val state = deletePaymentState) {
+            is UIState.Success -> {
+                val updatedOrder = state.data ?: return@LaunchedEffect
+                orders = orders.map { order ->
+                    if (order.id == updatedOrder.id) updatedOrder else order
+                }
+                localState = localState.copy(selectedOrder = updatedOrder)
+                onEffect(OrderFlowEffect.ShowToast("Pagamento excluido.", long = false))
+                viewModel.clearDeletePaymentState()
+            }
+            is UIState.Error -> {
+                onEffect(
+                    OrderFlowEffect.ShowToast(
+                        state.message ?: "Nao foi possivel excluir o pagamento.",
+                    ),
+                )
+                state.exception?.let { onEffect(OrderFlowEffect.ShowSessionExpired(it)) }
+                viewModel.clearDeletePaymentState()
+            }
+            is UIState.Loading,
+            is UIState.Idle,
+            null -> Unit
+        }
+    }
+
     fun startRequest(paymentMethod: PaymentMethod, installments: Int) {
         val order = localState.selectedOrder ?: return
         val selectedMethod = if (PaymentTypeRules.normalize(paymentMethod.paymentType) == "credito") {
@@ -270,6 +297,11 @@ fun OrdersRoute(
                 }
                 is OrderFlowAction.OrderDetail -> {
                     localState = OrderFlowReducer.showDetail(localState, action.order)
+                }
+                is OrderFlowAction.DeletePayment -> {
+                    localState.selectedOrder?.let { order ->
+                        viewModel.deleteOfflinePayment(order.id, action.receivable)
+                    }
                 }
                 OrderFlowAction.Back -> {
                     if (localState.step == OrderFlowStep.Waiting) {

@@ -6,8 +6,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.detrapay.data.Result
 import com.detrapay.data.model.Order
+import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.PaymentMethod
+import com.detrapay.data.model.canBeDeleted
 import com.detrapay.data.model.remote.CalculateFeesResponse
 import com.detrapay.data.repositories.OrderRepository
 import com.detrapay.data.repositories.RegistrationRepository
@@ -44,6 +46,8 @@ class OrdersViewModel @Inject constructor(
     val calculateFeesState: LiveData<UIState<CalculateFeesResponse>> = _calculateFeesState
     private val _paymentRecordState = MutableLiveData<UIState<Order>>(UIState.Idle())
     val paymentRecordState: LiveData<UIState<Order>> = _paymentRecordState
+    private val _deletePaymentState = MutableLiveData<UIState<Order>>(UIState.Idle())
+    val deletePaymentState: LiveData<UIState<Order>> = _deletePaymentState
 
     fun loadOrders(forceRefresh: Boolean = false) {
         if (!forceRefresh) _orderListState.postValue(UIState.Loading())
@@ -154,6 +158,30 @@ class OrdersViewModel @Inject constructor(
     }
 
     fun clearPaymentState() = _paymentRecordState.postValue(UIState.Idle())
+
+    fun deleteOfflinePayment(orderId: Int, receivable: OrderReceivableItem) {
+        if (!receivable.canBeDeleted()) {
+            _deletePaymentState.postValue(
+                UIState.Error("Este pagamento nao pode ser excluido."),
+            )
+            return
+        }
+
+        _deletePaymentState.postValue(UIState.Loading())
+        viewModelScope.launch(Dispatchers.IO) {
+            when (val result = orderRepository.cancelPendingReceivable(orderId, receivable)) {
+                is Result.Success -> _deletePaymentState.postValue(UIState.Success(result.data))
+                is Result.Error -> _deletePaymentState.postValue(
+                    UIState.Error(
+                        result.exception.message ?: "Nao foi possivel excluir o pagamento.",
+                        result.exception,
+                    ),
+                )
+            }
+        }
+    }
+
+    fun clearDeletePaymentState() = _deletePaymentState.postValue(UIState.Idle())
 
     fun prefetchRegistrationData() {
         viewModelScope.launch(Dispatchers.IO) {

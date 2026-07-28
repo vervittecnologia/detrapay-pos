@@ -525,7 +525,13 @@ git commit -m "fix: keep PagBank fees with the store"
 
 **Files:**
 - Modify: `app/src/main/java/com/detrapay/data/model/OrderReceivableItemDeleteRules.kt`
+- Modify: `app/src/main/java/com/detrapay/ui/home/orders/OrdersViewModel.kt`
+- Modify: `app/src/main/java/com/detrapay/ui/home/orders/OrderFlowContract.kt`
+- Modify: `app/src/main/java/com/detrapay/ui/home/orders/OrdersRoute.kt`
+- Modify: `app/src/main/java/com/detrapay/ui/home/orders/OrdersScreen.kt`
+- Modify: `app/src/main/java/com/detrapay/ui/home/orders/screens/DetailScreen.kt`
 - Create: `app/src/test/java/com/detrapay/data/model/OrderReceivableItemDeleteRulesTest.kt`
+- Modify: `app/src/test/java/com/detrapay/ui/home/orders/OrdersViewModelTest.kt`
 - Modify: `app/src/test/java/com/detrapay/ui/order_details/OrderDetailsViewModelTest.kt`
 
 **Interfaces:**
@@ -639,8 +645,22 @@ Expected: PASS. Because the adapter, Activity, ViewModel, and repository already
 
 - [ ] **Step 6: Commit the offline deletion behavior**
 
+Before committing, add the active Compose details flow using these exact interfaces:
+
+```kotlin
+data class DeletePayment(val receivable: OrderReceivableItem) : OrderFlowAction
+
+fun OrdersViewModel.deleteOfflinePayment(orderId: Int, receivable: OrderReceivableItem)
+
+fun OrdersViewModel.clearDeletePaymentState()
+```
+
+`DetailScreen` must expose `onDeletePayment: (OrderReceivableItem) -> Unit`, show “Excluir pagamento” only when `receivable.canBeDeleted()`, and require an `AlertDialog` confirmation. `OrdersRoute` must observe `deletePaymentState`, replace the matching order and `localState.selectedOrder` with the backend response, and surface success or error through `OrderFlowEffect.ShowToast`.
+
+Add ViewModel tests that prove an offline payment publishes the updated order and an online payment is rejected before `OrderRepository.cancelPendingReceivable` is called.
+
 ```powershell
-git add -- app/src/main/java/com/detrapay/data/model/OrderReceivableItemDeleteRules.kt app/src/test/java/com/detrapay/data/model/OrderReceivableItemDeleteRulesTest.kt app/src/test/java/com/detrapay/ui/order_details/OrderDetailsViewModelTest.kt
+git add -- app/src/main/java/com/detrapay/data/model/OrderReceivableItemDeleteRules.kt app/src/main/java/com/detrapay/ui/home/orders/OrdersViewModel.kt app/src/main/java/com/detrapay/ui/home/orders/OrderFlowContract.kt app/src/main/java/com/detrapay/ui/home/orders/OrdersRoute.kt app/src/main/java/com/detrapay/ui/home/orders/OrdersScreen.kt app/src/main/java/com/detrapay/ui/home/orders/screens/DetailScreen.kt app/src/test/java/com/detrapay/data/model/OrderReceivableItemDeleteRulesTest.kt app/src/test/java/com/detrapay/ui/home/orders/OrdersViewModelTest.kt app/src/test/java/com/detrapay/ui/order_details/OrderDetailsViewModelTest.kt
 git commit -m "fix: allow deleting offline order payments"
 ```
 
@@ -650,7 +670,7 @@ git commit -m "fix: allow deleting offline order payments"
 - Verify only; do not modify unrelated files.
 
 **Interfaces:**
-- Consumes: the completed Tasks 1-3.
+- Consumes: the completed Tasks 1-4.
 - Produces: test, install, launch, UI inspection, and crash-log evidence.
 
 - [ ] **Step 1: Run focused regression tests**

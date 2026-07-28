@@ -25,7 +25,7 @@ O simulador isolado de crédito continuará sendo apenas informativo e não inic
 
 ## Exclusão de pagamentos offline
 
-A tela de detalhes já possui o fluxo de confirmação e o endpoint de exclusão de recebível. A elegibilidade será centralizada em `OrderReceivableItem.canBeDeleted()` para que adapter, Activity, ViewModel e repositório apliquem a mesma regra.
+A elegibilidade será centralizada em `OrderReceivableItem.canBeDeleted()` para que as telas, ViewModels e repositório apliquem a mesma regra. Na tela Compose ativa de detalhes, cada pagamento offline elegível exibirá “Excluir pagamento”; a ação abrirá uma confirmação antes de chamar o endpoint e atualizará o pedido selecionado com a resposta do backend. A tela legada continuará protegida pela mesma regra de domínio.
 
 Um pagamento poderá ser excluído quando `paymentMethod.isOnlinePayment == false` e seu status não for `REFUNDED` nem `CANCELLED`. Isso mantém a possibilidade de corrigir pagamentos manuais já registrados, como dinheiro ou crédito da loja, e impede que pagamentos processados pelo PagBank sejam removidos localmente sem estorno na adquirente.
 

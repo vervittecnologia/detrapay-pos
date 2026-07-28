@@ -55,6 +55,7 @@ fun OrdersScreen(
                             order = currentOrder,
                             onBack = { onAction(OrderFlowAction.Back) },
                             onPay = { onAction(OrderFlowAction.OrderPay(currentOrder)) },
+                            onDeletePayment = { onAction(OrderFlowAction.DeletePayment(it)) },
                         )
                     }
                     OrderFlowStep.Keypad -> if (currentOrder != null) {

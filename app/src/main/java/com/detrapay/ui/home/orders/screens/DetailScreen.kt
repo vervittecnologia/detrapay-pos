@@ -20,9 +20,15 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,16 +38,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.detrapay.data.model.Order
+import com.detrapay.data.model.OrderReceivableItem
+import com.detrapay.data.model.canBeDeleted
 import com.detrapay.ui.home.orders.components.OrderFlowColors
 import com.detrapay.ui.home.orders.components.*
 import com.detrapay.ui.home.orders.OrderPresentation
 
 @Composable
-fun DetailScreen(order: Order, onBack: () -> Unit, onPay: () -> Unit) {
+fun DetailScreen(
+    order: Order,
+    onBack: () -> Unit,
+    onPay: () -> Unit,
+    onDeletePayment: (OrderReceivableItem) -> Unit,
+) {
     val summary = OrderPresentation.summary(order)
     val status = OrderPresentation.statusLabel(order)
     val percent = OrderPresentation.paidPercent(order)
     val isPending = status == "Pendente"
+    var pendingDeletion by remember { mutableStateOf<OrderReceivableItem?>(null) }
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
@@ -112,11 +126,21 @@ fun DetailScreen(order: Order, onBack: () -> Unit, onPay: () -> Unit) {
                     }
                 } else {
                     order.receivables.forEach { receivable ->
-                        SummaryRow(
-                            receivable.paymentMethod.name,
-                            OrderPresentation.formatCurrency(receivable.amountFinal),
-                            subtitle = OrderPresentation.receivableStatusLabel(receivable),
-                        )
+                        Column {
+                            SummaryRow(
+                                receivable.paymentMethod.name,
+                                OrderPresentation.formatCurrency(receivable.amountFinal),
+                                subtitle = OrderPresentation.receivableStatusLabel(receivable),
+                            )
+                            if (receivable.canBeDeleted()) {
+                                TextButton(
+                                    modifier = Modifier.align(Alignment.End),
+                                    onClick = { pendingDeletion = receivable },
+                                ) {
+                                    Text("Excluir pagamento", color = OrderFlowColors.Red)
+                                }
+                            }
+                        }
                     }
                 }
                 if (summary.hasPendingBalance) {
@@ -131,5 +155,28 @@ fun DetailScreen(order: Order, onBack: () -> Unit, onPay: () -> Unit) {
                 }
             }
         }
+    }
+
+    pendingDeletion?.let { receivable ->
+        AlertDialog(
+            onDismissRequest = { pendingDeletion = null },
+            title = { Text("Excluir pagamento") },
+            text = { Text("Deseja excluir este pagamento registrado manualmente?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingDeletion = null
+                        onDeletePayment(receivable)
+                    },
+                ) {
+                    Text("Excluir", color = OrderFlowColors.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDeletion = null }) {
+                    Text("Cancelar")
+                }
+            },
+        )
     }
 }

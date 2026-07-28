@@ -1,6 +1,7 @@
 ﻿package com.detrapay.ui.home.orders
 
 import com.detrapay.data.model.Order
+import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.remote.InstallmentFee
@@ -60,6 +61,7 @@ sealed interface OrderFlowAction {
     data object NewOrder : OrderFlowAction
     data class OrderPay(val order: Order) : OrderFlowAction
     data class OrderDetail(val order: Order) : OrderFlowAction
+    data class DeletePayment(val receivable: OrderReceivableItem) : OrderFlowAction
     data object Back : OrderFlowAction
     data class Key(val value: String) : OrderFlowAction
     data object UsePendingAmount : OrderFlowAction
