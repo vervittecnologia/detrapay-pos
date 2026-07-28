@@ -1286,7 +1286,7 @@ git commit -m "refactor: remove legacy home surfaces"
 - Consumes: completed canonical flow from Tasks 1-4.
 - Produces: passing build/tests plus device and log evidence that Pedidos is the only Home.
 
-**Device verification status (28/07/2026):** clean build, 106 unit tests, APK installation, app launch, Home capture, and crash-log inspection pass on `0123abcd`. The captured Home is the single Pedidos surface with no bottom navigation. Representative order/payment transitions remain blocked because the published `mobile` Edge Function currently returns `503 BOOT_ERROR` even for legacy endpoints; this is a backend deployment startup failure and must be repaired before release. No Android workaround may hide it.
+**Device verification status (28/07/2026):** clean build, 106 unit tests, APK installation, app launch, Home capture, and crash-log inspection pass on `0123abcd`. The captured Home is the single Pedidos surface with no bottom navigation. The published `mobile` Edge Function boot failure was traced to duplicated source in two deployed handlers, corrected remotely, and verified by a device login returning HTTP 200. Final representative order/payment and refresh checks remain in progress. No Android workaround may hide a backend contract failure.
 
 - [x] **Step 0: Recheck the production-safety gate**
 
@@ -1365,6 +1365,9 @@ Using `android layout` for coordinates and `adb shell input tap`, verify without
 12. Open the simulator, enter R$ 2.570,18, and close it.
 13. Open Novo Pedido and cancel/back to Pedidos.
 14. Confirm root back opens the logout confirmation.
+15. Create an order with no payment and confirm it opens the ordinary detail screen with `Resumo financeiro` and `Pagar`; it must never show `Pagamento realizado` or claim that the order was finalized.
+16. Pull down on Pedidos and confirm the refreshing indicator appears and a fresh forced orders request is made; the gesture must never be connected to an empty callback.
+17. In a debug build, start the atomic online-payment preparation and confirm `updatePaymentAttemptSplitConfig` returns locally without calling `POST /update-split-config`. Release builds retain the remote update before invoking PagBank.
 ```
 
 Expected: every transition follows the reference flow, returns to Pedidos, and never reveals an alternate Home.
