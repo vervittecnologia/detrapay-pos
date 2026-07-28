@@ -220,7 +220,7 @@ The following production packages are removed completely: `ui.home.registration`
 - `POST /orders/{orderId}/manual-payments` accepts the common payment fields plus optional `transaction_log`. It accepts only `is_online_payment=false`, idempotently creates the order receivable directly as `paid` with `payment_origin=manual`, and returns `{ data, updatedOrder }` without PagBank or a waiting state.
 - Every new write requires a nonblank client-generated `idempotency_key`. Repetition for the same order returns the existing result; reuse against another order returns a conflict. Online completion additionally requires the stable PagBank `transaction_id`.
 - The full request/response and retry contract is recorded in backend document `docs/MOBILE_ATOMIC_PAYMENT_CONTRACT.md` on branch `codex/single-orders-flow-backend`, commit `5dcb589a`.
-- Current gate status: unit tests and Deno type-check pass locally; PostgreSQL migration execution, legacy endpoint smoke tests, new endpoint idempotency tests, and Edge Function publication are still pending in an authorized non-production environment. Tasks 2 and 3 must not add Android network calls until these checks pass.
+- Current gate status (28/07/2026): local unit tests and Deno type-check pass; the additive migration is applied and registered in `detrapay-prod`; the `mobile` Edge Function is published; remote schema/RLS/grant/catalog checks pass; and legacy/new unauthenticated smoke requests reach the function and return the expected `401 TOKEN_INVALID` without writes. End-to-end writes and idempotency remain for the controlled Android/device scenarios with an authorized user and order.
 
 - [ ] **Step 1: Verify the existing production contract is retained**
 
