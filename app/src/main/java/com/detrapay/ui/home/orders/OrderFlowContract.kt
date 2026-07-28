@@ -16,6 +16,7 @@ enum class OrderFlowStep {
     Installments,
     Review,
     Waiting,
+    Result,
 }
 
 data class OrderPaymentReview(
@@ -51,6 +52,8 @@ data class OrderFlowLocalState(
     val feeRequestInFlight: Boolean = false,
     val activePaymentRequest: OrderPaymentRequest? = null,
     val paymentSubmissionInFlight: Boolean = false,
+    val showPaymentCancelConfirmation: Boolean = false,
+    val completedPaymentData: PaymentData? = null,
 )
 
 data class OrdersUiState(
@@ -82,6 +85,9 @@ sealed interface OrderFlowAction {
     data object ContinueInstallments : OrderFlowAction
     data object ConfirmPayment : OrderFlowAction
     data object RetryInPagePayment : OrderFlowAction
+    data object RequestPaymentCancel : OrderFlowAction
+    data object DismissPaymentCancel : OrderFlowAction
+    data object ConfirmPaymentCancel : OrderFlowAction
     data object FinishInPagePayment : OrderFlowAction
     data class CopyPaymentCode(val text: String) : OrderFlowAction
     data object OpenSimulator : OrderFlowAction

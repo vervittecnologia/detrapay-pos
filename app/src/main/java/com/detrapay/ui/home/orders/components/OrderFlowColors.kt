@@ -26,6 +26,7 @@ internal object OrderFlowColors {
     val WarningSoft = Color(0xFFFEF3C7)
     val WarningText = Color(0xFF92400E)
     val Green = Color(0xFF10B981)
+    val GreenText = Color(0xFF047857)
     val GreenSoft = Color(0xFFECFDF5)
     val Red = Color(0xFFCA170B)
     val RedSoft = Color(0xFFFEE2E2)

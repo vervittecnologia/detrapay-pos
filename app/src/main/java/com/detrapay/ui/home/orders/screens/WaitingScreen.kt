@@ -32,11 +32,13 @@ import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -65,6 +67,9 @@ fun WaitingScreen(
     paymentType: String,
     paymentState: UIState<PaymentData>,
     onBack: () -> Unit,
+    showCancelConfirmation: Boolean,
+    onCancelDismiss: () -> Unit,
+    onCancelConfirm: () -> Unit,
     onRetry: () -> Unit,
     onDone: () -> Unit,
     onCopyPixCode: (String) -> Unit,
@@ -129,6 +134,31 @@ fun WaitingScreen(
                 }
             }
         }
+    }
+    if (showCancelConfirmation) {
+        AlertDialog(
+            onDismissRequest = onCancelDismiss,
+            title = { Text("Cancelar pagamento?") },
+            text = {
+                Text(
+                    "A cobrança pode estar em andamento na maquininha. " +
+                        "Cancele somente se o atendimento não puder continuar.",
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = onCancelConfirm,
+                    colors = ButtonDefaults.buttonColors(containerColor = OrderFlowColors.Red),
+                ) {
+                    Text("Cancelar pagamento")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onCancelDismiss) {
+                    Text("Continuar aguardando")
+                }
+            },
+        )
     }
 }
 

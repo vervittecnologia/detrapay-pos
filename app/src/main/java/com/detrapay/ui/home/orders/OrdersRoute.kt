@@ -159,15 +159,7 @@ fun OrdersRoute(
         when (val state = inPagePaymentState) {
             is UIState.Success -> {
                 if (state.data?.pendingConfirmation == true) return@LaunchedEffect
-                onEffect(OrderFlowEffect.ShowToast(paymentSuccessMessage, long = false))
-                localState = localState.copy(
-                    step = OrderFlowStep.Orders,
-                    activePaymentRequest = null,
-                    paymentSubmissionInFlight = false,
-                )
-                viewModel.clearPaymentState()
-                isRefreshing = true
-                viewModel.loadOrders(forceRefresh = true)
+                localState = OrderFlowReducer.showPaymentResult(localState, state.data)
             }
             is UIState.Error -> {
                 state.exception?.let { onEffect(OrderFlowEffect.ShowSessionExpired(it)) }
@@ -324,9 +316,10 @@ fun OrdersRoute(
                 }
                 OrderFlowAction.Back -> {
                     if (localState.step == OrderFlowStep.Waiting) {
-                        paymentViewModel.abortPayment()
+                        localState = OrderFlowReducer.requestPaymentCancel(localState)
+                    } else {
+                        localState = OrderFlowReducer.back(localState)
                     }
-                    localState = OrderFlowReducer.back(localState)
                 }
                 is OrderFlowAction.Key -> {
                     localState = OrderFlowReducer.applyPaymentKey(localState, action.value)
@@ -384,11 +377,22 @@ fun OrdersRoute(
                         paymentViewModel.payOrder(request, terminalSerial)
                     }
                 }
+                OrderFlowAction.RequestPaymentCancel -> {
+                    localState = OrderFlowReducer.requestPaymentCancel(localState)
+                }
+                OrderFlowAction.DismissPaymentCancel -> {
+                    localState = OrderFlowReducer.dismissPaymentCancel(localState)
+                }
+                OrderFlowAction.ConfirmPaymentCancel -> {
+                    paymentViewModel.abortPayment()
+                    localState = OrderFlowReducer.confirmPaymentCancel(localState)
+                }
                 OrderFlowAction.FinishInPagePayment -> {
                     localState = localState.copy(
                         step = OrderFlowStep.Orders,
                         activePaymentRequest = null,
                         paymentSubmissionInFlight = false,
+                        completedPaymentData = null,
                     )
                     viewModel.clearPaymentState()
                     isRefreshing = true

@@ -6,6 +6,7 @@ import com.detrapay.data.model.OrderItem
 import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.OrderReceivableItemStatus
 import com.detrapay.data.model.OrderStatus
+import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.Salesman
 import com.detrapay.data.model.VehicleType
@@ -213,6 +214,29 @@ class OrderFlowReducerTest {
             OrderFlowStep.Review,
             OrderFlowReducer.back(OrderFlowLocalState(step = OrderFlowStep.Waiting)).step,
         )
+    }
+
+    @Test
+    fun `back during waiting requests confirmation without leaving`() {
+        val next = OrderFlowReducer.requestPaymentCancel(
+            OrderFlowLocalState(step = OrderFlowStep.Waiting),
+        )
+
+        assertEquals(OrderFlowStep.Waiting, next.step)
+        assertTrue(next.showPaymentCancelConfirmation)
+    }
+
+    @Test
+    fun `payment success opens persistent result`() {
+        val paymentData = PaymentData(transactionId = "tx-123")
+
+        val next = OrderFlowReducer.showPaymentResult(
+            OrderFlowLocalState(step = OrderFlowStep.Waiting),
+            paymentData,
+        )
+
+        assertEquals(OrderFlowStep.Result, next.step)
+        assertEquals(paymentData, next.completedPaymentData)
     }
 
     @Test

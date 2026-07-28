@@ -1,6 +1,7 @@
 ﻿package com.detrapay.ui.home.orders
 
 import com.detrapay.data.model.Order
+import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.remote.InstallmentFee
 import com.detrapay.ui.home.orders.OrderPresentation
@@ -31,6 +32,8 @@ object OrderFlowReducer {
             feeRequestTarget = null,
             activePaymentRequest = null,
             paymentSubmissionInFlight = false,
+            showPaymentCancelConfirmation = false,
+            completedPaymentData = null,
             step = OrderFlowStep.Method,
         )
     }
@@ -170,6 +173,38 @@ object OrderFlowReducer {
         return state.copy(selectedInstallment = installment, activePaymentRequest = null)
     }
 
+    fun requestPaymentCancel(state: OrderFlowLocalState): OrderFlowLocalState {
+        return if (state.step == OrderFlowStep.Waiting) {
+            state.copy(showPaymentCancelConfirmation = true)
+        } else {
+            state
+        }
+    }
+
+    fun dismissPaymentCancel(state: OrderFlowLocalState): OrderFlowLocalState {
+        return state.copy(showPaymentCancelConfirmation = false)
+    }
+
+    fun confirmPaymentCancel(state: OrderFlowLocalState): OrderFlowLocalState {
+        return state.copy(
+            step = OrderFlowStep.Review,
+            showPaymentCancelConfirmation = false,
+            paymentSubmissionInFlight = false,
+        )
+    }
+
+    fun showPaymentResult(
+        state: OrderFlowLocalState,
+        paymentData: PaymentData?,
+    ): OrderFlowLocalState {
+        return state.copy(
+            step = OrderFlowStep.Result,
+            completedPaymentData = paymentData,
+            paymentSubmissionInFlight = false,
+            showPaymentCancelConfirmation = false,
+        )
+    }
+
     fun back(state: OrderFlowLocalState): OrderFlowLocalState {
         val nextStep = when (state.step) {
             OrderFlowStep.Orders -> OrderFlowStep.Orders
@@ -186,6 +221,7 @@ object OrderFlowReducer {
                 OrderFlowStep.Amount
             }
             OrderFlowStep.Waiting -> OrderFlowStep.Review
+            OrderFlowStep.Result -> OrderFlowStep.Orders
         }
         val cancelCheckoutFeeRequest =
             state.step == OrderFlowStep.Amount &&

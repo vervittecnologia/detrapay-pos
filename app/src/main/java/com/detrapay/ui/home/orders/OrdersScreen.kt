@@ -15,6 +15,7 @@ import com.detrapay.ui.home.orders.screens.InstallmentsScreen
 import com.detrapay.ui.home.orders.screens.KeypadScreen
 import com.detrapay.ui.home.orders.screens.MethodScreen
 import com.detrapay.ui.home.orders.screens.OrdersListScreen
+import com.detrapay.ui.home.orders.screens.PaymentResultScreen
 import com.detrapay.ui.home.orders.screens.ReviewScreen
 import com.detrapay.ui.home.orders.screens.WaitingScreen
 import com.detrapay.ui.home.orders.OrderPresentation
@@ -113,10 +114,20 @@ fun OrdersScreen(
                         total = local.paymentReview?.amountFinal ?: amount,
                         paymentType = local.selectedPaymentMethod?.paymentType.orEmpty(),
                         paymentState = state.inPagePaymentState,
-                        onBack = { onAction(OrderFlowAction.Back) },
+                        onBack = { onAction(OrderFlowAction.RequestPaymentCancel) },
+                        showCancelConfirmation = local.showPaymentCancelConfirmation,
+                        onCancelDismiss = { onAction(OrderFlowAction.DismissPaymentCancel) },
+                        onCancelConfirm = { onAction(OrderFlowAction.ConfirmPaymentCancel) },
                         onRetry = { onAction(OrderFlowAction.RetryInPagePayment) },
                         onDone = { onAction(OrderFlowAction.FinishInPagePayment) },
                         onCopyPixCode = { onAction(OrderFlowAction.CopyPaymentCode(it)) },
+                    )
+                    OrderFlowStep.Result -> PaymentResultScreen(
+                        total = local.paymentReview?.amountFinal ?: amount,
+                        paymentMethod = local.selectedPaymentMethod?.name.orEmpty(),
+                        installments = local.paymentReview?.installments ?: 1,
+                        transactionId = local.completedPaymentData?.transactionId,
+                        onDone = { onAction(OrderFlowAction.FinishInPagePayment) },
                     )
                 }
 
