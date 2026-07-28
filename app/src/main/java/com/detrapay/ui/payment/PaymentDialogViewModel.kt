@@ -99,7 +99,19 @@ class PaymentDialogViewModel @Inject constructor(
                     prepared.exception.message ?: "Nao foi possivel preparar o pagamento online.",
                     prepared.exception,
                 )
-                is Result.Success -> startPagBank(request, prepared.data.id, prepared.data.amountFinal, serial)
+                is Result.Success -> {
+                    val requestedCents = amountInCents(request.amount)
+                    val preparedOriginalCents = amountInCents(prepared.data.amountOriginal)
+                    val preparedFinalCents = amountInCents(prepared.data.amountFinal)
+                    if (preparedOriginalCents != requestedCents || preparedFinalCents != requestedCents) {
+                        finishWithError(
+                            "O backend preparou um valor diferente do exibido. " +
+                                "O pagamento foi bloqueado para nao cobrar acrescimo do cliente.",
+                        )
+                    } else {
+                        startPagBank(request, prepared.data.id, serial)
+                    }
+                }
             }
         }
     }
@@ -116,7 +128,6 @@ class PaymentDialogViewModel @Inject constructor(
     private suspend fun startPagBank(
         request: OrderPaymentRequest,
         attemptId: String,
-        amountFinal: Double,
         serial: String,
     ) {
         when (val split = orderRepository.updatePaymentAttemptSplitConfig(attemptId, serial)) {
@@ -137,7 +148,7 @@ class PaymentDialogViewModel @Inject constructor(
             val result = plugPag.doPayment(
                 PlugPagPaymentData(
                     paymentType(request),
-                    (amountFinal * 100).roundToInt(),
+                    amountInCents(request.amount),
                     installmentType(request.installments),
                     request.installments,
                     null,
@@ -147,7 +158,7 @@ class PaymentDialogViewModel @Inject constructor(
                 ),
             )
             if (result.result != PlugPag.RET_OK) {
-                saveTransactionLog(request, result, amountFinal)
+                saveTransactionLog(request, result)
                 finishWithError(terminalFailureMessage(result))
                 return
             }
@@ -163,13 +174,13 @@ class PaymentDialogViewModel @Inject constructor(
                 pixTxIdCode = result.pixTxIdCode,
                 transactionLog = Gson().toJson(result),
                 amountOriginal = request.amount,
-                amountFinal = amountFinal,
+                amountFinal = request.amount,
             )
             if (approval.transactionId.isNullOrBlank()) {
                 finishWithError("A aprovacao PagBank nao retornou transaction_id.")
                 return
             }
-            saveTransactionLog(request, result, amountFinal)
+            saveTransactionLog(request, result)
             val completion = PendingCompletion(request.idempotencyKey, attemptId, approval)
             pendingCompletion = completion
             completeApprovedPayment(completion)
@@ -209,11 +220,10 @@ class PaymentDialogViewModel @Inject constructor(
     private suspend fun saveTransactionLog(
         request: OrderPaymentRequest,
         result: PlugPagTransactionResult,
-        amountFinal: Double,
     ) {
         paymentRepository.saveTransaction(
             orderId = request.order.id,
-            amount = amountFinal,
+            amount = request.amount,
             installments = request.installments,
             paymentType = request.paymentMethod.name,
             transactionId = result.transactionId,
@@ -242,6 +252,8 @@ class PaymentDialogViewModel @Inject constructor(
     } else {
         PlugPag.INSTALLMENT_TYPE_A_VISTA
     }
+
+    private fun amountInCents(amount: Double): Int = (amount * 100).roundToInt()
 
     private fun terminalFailureMessage(result: PlugPagTransactionResult): String {
         val message = result.message?.trim().orEmpty()

@@ -114,6 +114,43 @@ class PaymentDialogViewModelTest {
     }
 
     @Test
+    fun `prepared surcharge never opens PagBank or records payment`() {
+        coEvery { orderRepository.prepareOnlinePayment(any(), any(), any(), any(), any()) } returns
+            Result.Success(attempt(amountFinal = 27.00))
+
+        viewModel.payOrder(request("credito", online = true, installments = 3), "SER123")
+
+        val state = viewModel.paymentState.getOrAwaitValueMatching { it is UIState.Error<*> }
+        assertTrue(state.message?.contains("valor diferente") == true)
+        verify(exactly = 0) { plugPag.doPayment(any<PlugPagPaymentData>()) }
+        coVerify(exactly = 0) { orderRepository.updatePaymentAttemptSplitConfig(any(), any()) }
+        coVerify(exactly = 0) { orderRepository.recordApprovedOnlinePayment(any(), any()) }
+    }
+
+    @Test
+    fun `approved payment uses displayed amount as canonical total`() {
+        val paymentSlot = slot<PlugPagPaymentData>()
+        coEvery { orderRepository.prepareOnlinePayment(any(), any(), any(), any(), any()) } returns
+            Result.Success(attempt(amountOriginal = 25.674, amountFinal = 25.674))
+        coEvery { orderRepository.updatePaymentAttemptSplitConfig("attempt-1", "SER123") } returns
+            Result.Success(Unit)
+        every { plugPag.isAuthenticated() } returns true
+        every { plugPag.doPayment(capture(paymentSlot)) } returns approvedTransaction()
+        coEvery { orderRepository.recordApprovedOnlinePayment("attempt-1", any()) } returns
+            Result.Success(TestOrderFixtures.order())
+
+        viewModel.payOrder(request("credito", online = true, installments = 3), "SER123")
+
+        val state = viewModel.paymentState.getOrAwaitValueMatching { it is UIState.Success<*> }
+        assertEquals(25.67, state.data?.amountFinal ?: 0.0, 0.0)
+        assertEquals(2567, readInt(paymentSlot.captured, "amount"))
+        assertEquals(
+            PlugPag.INSTALLMENT_TYPE_PARC_VENDEDOR,
+            readInt(paymentSlot.captured, "installmentType"),
+        )
+    }
+
+    @Test
     fun `online pix uses PagBank pix and records only after approval`() {
         val paymentSlot = slot<PlugPagPaymentData>()
         arrangePreparedOnline()
@@ -167,13 +204,16 @@ class PaymentDialogViewModelTest {
         idempotencyKey = "stable-key",
     )
 
-    private fun attempt() = PaymentAttempt(
+    private fun attempt(
+        amountOriginal: Double = 25.67,
+        amountFinal: Double = 25.67,
+    ) = PaymentAttempt(
         id = "attempt-1",
         status = "prepared",
         orderId = 10,
         paymentMethodId = 1,
-        amountOriginal = 25.67,
-        amountFinal = 25.679,
+        amountOriginal = amountOriginal,
+        amountFinal = amountFinal,
         installments = 3,
         expiresAt = "2026-07-29T03:30:00Z",
     )
