@@ -158,7 +158,7 @@ object OrderFlowReducer {
     fun openInstallmentReview(state: OrderFlowLocalState): OrderFlowLocalState {
         val installment = state.creditInstallments.firstOrNull {
             it.installmentNumber == state.selectedInstallment
-        } ?: return state.copy(feesError = "Selecione uma opcao de parcelamento.")
+        } ?: return state.copy(feesError = "Selecione uma opção de parcelamento.")
         return state.copy(
             step = OrderFlowStep.Review,
             paymentReview = OrderPresentation.paymentReview(

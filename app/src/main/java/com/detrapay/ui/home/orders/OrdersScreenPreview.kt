@@ -34,7 +34,7 @@ private fun OrdersAmountLoadingPreview() = PreviewForOrder(OrderFlowStep.Amount,
 
 @Preview(name = "Orders - Amount error", showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
-private fun OrdersAmountErrorPreview() = PreviewForOrder(OrderFlowStep.Amount, selectedPaymentType = "credito", feesError = "Nao foi possivel consultar parcelas.")
+private fun OrdersAmountErrorPreview() = PreviewForOrder(OrderFlowStep.Amount, selectedPaymentType = "credito", feesError = "Não foi possível consultar parcelas.")
 
 @Preview(name = "Orders - Installments", showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
@@ -92,7 +92,7 @@ private fun OrdersSimulatorErrorPreview() = PreviewContent(
         step = OrderFlowStep.Orders,
         showSimulator = true,
         simulatorAmountDigits = "50000",
-        simulatorError = "Nao foi possivel consultar parcelas.",
+        simulatorError = "Não foi possível consultar parcelas.",
     ),
 )
 

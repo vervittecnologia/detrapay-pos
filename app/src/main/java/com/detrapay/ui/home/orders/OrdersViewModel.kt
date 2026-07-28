@@ -58,7 +58,7 @@ class OrdersViewModel @Inject constructor(
                     UIState.Success(OrderPresentation.allOrders(result.data)),
                 )
                 is Result.Error -> _orderListState.postValue(
-                    UIState.Error("Nao foi possivel carregar os pedidos.", result.exception),
+                    UIState.Error("Não foi possível carregar os pedidos.", result.exception),
                 )
             }
         }
@@ -74,7 +74,7 @@ class OrdersViewModel @Inject constructor(
                 }
                 is Result.Error -> _paymentMethodsState.postValue(
                     UIState.Error(
-                        result.exception.message ?: "Nao foi possivel carregar os meios de pagamento.",
+                        result.exception.message ?: "Não foi possível carregar os meios de pagamento.",
                         result.exception,
                     ),
                 )
@@ -102,7 +102,7 @@ class OrdersViewModel @Inject constructor(
                 is Result.Success -> _calculateFeesState.postValue(UIState.Success(result.data))
                 is Result.Error -> _calculateFeesState.postValue(
                     UIState.Error(
-                        result.exception.message ?: "Nao foi possivel calcular as parcelas.",
+                        result.exception.message ?: "Não foi possível calcular as parcelas.",
                         result.exception,
                     ),
                 )
@@ -151,7 +151,7 @@ class OrdersViewModel @Inject constructor(
             is Result.Success -> _paymentRecordState.postValue(UIState.Success(result.data))
             is Result.Error -> _paymentRecordState.postValue(
                 UIState.Error(
-                    result.exception.message ?: "Nao foi possivel registrar o pagamento.",
+                    result.exception.message ?: "Não foi possível registrar o pagamento.",
                     result.exception,
                 ),
             )
@@ -174,7 +174,7 @@ class OrdersViewModel @Inject constructor(
                 is Result.Success -> _deletePaymentState.postValue(UIState.Success(result.data))
                 is Result.Error -> _deletePaymentState.postValue(
                     UIState.Error(
-                        result.exception.message ?: "Nao foi possivel excluir o pagamento.",
+                        result.exception.message ?: "Não foi possível excluir o pagamento.",
                         result.exception,
                     ),
                 )

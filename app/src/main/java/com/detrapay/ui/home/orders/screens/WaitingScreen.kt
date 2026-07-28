@@ -3,11 +3,6 @@
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -40,15 +35,15 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -78,13 +73,6 @@ fun WaitingScreen(
     val paymentData = (paymentState as? UIState.Success)?.data
     val errorMessage = (paymentState as? UIState.Error)?.message
     val loadingMessage = (paymentState as? UIState.Loading)?.message
-    val transition = rememberInfiniteTransition(label = "waiting")
-    val scale by transition.animateFloat(
-        initialValue = 0.92f,
-        targetValue = 1.08f,
-        animationSpec = infiniteRepeatable(tween(1400), RepeatMode.Reverse),
-        label = "pulse",
-    )
     Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
         NavBar("Pagamento", onBack)
         AmountCard(presentation.amountLabel, OrderPresentation.formatCurrency(total), Icons.Default.AttachMoney, OrderFlowColors.Blue)
@@ -98,7 +86,6 @@ fun WaitingScreen(
                 Box(
                     modifier = Modifier
                         .size(180.dp)
-                        .graphicsLayer(scaleX = scale, scaleY = scale)
                         .clip(RoundedCornerShape(42.dp))
                         .background(OrderFlowColors.BlueSoft.copy(alpha = 0.55f)),
                 )
@@ -167,6 +154,7 @@ private fun PaymentStatusPill(status: String) {
     Row(
         modifier = Modifier
             .padding(top = 28.dp)
+            .semantics { liveRegion = LiveRegionMode.Polite }
             .clip(RoundedCornerShape(999.dp))
             .background(OrderFlowColors.BlueSoft)
             .border(1.dp, OrderFlowColors.BlueBorder, RoundedCornerShape(999.dp))
@@ -185,6 +173,7 @@ private fun PaymentErrorContent(message: String, onRetry: () -> Unit) {
         modifier = Modifier
             .padding(top = 28.dp)
             .padding(horizontal = 24.dp)
+            .semantics { liveRegion = LiveRegionMode.Assertive }
             .fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = OrderFlowColors.RedSoft),
@@ -232,11 +221,11 @@ private fun PixGeneratedContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Codigo Pix gerado", color = OrderFlowColors.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text("Código Pix gerado", color = OrderFlowColors.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             qrBitmap?.let {
                 Image(
                     bitmap = it.asImageBitmap(),
-                    contentDescription = null,
+                    contentDescription = "QR Code para pagamento Pix",
                     modifier = Modifier.size(196.dp),
                 )
             }
@@ -259,7 +248,7 @@ private fun PixGeneratedContent(
                 ) {
                     Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Copiar codigo Pix", fontWeight = FontWeight.Bold)
+                    Text("Copiar código Pix", fontWeight = FontWeight.Bold)
                 }
             }
             OutlinedButton(

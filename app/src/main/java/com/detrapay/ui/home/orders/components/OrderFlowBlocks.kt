@@ -3,6 +3,7 @@
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,6 +28,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -181,7 +185,14 @@ fun InstallmentRow(
             .clip(RoundedCornerShape(18.dp))
             .background(Color.White)
             .border(if (isSelected) 2.dp else 1.dp, if (isSelected) OrderFlowColors.Blue else OrderFlowColors.Border, RoundedCornerShape(18.dp))
-            .clickable(onClick = onClick)
+            .selectable(
+                selected = isSelected,
+                role = Role.RadioButton,
+                onClick = onClick,
+            )
+            .semantics {
+                stateDescription = if (isSelected) "Selecionado" else "Não selecionado"
+            }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

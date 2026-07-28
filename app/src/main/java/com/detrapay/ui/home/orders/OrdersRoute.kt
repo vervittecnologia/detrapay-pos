@@ -211,7 +211,7 @@ fun OrdersRoute(
             is UIState.Error -> {
                 onEffect(
                     OrderFlowEffect.ShowToast(
-                        state.message ?: "Nao foi possivel excluir o pagamento.",
+                        state.message ?: "Não foi possível excluir o pagamento.",
                     ),
                 )
                 state.exception?.let { onEffect(OrderFlowEffect.ShowSessionExpired(it)) }
@@ -234,7 +234,7 @@ fun OrdersRoute(
             paymentMethod
         }
         if (selectedMethod == null) {
-            onEffect(OrderFlowEffect.ShowToast("Metodo de pagamento indisponivel para a condicao selecionada."))
+            onEffect(OrderFlowEffect.ShowToast("Método de pagamento indisponível para a condição selecionada."))
             localState = localState.copy(step = OrderFlowStep.Installments)
             return
         }
