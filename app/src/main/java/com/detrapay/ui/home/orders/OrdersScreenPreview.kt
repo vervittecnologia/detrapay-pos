@@ -20,29 +20,33 @@ private fun OrdersOrdersErrorPreview() = PreviewContent(emptyList(), "Falha ao c
 @Composable
 private fun OrdersDetailPreview() = PreviewForOrder(OrderFlowStep.Detail)
 
-@Preview(name = "Orders - Keypad", showBackground = true, widthDp = 390, heightDp = 844)
+@Preview(name = "Orders - Amount", showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
-private fun OrdersKeypadPreview() = PreviewForOrder(OrderFlowStep.Keypad)
+private fun OrdersAmountPreview() = PreviewForOrder(OrderFlowStep.Amount, selectedPaymentType = "pix")
 
 @Preview(name = "Orders - Method", showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
 private fun OrdersMethodPreview() = PreviewForOrder(OrderFlowStep.Method)
 
-@Preview(name = "Orders - Credit loading", showBackground = true, widthDp = 390, heightDp = 844)
+@Preview(name = "Orders - Amount loading", showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
-private fun OrdersCreditLoadingPreview() = PreviewForOrder(OrderFlowStep.Credit, selectedPaymentType = "credito", feesLoading = true)
+private fun OrdersAmountLoadingPreview() = PreviewForOrder(OrderFlowStep.Amount, selectedPaymentType = "credito", feesLoading = true)
 
-@Preview(name = "Orders - Credit error", showBackground = true, widthDp = 390, heightDp = 844)
+@Preview(name = "Orders - Amount error", showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
-private fun OrdersCreditErrorPreview() = PreviewForOrder(OrderFlowStep.Credit, selectedPaymentType = "credito", feesError = "Nao foi possivel consultar parcelas.")
+private fun OrdersAmountErrorPreview() = PreviewForOrder(OrderFlowStep.Amount, selectedPaymentType = "credito", feesError = "Nao foi possivel consultar parcelas.")
 
-@Preview(name = "Orders - Credit loaded", showBackground = true, widthDp = 390, heightDp = 844)
+@Preview(name = "Orders - Installments", showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
-private fun OrdersCreditLoadedPreview() = PreviewForOrder(OrderFlowStep.Credit, selectedPaymentType = "credito", creditInstallments = previewInstallments(), selectedInstallment = 3)
+private fun OrdersInstallmentsPreview() = PreviewForOrder(OrderFlowStep.Installments, selectedPaymentType = "credito", creditInstallments = previewInstallments(), selectedInstallment = 3)
 
-@Preview(name = "Orders - Debit", showBackground = true, widthDp = 390, heightDp = 844)
+@Preview(name = "Orders - Review", showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
-private fun OrdersDebitPreview() = PreviewForOrder(OrderFlowStep.Debit, selectedPaymentType = "debito")
+private fun OrdersReviewPreview() = PreviewForOrder(
+    OrderFlowStep.Review,
+    selectedPaymentType = "credito",
+    paymentReview = OrderPaymentReview(125.0, 135.0, 10.0, 3, 45.0),
+)
 
 @Preview(name = "Orders - Waiting", showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
@@ -100,6 +104,7 @@ private fun PreviewForOrder(
     feesError: String? = null,
     creditInstallments: List<com.detrapay.data.model.remote.InstallmentFee> = emptyList(),
     selectedInstallment: Int = 1,
+    paymentReview: OrderPaymentReview? = null,
 ) {
     PreviewContent(
         local = OrderFlowLocalState(
@@ -113,6 +118,7 @@ private fun PreviewForOrder(
             feesError = feesError,
             creditInstallments = creditInstallments,
             selectedInstallment = selectedInstallment,
+            paymentReview = paymentReview,
         ),
     )
 }

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Payments
@@ -23,15 +22,12 @@ import androidx.compose.ui.unit.sp
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.ui.home.orders.components.OrderFlowColors
-import com.detrapay.ui.order_details.OrderDetailsPaymentMethodPickerBottomSheet
 import com.detrapay.ui.util.PaymentTypeRules
 import com.detrapay.ui.home.orders.components.*
-import com.detrapay.ui.home.orders.OrderPresentation
 
 @Composable
 fun MethodScreen(
     order: Order,
-    amount: Double,
     paymentMethods: List<PaymentMethod>,
     onBack: () -> Unit,
     onSelectPaymentMethod: (PaymentMethod) -> Unit,
@@ -52,7 +48,6 @@ fun MethodScreen(
         item {
             Column(modifier = Modifier.background(Color.White)) {
                 NavBar("Pedido #${order.id}", onBack)
-                AmountCard("VALOR DO PAGAMENTO", OrderPresentation.formatCurrency(amount), Icons.Default.AttachMoney, OrderFlowColors.Blue)
             }
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Escolha a forma de pagamento", color = OrderFlowColors.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)

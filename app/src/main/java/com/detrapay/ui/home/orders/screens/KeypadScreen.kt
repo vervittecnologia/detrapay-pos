@@ -37,13 +37,16 @@ import com.detrapay.ui.home.orders.components.*
 @Composable
 fun KeypadScreen(
     order: Order,
+    paymentMethodName: String,
     displayAmount: String,
     pendingAmountLabel: String,
     canPay: Boolean,
+    isLoading: Boolean,
+    errorMessage: String?,
     onBack: () -> Unit,
     onKey: (String) -> Unit,
     onUsePendingAmount: () -> Unit,
-    onPay: () -> Unit,
+    onContinue: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
             NavBar("Novo pagamento", onBack)
@@ -61,6 +64,7 @@ fun KeypadScreen(
                     Text("DIGITE O VALOR DO PAGAMENTO", color = OrderFlowColors.BlueLight, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     Text(displayAmount, color = OrderFlowColors.Ink, fontSize = 34.sp, fontWeight = FontWeight.Black)
                     Text("Pedido #${order.id}", color = OrderFlowColors.Blue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Forma: $paymentMethodName", color = OrderFlowColors.Blue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     Text("Valor pendente: $pendingAmountLabel", color = OrderFlowColors.Muted, fontSize = 13.sp)
                     OutlinedButton(onClick = onUsePendingAmount) {
                         Text("Usar valor pendente")
@@ -69,7 +73,12 @@ fun KeypadScreen(
             }
             Column(modifier = Modifier.padding(horizontal = 20.dp)) {
                 Text("Teclado da maquininha", color = OrderFlowColors.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                Text("Informe o valor e toque em Pagar.", color = OrderFlowColors.Muted, fontSize = 14.sp)
+                Text("Informe o valor e toque em Continuar.", color = OrderFlowColors.Muted, fontSize = 14.sp)
+                if (isLoading) {
+                    Text("Calculando valor final...", color = OrderFlowColors.Blue, fontSize = 14.sp)
+                } else if (errorMessage != null) {
+                    Text(errorMessage, color = OrderFlowColors.AmberText, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                }
             }
             Keypad(modifier = Modifier.weight(1f), keyHeight = 58.dp, onKey = onKey)
             Button(
@@ -77,14 +86,14 @@ fun KeypadScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 10.dp)
                     .height(58.dp),
-                onClick = onPay,
-                enabled = canPay,
+                onClick = onContinue,
+                enabled = canPay && !isLoading,
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = OrderFlowColors.Blue),
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Pagar", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                    Text("Escolher crédito, débito, Pix ou outras formas", color = OrderFlowColors.BlueOnSoft, fontSize = 12.sp)
+                    Text("Continuar", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text("Revisar as condições do pagamento", color = OrderFlowColors.BlueOnSoft, fontSize = 12.sp)
                 }
             }
     }

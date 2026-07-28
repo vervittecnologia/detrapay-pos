@@ -7,13 +7,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.detrapay.ui.home.orders.components.OrderFlowColors
-import com.detrapay.ui.home.orders.screens.CreditScreen
-import com.detrapay.ui.home.orders.screens.DebitScreen
 import com.detrapay.ui.home.orders.screens.DetailScreen
 import com.detrapay.ui.home.orders.screens.InstallmentSimulatorScreen
+import com.detrapay.ui.home.orders.screens.InstallmentsScreen
 import com.detrapay.ui.home.orders.screens.KeypadScreen
 import com.detrapay.ui.home.orders.screens.MethodScreen
 import com.detrapay.ui.home.orders.screens.OrdersListScreen
+import com.detrapay.ui.home.orders.screens.ReviewScreen
 import com.detrapay.ui.home.orders.screens.WaitingScreen
 import com.detrapay.ui.home.orders.OrderPresentation
 
@@ -58,44 +58,51 @@ fun OrdersScreen(
                             onDeletePayment = { onAction(OrderFlowAction.DeletePayment(it)) },
                         )
                     }
-                    OrderFlowStep.Keypad -> if (currentOrder != null) {
+                    OrderFlowStep.Amount -> if (
+                        currentOrder != null && local.selectedPaymentMethod != null
+                    ) {
                         KeypadScreen(
                             order = currentOrder,
+                            paymentMethodName = local.selectedPaymentMethod.name,
                             displayAmount = OrderPresentation.paymentDisplayAmount(local.paymentDigits),
                             pendingAmountLabel = OrderPresentation.formatCurrency(pendingAmount),
                             canPay = amount > 0.0,
+                            isLoading = local.feesLoading,
+                            errorMessage = local.feesError,
                             onBack = { onAction(OrderFlowAction.Back) },
                             onKey = { onAction(OrderFlowAction.Key(it)) },
                             onUsePendingAmount = { onAction(OrderFlowAction.UsePendingAmount) },
-                            onPay = { onAction(OrderFlowAction.OpenMethods) },
+                            onContinue = { onAction(OrderFlowAction.ContinueAmount) },
                         )
                     }
                     OrderFlowStep.Method -> if (currentOrder != null) {
                         MethodScreen(
                             order = currentOrder,
-                            amount = amount,
                             paymentMethods = state.paymentMethods,
                             onBack = { onAction(OrderFlowAction.Back) },
                             onSelectPaymentMethod = { onAction(OrderFlowAction.SelectPaymentMethod(it)) },
                         )
                     }
-                    OrderFlowStep.Credit -> CreditScreen(
+                    OrderFlowStep.Installments -> InstallmentsScreen(
                         amount = amount,
                         installments = local.creditInstallments,
                         selectedInstallment = local.selectedInstallment,
-                        isLoading = local.feesLoading,
-                        errorMessage = local.feesError,
                         onBack = { onAction(OrderFlowAction.Back) },
                         onSelectInstallment = { onAction(OrderFlowAction.SelectInstallment(it)) },
-                        onContinue = { onAction(OrderFlowAction.ContinueCredit) },
+                        onContinue = { onAction(OrderFlowAction.ContinueInstallments) },
                     )
-                    OrderFlowStep.Debit -> DebitScreen(
-                        amount = amount,
-                        onBack = { onAction(OrderFlowAction.Back) },
-                        onContinue = { onAction(OrderFlowAction.ContinueDebit) },
-                    )
+                    OrderFlowStep.Review -> if (
+                        local.selectedPaymentMethod != null && local.paymentReview != null
+                    ) {
+                        ReviewScreen(
+                            paymentMethod = local.selectedPaymentMethod,
+                            review = local.paymentReview,
+                            onBack = { onAction(OrderFlowAction.Back) },
+                            onConfirm = { onAction(OrderFlowAction.ConfirmPayment) },
+                        )
+                    }
                     OrderFlowStep.Waiting -> WaitingScreen(
-                        total = amount,
+                        total = local.paymentReview?.amountFinal ?: amount,
                         paymentType = local.selectedPaymentMethod?.paymentType.orEmpty(),
                         paymentState = state.inPagePaymentState,
                         onBack = { onAction(OrderFlowAction.Back) },

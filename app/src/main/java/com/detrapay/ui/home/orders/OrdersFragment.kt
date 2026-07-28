@@ -65,7 +65,6 @@ class OrdersFragment : Fragment() {
         when (effect) {
             OrderFlowEffect.ShowLogoutConfirmation -> showLogoutConfirmation()
             OrderFlowEffect.NavigateToRegistration -> openNewOrderFlow()
-            is OrderFlowEffect.ConfirmRecordOnlyPayment -> confirmRecordOnlyPayment(effect.request)
             is OrderFlowEffect.CopyPaymentText -> copyPaymentText(effect.text)
             is OrderFlowEffect.CopySimulatorText -> copySimulatorText(effect.text)
             is OrderFlowEffect.ShareSimulatorText -> shareSimulatorText(effect.text)
@@ -76,20 +75,6 @@ class OrdersFragment : Fragment() {
             ).show()
             is OrderFlowEffect.ShowSessionExpired -> validateErrorType(effect.exception)
         }
-    }
-
-    private fun confirmRecordOnlyPayment(request: OrderPaymentRequest) {
-        AlertDialog.Builder(requireContext())
-            .setTitle("Confirmar pagamento")
-            .setMessage(
-                "Registrar ${OrderPresentation.formatCurrency(request.amount)} como " +
-                    "${request.paymentMethod.name}?",
-            )
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                viewModel.recordOfflinePayment(request)
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
     }
 
     private fun copyPaymentText(text: String) {
