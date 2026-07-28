@@ -66,9 +66,9 @@ object DirectCheckoutOrderPresentation {
     fun summary(order: Order): DirectCheckoutOrderSummary {
         val totals = OrderPaymentTotals.from(order.receivables)
         val registered = totals.declaredAmount.coerceAtLeast(0.0)
-        val missing = (order.originalAmount - totals.paidAmount).coerceAtLeast(0.0)
+        val missing = (order.originalAmount - registered).coerceAtLeast(0.0)
         val progress = if (order.originalAmount > 0.0) {
-            ((totals.paidAmount / order.originalAmount).coerceIn(0.0, 1.0) * PROGRESS_MAX).roundToInt()
+            ((registered / order.originalAmount).coerceIn(0.0, 1.0) * PROGRESS_MAX).roundToInt()
         } else {
             0
         }

@@ -182,8 +182,7 @@ class OrderDetailsViewModelTest {
     }
 
     @Test
-    fun `cancelPendingItem allows refunded store credit receivable`() {
-        val updatedOrder = order(status = OrderStatus.PENDING)
+    fun `cancelPendingItem rejects refunded store credit receivable`() {
         val receivable = receivable(
             status = OrderReceivableItemStatus.REFUNDED,
             paymentMethod = PaymentMethod(
@@ -194,13 +193,12 @@ class OrderDetailsViewModelTest {
                 paymentType = "store_credit"
             )
         )
-        coEvery { orderRepository.cancelPendingReceivable(0, receivable) } returns Result.Success(updatedOrder)
-
         viewModel.cancelPendingItem(receivable)
 
-        val state = viewModel.orderState.getOrAwaitValueMatching { it is UIState.Success<*> }
+        val state = viewModel.orderState.getOrAwaitValueMatching { it is UIState.Error<*> } as UIState.Error
 
-        assertTrue(state is UIState.Success)
+        assertEquals("Este pagamento nao pode ser excluido no status atual.", state.message)
+        coVerify(exactly = 0) { orderRepository.cancelPendingReceivable(any(), any()) }
     }
 
     @Test
