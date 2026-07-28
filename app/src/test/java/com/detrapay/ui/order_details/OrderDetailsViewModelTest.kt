@@ -115,7 +115,16 @@ class OrderDetailsViewModelTest {
     @Test
     fun `cancelPendingItem publishes updated order on success`() {
         val updatedOrder = order(status = OrderStatus.PENDING)
-        val receivable = receivable()
+        val receivable = receivable(
+            paymentMethod = PaymentMethod(
+                id = 2,
+                name = "Dinheiro",
+                installments = 1,
+                interestTax = 0.0,
+                paymentType = "cash",
+                isOnlinePayment = false,
+            )
+        )
         coEvery { orderRepository.cancelPendingReceivable(0, receivable) } returns Result.Success(updatedOrder)
 
         viewModel.cancelPendingItem(receivable)
@@ -138,8 +147,7 @@ class OrderDetailsViewModelTest {
     }
 
     @Test
-    fun `cancelPendingItem allows paid pix receivable`() {
-        val updatedOrder = order(status = OrderStatus.PENDING)
+    fun `cancelPendingItem rejects paid pix receivable`() {
         val receivable = receivable(
             status = OrderReceivableItemStatus.PAID,
             paymentMethod = PaymentMethod(
@@ -151,13 +159,12 @@ class OrderDetailsViewModelTest {
                 isOnlinePayment = true,
             )
         )
-        coEvery { orderRepository.cancelPendingReceivable(0, receivable) } returns Result.Success(updatedOrder)
-
         viewModel.cancelPendingItem(receivable)
 
-        val state = viewModel.orderState.getOrAwaitValueMatching { it is UIState.Success<*> }
+        val state = viewModel.orderState.getOrAwaitValueMatching { it is UIState.Error<*> } as UIState.Error
 
-        assertTrue(state is UIState.Success)
+        assertEquals("Este pagamento nao pode ser excluido no status atual.", state.message)
+        coVerify(exactly = 0) { orderRepository.cancelPendingReceivable(any(), any()) }
     }
 
     @Test
