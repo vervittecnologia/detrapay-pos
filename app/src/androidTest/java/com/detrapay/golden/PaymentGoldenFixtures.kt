@@ -25,7 +25,6 @@ object PaymentGoldenFixtures {
 
         binding.orderTitleTextView.text = "Pedido #292"
         binding.orderCaptionTextView.text = "Finalizacao de Venda"
-        binding.customerInfoTextView.text = "123.456.789-00 - John Doe"
         binding.vehicleValueValue.text = "R$ 3.469,18"
         binding.registeredAmountValueTextView.text = "R$ 2.500,00"
         binding.balanceLabelTextView.text = "Saldo devedor"
@@ -54,7 +53,6 @@ object PaymentGoldenFixtures {
             ),
             listener = object : OrderDetailsPaymentsRecyclerViewAdapter.OnItemClickListener {
                 override fun onItemClick(receivable: OrderReceivableItem) = Unit
-                override fun onRefundClick(receivable: OrderReceivableItem) = Unit
                 override fun onDeletePendingClick(receivable: OrderReceivableItem) = Unit
             },
         )
@@ -78,13 +76,14 @@ object PaymentGoldenFixtures {
         binding.rvInstallments.layoutParams.height = 420
         binding.rvInstallments.adapter = InstallmentsAdapter { }
         (binding.rvInstallments.adapter as InstallmentsAdapter).submitList(
-            listOf(
+            newItems = listOf(
                 fee(1, "3.469,18", "3.469,18", true),
                 fee(2, "1.734,59", "3.469,18", true),
                 fee(5, "693,84", "3.469,18", true),
                 fee(10, "346,92", "3.469,18", true),
                 fee(12, "315,22", "3.782,64", false),
             ),
+            amountOriginal = 3469.18,
         )
         (binding.rvInstallments.adapter as InstallmentsAdapter).setSelected(
             fee(1, "3.469,18", "3.469,18", true),
@@ -144,6 +143,7 @@ object PaymentGoldenFixtures {
                 installments = installments,
                 interestTax = 0.0,
                 paymentType = paymentType,
+                isOnlinePayment = paymentType in setOf("credito", "debito", "pix"),
             ),
             paymentDate = "04/10/2025 as 14:00",
             refundDate = null,
