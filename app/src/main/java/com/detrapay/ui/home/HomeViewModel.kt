@@ -5,7 +5,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.detrapay.data.Result
-import com.detrapay.data.model.SellerAppMode
 import com.detrapay.data.repositories.AuthRepository
 import com.detrapay.data.repositories.RegistrationRepository
 import com.detrapay.data.repositories.SalesmanRepository
@@ -51,7 +50,6 @@ class HomeViewModel @Inject constructor(
                             dispatcherName = dispatcherName,
                             companyLogoKey = company?.logoKey,
                             salesmen = salesmen,
-                            sellerAppMode = SellerAppMode.DIRECT_CHECKOUT
                         )
                     )
                 )

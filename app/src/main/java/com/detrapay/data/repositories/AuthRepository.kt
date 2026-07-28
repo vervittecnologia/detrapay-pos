@@ -53,7 +53,6 @@ class AuthRepository @Inject constructor(
             expiresIn = authResponse.expiresIn,
             expiresAt = authResponse.expiresAt,
             tokenType = authResponse.tokenType,
-            appMode = LoggedInUser.APP_MODE_DIRECT_CHECKOUT,
         )
         updateCachedUser(localUser)
     }
@@ -68,7 +67,6 @@ class AuthRepository @Inject constructor(
             expiresIn = response.resolvedExpiresIn(),
             expiresAt = response.resolvedExpiresAt(),
             tokenType = response.resolvedTokenType(),
-            appMode = currentAppMode(),
         )
         updateStoredUserToken(accessToken)
         return true
@@ -119,7 +117,6 @@ class AuthRepository @Inject constructor(
                 companies,
                 dispatchers,
                 salesmen,
-                currentAppMode()
             )
             this.user = loggedInUser
             return loggedInUser
@@ -148,7 +145,6 @@ class AuthRepository @Inject constructor(
         expiresIn: Long?,
         expiresAt: Long?,
         tokenType: String?,
-        appMode: String?,
     ) {
         val computedExpiresAt = expiresAt ?: expiresIn?.let { (System.currentTimeMillis() / 1000L) + it }
         preferences.edit()
@@ -156,14 +152,7 @@ class AuthRepository @Inject constructor(
             .putString(KEY_REFRESH_TOKEN, refreshToken)
             .putString(KEY_TOKEN_TYPE, tokenType ?: DEFAULT_TOKEN_TYPE)
             .putLong(KEY_EXPIRES_AT, computedExpiresAt ?: NO_EXPIRATION)
-            .putString(KEY_APP_MODE, appMode?.takeIf { it.isNotBlank() } ?: LoggedInUser.APP_MODE_DIRECT_CHECKOUT)
             .apply()
-    }
-
-    private fun currentAppMode(): String {
-        return preferences.getString(KEY_APP_MODE, LoggedInUser.APP_MODE_DIRECT_CHECKOUT)
-            ?.takeIf { it.isNotBlank() }
-            ?: LoggedInUser.APP_MODE_DIRECT_CHECKOUT
     }
 
     private fun saveLastLoggedCnpj(cnpj: String) {
@@ -176,7 +165,6 @@ class AuthRepository @Inject constructor(
             .remove(KEY_REFRESH_TOKEN)
             .remove(KEY_TOKEN_TYPE)
             .remove(KEY_EXPIRES_AT)
-            .remove(KEY_APP_MODE)
             .apply()
     }
 
@@ -187,7 +175,6 @@ class AuthRepository @Inject constructor(
         private const val KEY_REFRESH_TOKEN = "refresh_token"
         private const val KEY_TOKEN_TYPE = "token_type"
         private const val KEY_EXPIRES_AT = "expires_at"
-        private const val KEY_APP_MODE = "app_mode"
         private const val DEFAULT_TOKEN_TYPE = "Bearer"
         private const val NO_EXPIRATION = -1L
     }

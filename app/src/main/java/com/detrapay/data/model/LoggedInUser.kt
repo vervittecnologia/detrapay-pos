@@ -13,12 +13,4 @@ data class LoggedInUser(
     val companies: List<Company>,
     val dispatchers: List<Dispatcher>,
     val salesmen: List<Salesman>,
-    val appMode: String = APP_MODE_DIRECT_CHECKOUT
-) {
-    val activeSellerAppMode: SellerAppMode
-        get() = SellerAppMode.DIRECT_CHECKOUT
-
-    companion object {
-        const val APP_MODE_DIRECT_CHECKOUT = "direct_checkout"
-    }
-}
+)

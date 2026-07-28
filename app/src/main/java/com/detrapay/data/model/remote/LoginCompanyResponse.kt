@@ -9,6 +9,4 @@ data class LoginCompanyResponse(
     val name: String,
     @SerializedName("logo_url")
     val logoUrl: String? = null,
-    @SerializedName("seller_app_mode")
-    val sellerAppMode: String? = null
 )

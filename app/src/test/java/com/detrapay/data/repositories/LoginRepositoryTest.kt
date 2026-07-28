@@ -48,9 +48,9 @@ class LoginRepositoryTest {
     }
 
     @Test
-    fun `login always sets direct checkout mode regardless of company config`() = runTest {
+    fun `login maps the authenticated user without application mode state`() = runTest {
         coEvery { remoteDataSource.login("04685620000162", "crasa04685620") } returns Result.Success(
-            authResponse(appMode = "complete", companySellerAppMode = "standard")
+            authResponse()
         )
         coEvery { usersDao.insertUser(any()) } returns 1L
         coEvery { authRepository.saveLoginSession(any(), any()) } just Runs
@@ -59,47 +59,17 @@ class LoginRepositoryTest {
 
         assertTrue(result is Result.Success)
         val user = (result as Result.Success).data
-        assertEquals("direct_checkout", user.appMode)
+        assertEquals("user-1", user.id)
+        assertEquals("CRASA", user.companies.single().name)
     }
 
-    @Test
-    fun `login always sets direct checkout mode even when api returns simplified`() = runTest {
-        coEvery { remoteDataSource.login("04685620000162", "crasa04685620") } returns Result.Success(
-            authResponse(appMode = "simplified", companySellerAppMode = "simplified")
-        )
-        coEvery { usersDao.insertUser(any()) } returns 1L
-        coEvery { authRepository.saveLoginSession(any(), any()) } just Runs
-
-        val result = repository.login("04685620000162", "crasa04685620")
-
-        assertTrue(result is Result.Success)
-        val user = (result as Result.Success).data
-        assertEquals("direct_checkout", user.appMode)
-    }
-
-    @Test
-    fun `login always sets direct checkout mode from company configuration`() = runTest {
-        coEvery { remoteDataSource.login("04685620000162", "crasa04685620") } returns Result.Success(
-            authResponse(appMode = "complete", companySellerAppMode = "direct_checkout")
-        )
-        coEvery { usersDao.insertUser(any()) } returns 1L
-        coEvery { authRepository.saveLoginSession(any(), any()) } just Runs
-
-        val result = repository.login("04685620000162", "crasa04685620")
-
-        assertTrue(result is Result.Success)
-        val user = (result as Result.Success).data
-        assertEquals("direct_checkout", user.appMode)
-    }
-
-    private fun authResponse(appMode: String, companySellerAppMode: String? = null) = AuthResponse(
+    private fun authResponse() = AuthResponse(
         token = "legacy-token",
         accessToken = "access-token",
         refreshToken = "refresh-token",
         expiresIn = 3600,
         expiresAt = 999999,
         tokenType = "Bearer",
-        appMode = appMode,
         user = UserResponse(
             id = "user-1",
             documentId = "doc-1",
@@ -119,7 +89,6 @@ class LoginRepositoryTest {
             LoginCompanyResponse(
                 id = 37,
                 name = "CRASA",
-                sellerAppMode = companySellerAppMode,
             ),
         ),
         dispatchers = listOf(
