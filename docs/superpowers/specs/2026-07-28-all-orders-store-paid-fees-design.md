@@ -13,6 +13,7 @@ Exibir todos os pedidos na tela de Pedidos, inclusive os pagos, concluídos e ca
 - Usar uma única fonte para o total apresentado e cobrado: o valor original informado para o pagamento.
 - Bloquear o pagamento antes de abrir o PagBank quando o backend preparar uma tentativa com acréscimo ao cliente.
 - Ajustar a apresentação das parcelas do checkout para não exibir taxa ou total superior ao valor que será cobrado.
+- Exibir a opção de exclusão, nos detalhes do pedido, somente para pagamentos cujo meio tenha `isOnlinePayment == false` e cujo status ainda admita exclusão.
 
 O simulador isolado de crédito continuará sendo apenas informativo e não inicia nem registra pagamentos. A garantia de igualdade desta mudança se aplica ao checkout que efetivamente abre o PagBank.
 
@@ -21,6 +22,12 @@ O simulador isolado de crédito continuará sendo apenas informativo e não inic
 `OrdersViewModel` deve publicar todos os pedidos retornados por `OrderRepository.getOrders`, ordenados do maior identificador para o menor. Nenhum status será removido: `PENDING`, `PAID`, `AUTHORIZED`, `COMPLETED` e `CANCELLED` devem aparecer.
 
 `OrderPresentation.shouldStartPayment` continuará protegendo os estados finais e os pedidos sem saldo. Assim, ampliar a listagem não amplia indevidamente as operações permitidas.
+
+## Exclusão de pagamentos offline
+
+A tela de detalhes já possui o fluxo de confirmação e o endpoint de exclusão de recebível. A elegibilidade será centralizada em `OrderReceivableItem.canBeDeleted()` para que adapter, Activity, ViewModel e repositório apliquem a mesma regra.
+
+Um pagamento poderá ser excluído quando `paymentMethod.isOnlinePayment == false` e seu status não for `REFUNDED` nem `CANCELLED`. Isso mantém a possibilidade de corrigir pagamentos manuais já registrados, como dinheiro ou crédito da loja, e impede que pagamentos processados pelo PagBank sejam removidos localmente sem estorno na adquirente.
 
 ## Valor único de cobrança
 
@@ -62,6 +69,7 @@ Demanda de backend: ajustar `POST /orders/{orderId}/payment-attempts` para que t
 - Teste comprovando que o valor exibido/de referência é o valor em centavos enviado ao `PlugPagPaymentData`, mesmo quando parcelado.
 - Teste comprovando que uma tentativa preparada com acréscimo não chama `doPayment` nem registra pagamento.
 - Teste da apresentação das parcelas comprovando que o total mostrado permanece igual ao valor original e sinaliza taxas por conta da loja.
+- Testes da regra de exclusão comprovando que pagamentos offline pendentes ou pagos são permitidos e que pagamentos online, estornados e cancelados são rejeitados.
 - Execução dos testes unitários relacionados e da suíte de testes unitários do app.
 - Instalação no device, abertura automática do app e inspeção de `adb logcat` filtrado por `com.detrapay`, `AndroidRuntime` e `FATAL EXCEPTION`, conforme as instruções do workspace.
 
@@ -72,6 +80,7 @@ Demanda de backend: ajustar `POST /orders/{orderId}/payment-attempts` para que t
 - Parcelamento PagBank é sempre do vendedor.
 - O total mostrado no checkout é igual ao total enviado ao terminal.
 - Nenhuma resposta do backend que acrescente taxa ao cliente consegue iniciar o PagBank.
+- Os detalhes do pedido oferecem exclusão para pagamentos offline elegíveis e nunca para pagamentos online.
 - Testes automatizados e validação no device não apresentam regressões ou falhas fatais.
 
 Não haverá validação automatizada ou manual específica da impressão do comprovante. O comprovante é um efeito colateral do valor entregue ao SDK com `printReceipt = true`, não um requisito de teste desta mudança.
