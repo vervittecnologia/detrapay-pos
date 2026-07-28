@@ -100,16 +100,16 @@ class PaymentDialogViewModel @Inject constructor(
                     prepared.exception,
                 )
                 is Result.Success -> {
-                    val requestedCents = amountInCents(request.amount)
-                    val preparedOriginalCents = amountInCents(prepared.data.amountOriginal)
-                    val preparedFinalCents = amountInCents(prepared.data.amountFinal)
-                    if (preparedOriginalCents != requestedCents || preparedFinalCents != requestedCents) {
-                        finishWithError(
-                            "O backend preparou um valor diferente do exibido. " +
-                                "O pagamento foi bloqueado para nao cobrar acrescimo do cliente.",
-                        )
+                    val preparedAmount = prepared.data.amountFinal
+                    val preparedAmountCents = if (preparedAmount.isFinite()) {
+                        amountInCents(preparedAmount)
                     } else {
-                        startPagBank(request, prepared.data.id, serial)
+                        0
+                    }
+                    if (preparedAmountCents <= 0) {
+                        finishWithError("O backend retornou um valor final invalido para o pagamento.")
+                    } else {
+                        startPagBank(request, prepared.data.id, preparedAmountCents, serial)
                     }
                 }
             }
@@ -128,8 +128,10 @@ class PaymentDialogViewModel @Inject constructor(
     private suspend fun startPagBank(
         request: OrderPaymentRequest,
         attemptId: String,
+        amountFinalCents: Int,
         serial: String,
     ) {
+        val amountFinal = amountFinalCents / 100.0
         when (val split = orderRepository.updatePaymentAttemptSplitConfig(attemptId, serial)) {
             is Result.Error -> {
                 finishWithError("Nao foi possivel configurar a maquininha: ${split.exception.message}", split.exception)
@@ -148,7 +150,7 @@ class PaymentDialogViewModel @Inject constructor(
             val result = plugPag.doPayment(
                 PlugPagPaymentData(
                     paymentType(request),
-                    amountInCents(request.amount),
+                    amountFinalCents,
                     installmentType(request.installments),
                     request.installments,
                     null,
@@ -158,7 +160,7 @@ class PaymentDialogViewModel @Inject constructor(
                 ),
             )
             if (result.result != PlugPag.RET_OK) {
-                saveTransactionLog(request, result)
+                saveTransactionLog(request, result, amountFinal)
                 finishWithError(terminalFailureMessage(result))
                 return
             }
@@ -174,13 +176,13 @@ class PaymentDialogViewModel @Inject constructor(
                 pixTxIdCode = result.pixTxIdCode,
                 transactionLog = Gson().toJson(result),
                 amountOriginal = request.amount,
-                amountFinal = request.amount,
+                amountFinal = amountFinal,
             )
             if (approval.transactionId.isNullOrBlank()) {
                 finishWithError("A aprovacao PagBank nao retornou transaction_id.")
                 return
             }
-            saveTransactionLog(request, result)
+            saveTransactionLog(request, result, amountFinal)
             val completion = PendingCompletion(request.idempotencyKey, attemptId, approval)
             pendingCompletion = completion
             completeApprovedPayment(completion)
@@ -220,10 +222,11 @@ class PaymentDialogViewModel @Inject constructor(
     private suspend fun saveTransactionLog(
         request: OrderPaymentRequest,
         result: PlugPagTransactionResult,
+        amountFinal: Double,
     ) {
         paymentRepository.saveTransaction(
             orderId = request.order.id,
-            amount = request.amount,
+            amount = amountFinal,
             installments = request.installments,
             paymentType = request.paymentMethod.name,
             transactionId = result.transactionId,

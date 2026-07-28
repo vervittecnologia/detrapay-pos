@@ -6,6 +6,7 @@ import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPag
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagPaymentData
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagTransactionResult
 import com.detrapay.data.Result
+import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.remote.PaymentAttempt
 import com.detrapay.data.repositories.OrderRepository
@@ -114,55 +115,91 @@ class PaymentDialogViewModelTest {
     }
 
     @Test
-    fun `prepared surcharge never opens PagBank or records payment`() {
+    fun `credit charges the final amount prepared by backend`() {
+        val terminalSlot = slot<PlugPagPaymentData>()
+        val approvalSlot = slot<PaymentData>()
         coEvery { orderRepository.prepareOnlinePayment(any(), any(), any(), any(), any()) } returns
-            Result.Success(attempt(amountFinal = 27.00))
-
-        viewModel.payOrder(request("credito", online = true, installments = 3), "SER123")
-
-        val state = viewModel.paymentState.getOrAwaitValueMatching { it is UIState.Error<*> }
-        assertTrue(state.message?.contains("valor diferente") == true)
-        verify(exactly = 0) { plugPag.doPayment(any<PlugPagPaymentData>()) }
-        coVerify(exactly = 0) { orderRepository.updatePaymentAttemptSplitConfig(any(), any()) }
-        coVerify(exactly = 0) { orderRepository.recordApprovedOnlinePayment(any(), any()) }
-    }
-
-    @Test
-    fun `approved payment uses displayed amount as canonical total`() {
-        val paymentSlot = slot<PlugPagPaymentData>()
-        coEvery { orderRepository.prepareOnlinePayment(any(), any(), any(), any(), any()) } returns
-            Result.Success(attempt(amountOriginal = 25.674, amountFinal = 25.674))
+            Result.Success(attempt(amountOriginal = 25.67, amountFinal = 27.00))
         coEvery { orderRepository.updatePaymentAttemptSplitConfig("attempt-1", "SER123") } returns
             Result.Success(Unit)
         every { plugPag.isAuthenticated() } returns true
-        every { plugPag.doPayment(capture(paymentSlot)) } returns approvedTransaction()
-        coEvery { orderRepository.recordApprovedOnlinePayment("attempt-1", any()) } returns
+        every { plugPag.doPayment(capture(terminalSlot)) } returns approvedTransaction()
+        coEvery { orderRepository.recordApprovedOnlinePayment("attempt-1", capture(approvalSlot)) } returns
+            Result.Success(TestOrderFixtures.order())
+
+        viewModel.payOrder(request("credito", online = true, installments = 3), "SER123")
+
+        viewModel.paymentState.getOrAwaitValueMatching { it is UIState.Success<*> }
+        assertEquals(2700, readInt(terminalSlot.captured, "amount"))
+        assertEquals(25.67, approvalSlot.captured.amountOriginal ?: 0.0, 0.0)
+        assertEquals(27.00, approvalSlot.captured.amountFinal ?: 0.0, 0.0)
+        coVerify(exactly = 1) {
+            paymentRepository.saveTransaction(
+                orderId = 10,
+                amount = 27.00,
+                installments = 3,
+                paymentType = "credito",
+                transactionId = any(),
+                transactionCode = any(),
+                date = any(),
+                result = PlugPag.RET_OK,
+                cardBrand = any(),
+                cardLast4 = any(),
+                cardHolder = any(),
+                pixTxIdCode = any(),
+                message = any(),
+                errorCode = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `prepared amount is rounded once and used as canonical total`() {
+        val terminalSlot = slot<PlugPagPaymentData>()
+        val approvalSlot = slot<PaymentData>()
+        coEvery { orderRepository.prepareOnlinePayment(any(), any(), any(), any(), any()) } returns
+            Result.Success(attempt(amountOriginal = 25.67, amountFinal = 27.006))
+        coEvery { orderRepository.updatePaymentAttemptSplitConfig("attempt-1", "SER123") } returns
+            Result.Success(Unit)
+        every { plugPag.isAuthenticated() } returns true
+        every { plugPag.doPayment(capture(terminalSlot)) } returns approvedTransaction()
+        coEvery { orderRepository.recordApprovedOnlinePayment("attempt-1", capture(approvalSlot)) } returns
             Result.Success(TestOrderFixtures.order())
 
         viewModel.payOrder(request("credito", online = true, installments = 3), "SER123")
 
         val state = viewModel.paymentState.getOrAwaitValueMatching { it is UIState.Success<*> }
-        assertEquals(25.67, state.data?.amountFinal ?: 0.0, 0.0)
-        assertEquals(2567, readInt(paymentSlot.captured, "amount"))
+        assertEquals(27.01, state.data?.amountFinal ?: 0.0, 0.0)
+        assertEquals(27.01, approvalSlot.captured.amountFinal ?: 0.0, 0.0)
+        assertEquals(2701, readInt(terminalSlot.captured, "amount"))
         assertEquals(
             PlugPag.INSTALLMENT_TYPE_PARC_VENDEDOR,
-            readInt(paymentSlot.captured, "installmentType"),
+            readInt(terminalSlot.captured, "installmentType"),
         )
     }
 
     @Test
-    fun `online pix uses PagBank pix and records only after approval`() {
-        val paymentSlot = slot<PlugPagPaymentData>()
-        arrangePreparedOnline()
-        every { plugPag.doPayment(capture(paymentSlot)) } returns approvedTransaction()
-        coEvery { orderRepository.recordApprovedOnlinePayment("attempt-1", any()) } returns
-            Result.Success(TestOrderFixtures.order())
+    fun `debit charges the final amount prepared by backend`() {
+        assertPreparedOnlineAmount(type = "debito", expectedPaymentType = PlugPag.TYPE_DEBITO)
+    }
 
-        viewModel.payOrder(request("pix", online = true), "SER123")
+    @Test
+    fun `pix charges the final amount prepared by backend`() {
+        assertPreparedOnlineAmount(type = "pix", expectedPaymentType = PlugPag.TYPE_PIX)
+    }
 
-        viewModel.paymentState.getOrAwaitValueMatching { it is UIState.Success<*> }
-        assertEquals(PlugPag.TYPE_PIX, readInt(paymentSlot.captured, "paymentType", "type"))
-        coVerify(exactly = 1) { orderRepository.recordApprovedOnlinePayment("attempt-1", any()) }
+    @Test
+    fun `invalid prepared final amount never opens PagBank`() {
+        coEvery { orderRepository.prepareOnlinePayment(any(), any(), any(), any(), any()) } returns
+            Result.Success(attempt(amountFinal = Double.NaN))
+
+        viewModel.payOrder(request("credito", online = true), "SER123")
+
+        val state = viewModel.paymentState.getOrAwaitValueMatching { it is UIState.Error<*> }
+        assertEquals("O backend retornou um valor final invalido para o pagamento.", state.message)
+        coVerify(exactly = 0) { orderRepository.updatePaymentAttemptSplitConfig(any(), any()) }
+        verify(exactly = 0) { plugPag.doPayment(any<PlugPagPaymentData>()) }
+        coVerify(exactly = 0) { orderRepository.recordApprovedOnlinePayment(any(), any()) }
     }
 
     @Test
@@ -190,6 +227,26 @@ class PaymentDialogViewModelTest {
         coEvery { orderRepository.updatePaymentAttemptSplitConfig("attempt-1", "SER123") } returns
             Result.Success(Unit)
         every { plugPag.isAuthenticated() } returns true
+    }
+
+    private fun assertPreparedOnlineAmount(type: String, expectedPaymentType: Int) {
+        val terminalSlot = slot<PlugPagPaymentData>()
+        val approvalSlot = slot<PaymentData>()
+        coEvery { orderRepository.prepareOnlinePayment(any(), any(), any(), any(), any()) } returns
+            Result.Success(attempt(amountOriginal = 25.67, amountFinal = 26.40))
+        coEvery { orderRepository.updatePaymentAttemptSplitConfig("attempt-1", "SER123") } returns
+            Result.Success(Unit)
+        every { plugPag.isAuthenticated() } returns true
+        every { plugPag.doPayment(capture(terminalSlot)) } returns approvedTransaction()
+        coEvery { orderRepository.recordApprovedOnlinePayment("attempt-1", capture(approvalSlot)) } returns
+            Result.Success(TestOrderFixtures.order())
+
+        viewModel.payOrder(request(type, online = true), "SER123")
+
+        viewModel.paymentState.getOrAwaitValueMatching { it is UIState.Success<*> }
+        assertEquals(expectedPaymentType, readInt(terminalSlot.captured, "paymentType", "type"))
+        assertEquals(2640, readInt(terminalSlot.captured, "amount"))
+        assertEquals(26.40, approvalSlot.captured.amountFinal ?: 0.0, 0.0)
     }
 
     private fun request(
