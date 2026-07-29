@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:model": "node --test tests/catalog.test.mjs",
-    "test:browser": "playwright test",
+    "test:model": "node --test tests/catalog.test.mjs tests/render.test.mjs",
+    "test:browser": "node --test tests/browser.test.mjs",
     "capture": "node scripts/capture.mjs"
   }
 }

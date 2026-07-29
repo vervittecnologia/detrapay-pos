@@ -60,10 +60,7 @@ const amountHero = (label, value, meta = "") => `
 
 const renderers = {
   login: () => `
-    ${systemBar()}<div class="login-visual">
-      <div class="brand-lockup"><span class="brand-symbol">✣</span><strong>Detrapay</strong></div>
-      <div class="document-illustration"><span class="key-art">⌕</span><span class="document-art">▤</span><span class="vehicle-art">▱</span></div>
-    </div>
+    <div class="login-visual"><img src="./assets/figma-login.png" alt="Ilustração documental Detrapay extraída do Figma"></div>
     <main class="login-sheet">
       <h1>Login</h1>
       <label class="field"><span>CPF</span><input value="072.990.879-00" aria-label="CPF"></label>

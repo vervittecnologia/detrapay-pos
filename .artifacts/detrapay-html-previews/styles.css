@@ -254,10 +254,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focu
 .text-button { width: 100%; min-height: 48px; border: 0; background: transparent; color: var(--blue-700); font-size: 14px; font-weight: 800; }
 .login-visual {
   position: relative;
-  flex: 0 0 370px;
+  flex: 0 0 404px;
   overflow: hidden;
   background: #dfeefa;
 }
+.login-visual img { display: block; width: 100%; height: auto; }
 .brand-lockup { position: absolute; top: 54px; left: 0; right: 0; display: flex; align-items: center; justify-content: center; gap: 13px; color: var(--blue-600); }
 .brand-lockup strong { font-size: 31px; letter-spacing: -.025em; }
 .brand-symbol {
@@ -271,7 +272,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focu
 .login-sheet {
   z-index: 2;
   flex: 1;
-  margin-top: -16px;
+  margin-top: -14px;
   padding: 26px 22px;
   border-radius: 18px 18px 0 0;
   background: white;
