@@ -1,8 +1,8 @@
 <!doctype html>
 <!--
-THESIS: Uma prancha de revisão que transforma o Figma em um fluxo financeiro operável, sem esconder valores ou estados em decoração.
-OWN-WORLD: Azul Detrapay, superfícies brancas, fundo azul-gelo, cantos de 12–16px, linhas suaves e verde reservado ao sucesso.
-STORY: O revisor percorre acesso, pedidos, cobrança, parcelas e confirmação, incluindo todos os estados de recuperação.
+THESIS: Uma prancha de revisão fiel à página 4569:1291 do Figma, preservando os fluxos atuais do aplicativo.
+OWN-WORLD: Cabeçalho azul Detrapay, superfícies brancas, campos sublinhados, cartões azul-claro e cantos discretos.
+STORY: O revisor percorre acesso, emplacamento, pagamento, pedidos e diálogos antes de qualquer implementação Android.
 FIRST VIEWPORT: Cabeçalho de revisão compacto, filtros à direita e uma grade de SmartPOS em escala real logo abaixo.
 FORM: Galeria técnica em modo Operate, com foco navegável e comparação direta com três referências extraídas do Figma.
 -->
@@ -18,8 +18,8 @@ FORM: Galeria técnica em modo Operate, com foco navegável e comparação diret
     <header class="review-header">
       <div class="review-title">
         <span class="review-kicker">Detrapay · revisão visual</span>
-        <h1>Figma na aparência.<br>Fluxo real na operação.</h1>
-        <p>18 telas e estados em 390 × 844, prontas para aprovação antes do Android.</p>
+        <h1>Todas as telas.<br>Um único fluxo fiel.</h1>
+        <p>18 previews em 390 × 844, baseadas no Dev Mode e no protótipo full-screen do Detrapay.</p>
       </div>
       <div class="review-actions">
         <nav class="view-switcher" aria-label="Modo de visualização">
@@ -31,9 +31,10 @@ FORM: Galeria técnica em modo Operate, com foco navegável e comparação diret
           <select id="flow-filter">
             <option value="all">Todos</option>
             <option value="access">Acesso</option>
+            <option value="registration">Emplacamento</option>
             <option value="orders">Pedidos</option>
             <option value="payment">Pagamento</option>
-            <option value="simulator">Simulador</option>
+            <option value="dialogs">Diálogos</option>
           </select>
         </label>
       </div>
@@ -43,13 +44,13 @@ FORM: Galeria técnica em modo Operate, com foco navegável e comparação diret
       <section class="reference-note" aria-label="Referências do Figma">
         <div>
           <strong>Base visual verificada</strong>
-          <span>Login, início e confirmação extraídos do arquivo Detrapay (Copy).</span>
+          <span>Node 4569:1291 em Dev Mode e fluxo full-screen 4569:1604.</span>
         </div>
         <button type="button" id="toggle-reference">Ver referências</button>
         <div class="reference-strip" id="reference-strip" hidden>
-          <figure><img src="./assets/figma-login.png" alt="Tela de login no Figma"><figcaption>Login</figcaption></figure>
-          <figure><img src="./assets/figma-home.png" alt="Tela inicial no Figma"><figcaption>Início</figcaption></figure>
-          <figure><img src="./assets/figma-pix-success.png" alt="Confirmação de Pix no Figma"><figcaption>Resultado</figcaption></figure>
+          <figure><img src="./references/figma-flow-overview.png" alt="Visão geral do fluxo no Figma"><figcaption>Fluxo completo</figcaption></figure>
+          <figure><img src="./references/figma-login.png" alt="Tela de login no Figma"><figcaption>Login</figcaption></figure>
+          <figure><img src="./references/figma-payment-breakdown.png" alt="Detalhamento do pagamento no Figma"><figcaption>Detalhamento</figcaption></figure>
         </div>
       </section>
       <section id="gallery" class="gallery" aria-live="polite"></section>

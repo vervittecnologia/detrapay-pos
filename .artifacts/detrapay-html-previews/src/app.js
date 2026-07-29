@@ -12,7 +12,7 @@ import { renderGallery, renderScreen } from "./render.js";
 const params = new URLSearchParams(location.search);
 const state = {
   view: params.get("view") === "focused" ? "focused" : "gallery",
-  flow: ["all", "access", "orders", "payment", "simulator"].includes(params.get("flow"))
+  flow: ["all", "access", "registration", "payment", "orders", "dialogs"].includes(params.get("flow"))
     ? params.get("flow")
     : "all",
   screen: params.get("screen") || HAPPY_PATH[0],

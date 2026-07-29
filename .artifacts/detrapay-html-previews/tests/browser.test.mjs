@@ -33,7 +33,7 @@ test("every focused screen fits the 390 by 844 device without clipped content", 
   for (const screen of SCREENS) {
     await page.goto(`http://127.0.0.1:4173/?view=focused&screen=${screen.id}`);
     const result = await page.locator(".device").evaluate((device) => {
-      const content = device.querySelector(".screen-content");
+      const content = device.querySelector(".fig-content, .fig-store, .fig-login-panel, .fig-approved, .fig-splash");
       const rect = device.getBoundingClientRect();
       return {
         width: rect.width,

@@ -1,177 +1,188 @@
-const money = (value) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
+const brl = (value) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
-const systemBar = () => `
-  <div class="system-bar"><strong>9:41</strong><span>▮▮▮  Wi-Fi  100%</span></div>`;
-
-const appBar = (title, subtitle = "") => `
-  <header class="app-bar">
-    <button class="icon-button" type="button" aria-label="Voltar">‹</button>
-    <div><strong>${title}</strong>${subtitle ? `<span>${subtitle}</span>` : ""}</div>
-    <button class="icon-button quiet" type="button" aria-label="Ajuda">?</button>
-  </header>`;
-
-const stepper = (step) => `
-  <div class="stepper" aria-label="Etapa ${step} de 5">
-    ${[1, 2, 3, 4, 5].map((item) => `<i class="${item <= step ? "done" : ""}"></i>`).join("")}
+const statusBar = (blue = true) => `
+  <div class="fig-status ${blue ? "fig-status-blue" : ""}">
+    <strong>23:59</strong><span>▮▮▮  Wi-Fi  100</span>
   </div>`;
 
-const button = (label, action, kind = "primary") =>
-  `<button class="button button-${kind}" type="button" data-action="${action}">${label}</button>`;
+const userBar = (section = "") => `
+  <header class="fig-userbar">
+    <span class="fig-user"><i>RM</i><strong>Rodrigo Maia</strong><b>⌄</b></span>
+    <span class="fig-location">⌖ Concessionária Mito</span>
+    ${section ? `<h1>${section}</h1>` : ""}
+  </header>`;
 
-const statusPanel = (kind, title, detail, action = "") => `
-  <section class="state-panel state-${kind}">
-    <span class="state-symbol">${kind === "error" ? "!" : kind === "loading" ? "◌" : "○"}</span>
-    <h2>${title}</h2><p>${detail}</p>${action ? button(action, "retry", "secondary") : ""}
-  </section>`;
+const fullHeader = (section = "") => `${statusBar()}${userBar(section)}`;
 
-const bottomNav = (active = "inicio") => `
-  <nav class="bottom-nav" aria-label="Navegação principal">
-    <button class="${active === "inicio" ? "active" : ""}" type="button"><b>⌂</b><span>Início</span></button>
-    <button class="${active === "vendas" ? "active" : ""}" type="button"><b>◆</b><span>Vendas</span></button>
-    <button type="button"><b>●</b><span>Perfil</span></button>
+const tabBar = (active = "emplacamento") => `
+  <nav class="fig-tabs" aria-label="Navegação principal">
+    <button class="${active === "emplacamento" ? "active" : ""}" type="button"><b>▣</b><span>Emplacamento</span></button>
+    <button class="${active === "pedidos" ? "active" : ""}" type="button"><b>▤</b><span>Pedidos</span></button>
   </nav>`;
 
-const orderCard = (initials, name, document, value, status, action = "") => `
-  <button class="order-card" type="button" ${action ? `data-action="${action}"` : ""}>
-    <span class="avatar">${initials}</span>
-    <span class="order-copy"><strong>${name}</strong><small>${document}</small><em>Vendedor: Marco Aurélio</em></span>
-    <span class="order-meta"><mark class="${status === "Finalizado" ? "success" : "warning"}">${status}</mark><strong>${money(value)}</strong><small>Hoje</small></span>
+const solidButton = (label, action) =>
+  `<button class="fig-button fig-button-primary" type="button" data-action="${action}">${label}</button>`;
+
+const outlineButton = (label, action = "") =>
+  `<button class="fig-button fig-button-outline" type="button" ${action ? `data-action="${action}"` : ""}>${label}</button>`;
+
+const screenTitle = (title, back = true, menu = false) => `
+  <header class="fig-screen-title">
+    ${back ? `<button type="button" aria-label="Voltar">‹</button>` : "<span></span>"}
+    <h1>${title}</h1>
+    ${menu ? `<button type="button" aria-label="Mais opções">•••</button>` : "<span></span>"}
+  </header>`;
+
+const field = (label, value = "", required = false, search = false) => `
+  <label class="fig-field"><span>${label}${required ? "*" : ""}</span>
+    <span class="fig-field-value ${value ? "" : "placeholder"}">${value || " "}${search ? "<b>⌕</b>" : ""}</span>
+  </label>`;
+
+const statePanel = (kind, title, detail, action = "") => `
+  <section class="fig-state">
+    <span class="fig-state-icon ${kind}">${kind === "error" ? "!" : kind === "loading" ? "◌" : "○"}</span>
+    <h2>${title}</h2><p>${detail}</p>${action ? outlineButton(action, "retry") : ""}
+  </section>`;
+
+const orderCard = (name, status, date, kind = "Primeiro Emplacamento", action = "") => `
+  <button class="fig-order-card" type="button" ${action ? `data-action="${action}"` : ""}>
+    <span><strong>${name}</strong><small>${kind}</small></span>
+    <span><mark class="status-${status.toLowerCase()}">${status}</mark><small>${date}</small></span>
   </button>`;
 
-const paymentOption = (symbol, label, detail, action = "select-credit") => `
-  <button class="payment-option" type="button" data-action="${action}">
-    <span class="option-icon">${symbol}</span>
-    <span><strong>${label}</strong><small>${detail}</small></span>
-    <b>›</b>
-  </button>`;
+const detailLine = (label, value, emphasized = false) => `
+  <div class="fig-detail-line ${emphasized ? "emphasized" : ""}"><span>${label}</span><strong>${value}</strong></div>`;
 
-const installmentRow = (count, total, fee, selected = false) => `
-  <button class="installment-row ${selected ? "selected" : ""}" type="button" data-action="continue-installments">
-    <span class="radio">${selected ? "●" : "○"}</span>
-    <span><strong>${count}x de ${money(total / count)}</strong><small>Juros ${money(fee)} · total ${money(total)}</small></span>
-  </button>`;
-
-const amountHero = (label, value, meta = "") => `
-  <section class="amount-hero"><span>${label}</span><strong>${money(value)}</strong>${meta ? `<small>${meta}</small>` : ""}</section>`;
+const dialogShell = (title, body, actions) => `
+  ${fullHeader()}<main class="fig-content muted-background">
+    <section class="fig-placeholder-page">${field("CPF/CNPJ do cliente", "006.000.000-00", true)}${field("Nome do cliente", "João Pedro da Silva")}</section>
+  </main>
+  <div class="fig-dialog-layer"><section class="fig-dialog"><header><strong>${title}</strong><button type="button">×</button></header>${body}<footer>${actions}</footer></section></div>`;
 
 const renderers = {
+  splash: () => `
+    <main class="fig-splash">
+      <div class="fig-logo-lockup"><span>✣</span><strong>Detrapay</strong></div>
+      <small>Documentação veicular fácil e rápida</small>
+    </main>${solidButton("Continuar", "next")}`,
   login: () => `
-    <div class="login-visual"><img src="./assets/figma-login.png" alt="Ilustração documental Detrapay extraída do Figma"></div>
-    <main class="login-sheet">
-      <h1>Login</h1>
-      <label class="field"><span>CPF</span><input value="072.990.879-00" aria-label="CPF"></label>
-      <label class="field"><span>Senha</span><span class="input-with-icon"><input type="password" value="detrapay2026" aria-label="Senha"><b>◉</b></span></label>
-      ${button("Fazer login", "login")}
-      <button class="text-button" type="button">Esqueci minha senha</button>
+    <div class="fig-login-hero">
+      <div class="fig-logo-lockup"><span>✣</span><strong>Detrapay</strong></div>
+      <div class="fig-document-art"><i>⌕</i><b>▤</b><em>▱</em></div>
+    </div>
+    <main class="fig-login-panel"><h1>Login</h1>
+      ${field("CNPJ", "15.945.405/0001-70")}
+      ${field("Senha", "**************")}
+      ${solidButton("Fazer login", "next")}
     </main>`,
-  orders: () => `
-    ${systemBar()}<header class="brand-header">
-      <span class="dealer-mark">D</span><div><strong>Detrapay</strong><small>DOCUMENTAÇÃO VEICULAR FÁCIL E RÁPIDA</small></div>
-      <button class="notification" type="button" aria-label="Notificações">●</button>
-    </header>
-    <main class="screen-content home-content">
-      <section class="operator-card"><span class="operator-icon">●</span><div><strong>ID Operador</strong><small>Detrapay Motors</small></div></section>
-      <div class="section-heading"><h2>Pedidos recentes</h2><button type="button">Ver todos</button></div>
-      ${orderCard("RA", "Ricardo S. Almeida", "123.456.789-00", 18490, "Finalizado", "select-order")}
-      ${orderCard("FL", "Fernanda Lima", "987.654.321-00", 24100, "Pendente")}
-    </main>${bottomNav("inicio")}`,
-  ordersState: ({ state }) => `
-    ${systemBar()}${appBar("Pedidos", "Detrapay Motors")}
-    <main class="screen-content state-layout">${
-      state === "loading"
-        ? statusPanel("loading", "Carregando pedidos", "Sincronizando as vendas mais recentes.")
-        : state === "empty"
-          ? statusPanel("empty", "Nenhum pedido encontrado", "Novos pedidos aparecerão aqui assim que forem criados.", "Atualizar")
-          : statusPanel("error", "Falha ao carregar pedidos", "Verifique a conexão e tente novamente.", "Tentar novamente")
-    }</main>${bottomNav("vendas")}`,
-  detail: () => `
-    ${systemBar()}${appBar("Detalhes do pedido", "#1048 · Finalizado")}
-    <main class="screen-content">
-      ${amountHero("SALDO DISPONÍVEL PARA RECEBER", 18490, "Pedido total · pagamento ainda não iniciado")}
-      <section class="identity-block"><span class="avatar large">RA</span><div><h1>Ricardo S. Almeida</h1><p>123.456.789-00</p></div><mark class="success">ATIVO</mark></section>
-      <h2 class="content-title">Resumo do pedido</h2>
-      <dl class="data-list"><div><dt>Vendedor</dt><dd>Marco Aurélio</dd></div><div><dt>Data</dt><dd>29 Jul, 2026</dd></div><div><dt>Categoria</dt><dd>Motocicleta</dd></div><div><dt>Número</dt><dd>#1048</dd></div></dl>
-      <section class="info-band"><b>i</b><span>Confira o cliente e o valor antes de iniciar a cobrança.</span></section>
-    </main><footer class="action-footer">${button("Receber pagamento", "continue-detail")}</footer>`,
-  amount: () => `
-    ${systemBar()}${appBar("Valor da cobrança", "Pedido #1048")}${stepper(2)}
-    <main class="screen-content amount-screen"><p>Digite o valor original que será recebido agora.</p>
-      <div class="amount-display"><span>R$</span><strong>125,00</strong><small>Disponível no pedido: ${money(18490)}</small></div>
-      <div class="keypad">${["1","2","3","4","5","6","7","8","9","00","0","⌫"].map((key) => `<button type="button">${key}</button>`).join("")}</div>
-    </main><footer class="action-footer">${button("Continuar", "continue-amount")}</footer>`,
-  amountState: ({ state }) => `
-    ${systemBar()}${appBar("Valor da cobrança", "Pedido #1048")}${stepper(2)}
-    <main class="screen-content state-layout">${
-      state === "loading"
-        ? statusPanel("loading", "Consultando condições", "Buscando taxas e parcelas disponíveis.")
-        : statusPanel("error", "Não foi possível consultar parcelas", "Mantenha o valor informado e tente a consulta novamente.", "Tentar novamente")
-    }</main>`,
-  method: () => `
-    ${systemBar()}${appBar("Forma de pagamento", `${money(125)} · Pedido #1048`)}${stepper(3)}
-    <main class="screen-content"><h1 class="screen-title">Como o cliente vai pagar?</h1><p class="screen-lead">Escolha uma opção para continuar.</p>
-      <div class="option-group"><span>PAGAMENTO NA MAQUININHA</span>
-        ${paymentOption("Cr", "Crédito", "À vista ou parcelado")}
-        ${paymentOption("Db", "Débito", "Pagamento à vista", "select-debit")}
-        ${paymentOption("Px", "Pix", "QR Code com aprovação imediata", "select-pix")}
-      </div>
-      <div class="option-group"><span>SOMENTE REGISTRO</span>${paymentOption("R$", "Dinheiro", "Registrar recebimento", "select-cash")}</div>
+  store: () => `
+    ${statusBar()}<main class="fig-store">
+      <h1>Bem-vindo ao Detrapay!</h1>
+      <p>Você está na <strong>Concessionária Mito.</strong> Toque no seu nome para continuar.</p>
+      <button type="button" data-action="next">Rodrigo Maia</button>
+      <button type="button">Luan Lemos</button>
+      <button type="button">Roberto Silva</button>
+      <div class="fig-store-art"><span>⌕</span><i></i><b></b></div>
     </main>`,
-  installments: () => `
-    ${systemBar()}${appBar("Parcelamento", `Crédito · ${money(125)}`)}${stepper(4)}
-    <main class="screen-content"><h1 class="screen-title">Escolha as parcelas</h1><p class="screen-lead">O cliente verá o valor total antes da cobrança.</p>
-      <div class="installment-list">
-        ${installmentRow(1, 128.75, 3.75)}
-        ${installmentRow(2, 132, 7)}
-        ${installmentRow(3, 135, 10, true)}
-        ${installmentRow(4, 139, 14)}
-        ${installmentRow(6, 146, 21)}
-      </div>
-    </main><footer class="action-footer">${button("Revisar pagamento", "continue-installments")}</footer>`,
-  review: () => `
-    ${systemBar()}${appBar("Revisar pagamento", "Última etapa antes de cobrar")}${stepper(5)}
-    <main class="screen-content">
-      ${amountHero("TOTAL A COBRAR", 135, "3x de R$ 45,00 no crédito")}
-      <h2 class="content-title">Resumo transparente</h2>
-      <dl class="finance-list"><div><dt>Valor original</dt><dd>${money(125)}</dd></div><div><dt>Juros e taxas</dt><dd>${money(10)}</dd></div><div><dt>Parcelamento</dt><dd>3x de ${money(45)}</dd></div><div class="total"><dt>Total final</dt><dd>${money(135)}</dd></div></dl>
-      <section class="customer-mini"><span class="avatar">RA</span><div><small>CLIENTE</small><strong>Ricardo S. Almeida</strong><em>Pedido #1048</em></div></section>
-      <section class="info-band warning-band"><b>!</b><span>Após confirmar, mantenha o app aberto até o resultado final.</span></section>
-    </main><footer class="action-footer">${button("Confirmar pagamento", "confirm-payment")}</footer>`,
-  processing: () => `
-    ${systemBar()}${appBar("Pagamento em andamento")}
-    <main class="screen-content processing-layout"><div class="processing-orbit"><span>Cr</span></div>
-      <h1>Processando pagamento</h1><p>Aguarde a confirmação da maquininha. Não feche o aplicativo.</p>
-      <dl class="compact-summary"><div><dt>Total</dt><dd>${money(135)}</dd></div><div><dt>Forma</dt><dd>Crédito · 3x</dd></div></dl>
-      ${button("Simular aprovação", "finish", "ghost")}
-    </main>`,
+  orderData: () => `
+    ${fullHeader()}<main class="fig-content">
+      <h1 class="fig-form-heading">Dados do pedido</h1>
+      ${field("CPF/CNPJ do cliente", "000.000.000-00", true)}
+      ${field("Nome do cliente")}
+      ${field("Whatsapp", "(85) 99000-0865", true)}
+      ${field("Data de faturamento", "05/02/2025", true)}
+      ${field("Valor do veículo", "R$ 350.000,00", true)}
+      ${field("Tipo de veículo", "Selecione o tipo de veículo", true, true)}
+      <label class="fig-check"><i></i>Veículo com alienação</label>
+      <label class="fig-check checked"><i>✓</i>Placa especial</label>
+    </main><footer class="fig-footer">${solidButton("Avançar", "next")}</footer>${tabBar("emplacamento")}`,
+  breakdown: () => `
+    ${fullHeader()}${screenTitle("Detalhamento do pagamento", true, true)}
+    <main class="fig-content"><section class="fig-breakdown">
+      ${detailLine("IPVA 2024", brl(522.05))}
+      ${detailLine("IPVA 2025", brl(5162.53))}
+      ${detailLine("Taxas do 1º emplacamento", brl(518.60))}
+      ${detailLine("Taxa de alienação", brl(90.45))}
+      ${detailLine("Cartório", brl(40))}
+      ${detailLine("Placa Mercosul", brl(370))}
+      ${detailLine("Serviço do despachante", brl(300))}
+      ${detailLine("", brl(7003.63), true)}
+    </section></main><footer class="fig-footer stacked">${solidButton("Avançar", "next")}${outlineButton("▧  Imprimir")}</footer>${tabBar("emplacamento")}`,
+  paymentMethod: () => `
+    ${fullHeader()}${screenTitle("Forma de pagamento")}
+    <main class="fig-content payment-method-content">
+      <section class="fig-total-field"><span>Valor total</span><strong>${brl(7003.63)}</strong></section>
+      <p>Selecione a forma de pagamento</p>
+      <section class="fig-payment-line"><label>Forma de pgto.<b>Dinheiro⌄</b></label><label>Valor<b>${brl(1003.63)}</b></label><button>⊕</button></section>
+      <section class="fig-payment-line"><label>Forma de pgto.<b>Pix⌄</b></label><label>Valor<b>${brl(1000)}</b></label><button class="remove">▣</button></section>
+      <section class="fig-payment-line with-installments"><label>Forma de pgto.<b>Cartão⌄</b></label><label>Valor<b>${brl(5000)}</b></label><button class="remove">▣</button><small>Parcelamento<br><strong>Em 10x sem juros de R$500,00 (R$5.000)</strong>⌄</small></section>
+    </main><footer class="fig-footer">${solidButton("Criar pedido", "next")}</footer>${tabBar("emplacamento")}`,
+  paymentMismatch: () => `
+    ${fullHeader()}${screenTitle("Forma de pagamento")}
+    <main class="fig-content">${statePanel("error", "A soma dos valores está incorreta", "Por favor, revise e tente novamente.", "Revisar pagamentos")}</main>
+    <div class="fig-toast-error"><b>!</b><span>A soma dos valores está incorreta<br><small>Por favor, revise e tente novamente.</small></span></div>${tabBar("emplacamento")}`,
+  orderCreated: () => `
+    ${fullHeader()}<main class="fig-content">
+      <header class="fig-order-heading"><h1>Pedido 12345</h1><button>Editar dados⌄</button></header>
+      ${detailLine("CPF/CNPJ do cliente", "007.877.765-09")}
+      ${detailLine("Nome do cliente", "João Pedro da Silva")}
+      ${detailLine("Chassi", "MTX123456789")}
+      ${detailLine("Tipo de veículo", "Motocicleta de 300cc")}
+      <section class="fig-order-total"><span>Valor total</span><strong>${brl(7003.63)}</strong></section>
+      <button class="fig-service-row"><span>▣ Cartão de crédito <mark>Pendente</mark><small>${brl(5000)} · 10x de R$500,00</small></span><b>›</b></button>
+      <button class="fig-service-row"><span>◆ Pix <mark>Pago</mark><small>${brl(1000)}</small></span><b>›</b></button>
+    </main><footer class="fig-footer">${solidButton("Concluir atendimento", "next")}</footer>${tabBar("emplacamento")}`,
   approved: () => `
-    ${systemBar()}<header class="success-header">Detalhe da transação</header>
-    <main class="screen-content approved-layout"><span class="approved-icon">✓</span>
-      <h1>Pagamento realizado<br>com sucesso!</h1><p>29/07/2026 às 09:41</p>
-      <div class="approved-value"><small>Valor do pagamento</small><strong>${money(135)}</strong></div>
-      <div class="approved-customer"><small>Para</small><strong>Ricardo S. Almeida</strong><span>CPF: 123.456.789-00</span></div>
-      <button class="receipt-button" type="button">Ver comprovante</button>
-      <section class="approved-actions">${button("Ir para o início", "finish")}${button("Ver pedidos", "finish", "secondary")}</section>
+    <header class="fig-success-header">Detalhe da transação</header>
+    <main class="fig-approved"><span class="fig-approved-icon">✓</span><h1>Pagamento realizado<br>com sucesso!</h1><small>20/07/2020 às 10:00:05</small>
+      <div><span>Valor do pagamento</span><strong>${brl(5000)}</strong></div>
+      <p>Para<br><strong>Rodrigo Teles Oliveira</strong><small>CPF: 948.456.789-**</small></p>
+      <button type="button">Ver comprovante</button>
+      <section><span>O que você deseja fazer agora?</span>${solidButton("Ir para pedidos", "next")}</section>
     </main>`,
-  simulator: () => `
-    ${systemBar()}${appBar("Simular parcelamento", "Sem iniciar uma cobrança")}
-    <main class="screen-content"><label class="simulator-value"><span>VALOR ORIGINAL</span><strong>${money(500)}</strong></label>
-      <h1 class="screen-title">Condições disponíveis</h1><p class="screen-lead">Compare parcela, juros e total final.</p>
-      <div class="installment-list">${installmentRow(1, 515, 15)}${installmentRow(2, 525, 25)}${installmentRow(3, 533, 33, true)}${installmentRow(6, 558, 58)}</div>
-      <section class="simulator-total"><span>Opção selecionada</span><strong>3x de ${money(177.67)}</strong><small>Total ${money(533)}</small></section>
-    </main>`,
-  simulatorState: ({ state }) => `
-    ${systemBar()}${appBar("Simular parcelamento", "Sem iniciar uma cobrança")}
-    <main class="screen-content state-layout">${
+  reversed: () => `
+    ${fullHeader()}${screenTitle("Pagamento estornado")}
+    <main class="fig-content">${statePanel("warning", "Pagamento estornado", "A transação de R$ 5.000,00 foi cancelada e o pedido permanece pendente.", "Voltar ao pedido")}</main>${tabBar("pedidos")}`,
+  orders: () => `
+    ${fullHeader("Meus pedidos")}<main class="fig-content">
+      <label class="fig-search">Nome ou CPF do cliente <b>⌕</b></label>
+      ${orderCard("João Pedro da Silva", "Autorizado", "01/02/2025", "Primeiro Emplacamento", "next")}
+      ${orderCard("Roberto Olaerde Lima da Silva", "Pendente", "29/01/2025")}
+      ${orderCard("Gustavo Cavalcante Gomes", "Negado", "28/01/2025")}
+    </main>${tabBar("pedidos")}`,
+  ordersState: ({ state }) => `
+    ${fullHeader("Meus pedidos")}<main class="fig-content fig-state-page">${
       state === "loading"
-        ? statusPanel("loading", "Calculando parcelas", "Consultando as condições disponíveis.")
+        ? statePanel("loading", "Carregando pedidos", "Buscando os atendimentos mais recentes.")
         : state === "empty"
-          ? statusPanel("empty", "Informe um valor", "As opções aparecerão após a simulação.", "Digitar valor")
-          : statusPanel("error", "Não foi possível simular", "Revise o valor e tente novamente.", "Tentar novamente")
-    }</main>`,
+          ? statePanel("empty", "Nenhum pedido encontrado", "Os novos atendimentos aparecerão aqui.", "Atualizar")
+          : statePanel("error", "Não foi possível carregar", "Verifique a conexão e tente novamente.", "Tentar novamente")
+    }</main>${tabBar("pedidos")}`,
+  orderDetail: () => `
+    ${fullHeader()}${screenTitle("Detalhes do pedido", true, true)}
+    <main class="fig-content">
+      <section class="fig-order-summary"><h1>João Pedro da Silva</h1><mark class="status-autorizado">Autorizado</mark><small>Primeiro Emplacamento · Pedido 12345</small></section>
+      ${detailLine("CPF/CNPJ", "007.877.765-09")}
+      ${detailLine("Veículo", "Motocicleta de 300cc")}
+      ${detailLine("Data", "01/02/2025")}
+      ${detailLine("Valor total", brl(7003.63), true)}
+      <h2 class="fig-section-label">Pagamentos</h2>
+      <button class="fig-service-row"><span>▣ Cartão de crédito <mark>Pago</mark><small>${brl(5000)} · 10 parcelas</small></span><b>›</b></button>
+      <button class="fig-service-row"><span>◆ Pix <mark>Pago</mark><small>${brl(2003.63)}</small></span><b>›</b></button>
+      ${outlineButton("Voltar aos pedidos", "next")}
+    </main>${tabBar("pedidos")}`,
+  notifications: () => `
+    ${fullHeader()}${screenTitle("Notificações", true)}
+    <main class="fig-content"><section class="fig-notification unread"><b>Pagamento autorizado</b><span>O pedido de João Pedro foi atualizado.</span><small>Agora</small></section>
+      <section class="fig-notification"><b>Novo pedido criado</b><span>O pedido 12345 está aguardando pagamento.</span><small>Há 12 min</small></section>
+    </main>${tabBar("pedidos")}`,
+  discountDialog: () => dialogShell("Adicionar desconto",
+    `<label class="fig-select-dialog">Selecione o item do desconto<b>Serviço do despachante⌄</b></label>${field("Insira o valor do desconto", "R$ 100,00")}`,
+    `<button type="button">Cancelar</button><button type="button">Adicionar</button>`),
+  leaveDialog: () => dialogShell("Deseja sair sem salvar?",
+    `<p>Tem certeza que deseja sair sem salvar? As informações serão perdidas.</p>`,
+    `<button type="button">Cancelar</button><button class="danger" type="button">Sair</button>`),
 };
 
 export function renderScreen(screen) {

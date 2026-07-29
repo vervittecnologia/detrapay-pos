@@ -22,15 +22,16 @@ test("gallery contains each screen and its review label", () => {
 
 test("happy-path screens expose meaningful actions", () => {
   const actionable = [
+    "splash",
     "login-default",
+    "store-select",
+    "order-data",
+    "payment-breakdown",
+    "payment-method",
+    "order-created",
+    "payment-approved",
     "orders-loaded",
     "order-detail",
-    "amount-default",
-    "method-selection",
-    "installments-selection",
-    "review-payment",
-    "payment-processing",
-    "payment-approved",
   ];
   for (const id of actionable) {
     const screen = SCREENS.find((candidate) => candidate.id === id);
