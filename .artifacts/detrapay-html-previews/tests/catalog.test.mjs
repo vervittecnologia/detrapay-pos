@@ -71,6 +71,8 @@ test("access, registration, payment, and simulator follow current app routes", (
   assert.equal(resolveAction("payment-method", "select-credit"), "payment-amount");
   assert.equal(resolveAction("payment-amount", "continue-credit"), "payment-fees-loading");
   assert.equal(resolveAction("payment-amount", "continue-direct"), "payment-review");
+  assert.equal(resolveAction("payment-review", "confirm-record"), "orders-loaded");
+  assert.equal(resolveAction("payment-review", "back-direct"), "payment-amount");
   assert.equal(resolveAction("simulator-loaded", "close"), "orders-loaded");
 });
 

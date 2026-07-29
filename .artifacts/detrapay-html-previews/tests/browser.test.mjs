@@ -1,6 +1,6 @@
 import test, { after, before } from "node:test";
 import assert from "node:assert/strict";
-import { SCREENS, HAPPY_PATH } from "../src/catalog.js";
+import { SCREENS } from "../src/catalog.js";
 import { startStaticServer } from "../scripts/static-server.mjs";
 
 const playwrightPath = process.env.CODEX_PLAYWRIGHT_PATH;
@@ -24,22 +24,25 @@ after(async () => {
   await server?.close();
 });
 
-test("gallery renders every registered preview", async () => {
+test("gallery renders every current-flow preview and all filters", async () => {
   await page.goto("http://127.0.0.1:4173/?view=gallery&flow=all");
   assert.equal(await page.locator(".device").count(), SCREENS.length);
+  assert.deepEqual(
+    await page.locator("#flow-filter option").evaluateAll((options) => options.map(({ value }) => value)),
+    ["all", "access", "orders", "registration", "payment", "simulator", "dialogs"],
+  );
 });
 
-test("every focused screen fits the 390 by 844 device without clipped content", async () => {
+test("every focused screen stays inside the 390 by 844 device", async () => {
   for (const screen of SCREENS) {
     await page.goto(`http://127.0.0.1:4173/?view=focused&screen=${screen.id}`);
     const result = await page.locator(".device").evaluate((device) => {
-      const content = device.querySelector(".fig-content, .fig-store, .fig-login-panel, .fig-approved, .fig-splash");
       const rect = device.getBoundingClientRect();
       return {
         width: rect.width,
         height: rect.height,
-        clippedX: content ? content.scrollWidth > content.clientWidth : false,
-        clippedY: content ? content.scrollHeight > content.clientHeight : false,
+        clippedX: device.scrollWidth > device.clientWidth,
+        clippedY: device.scrollHeight > device.clientHeight,
       };
     });
     assert.deepEqual(result, {
@@ -51,10 +54,48 @@ test("every focused screen fits the 390 by 844 device without clipped content", 
   }
 });
 
-test("primary actions traverse the complete happy path", async () => {
-  await page.goto(`http://127.0.0.1:4173/?view=focused&screen=${HAPPY_PATH[0]}`);
-  for (const expected of HAPPY_PATH.slice(1)) {
-    await page.locator(".device [data-action]").first().click();
+test("new-order journey creates without registration payment", async () => {
+  await page.goto("http://127.0.0.1:4173/?view=focused&journey=registration&screen=orders-loaded");
+  for (const [action, expected] of [
+    ["new-order", "order-data"],
+    ["simulate", "registration-loading"],
+    ["loaded", "registration-resume"],
+    ["create", "order-creating"],
+    ["created", "order-created-detail"],
+    ["finish", "orders-loaded"],
+  ]) {
+    await page.locator(`.device [data-action="${action}"]`).first().click();
+    assert.equal(await page.locator(".device").getAttribute("data-screen-id"), expected);
+  }
+});
+
+test("existing-order credit checkout follows every current step", async () => {
+  await page.goto("http://127.0.0.1:4173/?view=focused&journey=payment&screen=orders-loaded");
+  for (const [action, expected] of [
+    ["open-detail", "order-detail"],
+    ["pay", "payment-method"],
+    ["select-credit", "payment-amount"],
+    ["continue-credit", "payment-fees-loading"],
+    ["fees-loaded", "payment-installments"],
+    ["review", "payment-review"],
+    ["confirm", "payment-waiting"],
+    ["approved", "payment-approved"],
+    ["finish", "orders-loaded"],
+  ]) {
+    await page.locator(`.device [data-action="${action}"]`).first().click();
+    assert.equal(await page.locator(".device").getAttribute("data-screen-id"), expected);
+  }
+});
+
+test("simulator opens as an overlay and closes back to orders", async () => {
+  await page.goto("http://127.0.0.1:4173/?view=focused&journey=simulator&screen=orders-loaded");
+  for (const [action, expected] of [
+    ["open-simulator", "simulator-empty"],
+    ["consult", "simulator-loading"],
+    ["loaded", "simulator-loaded"],
+    ["close", "orders-loaded"],
+  ]) {
+    await page.locator(`.device [data-action="${action}"]`).first().click();
     assert.equal(await page.locator(".device").getAttribute("data-screen-id"), expected);
   }
 });

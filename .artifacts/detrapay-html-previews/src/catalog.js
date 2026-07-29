@@ -85,7 +85,9 @@ export const SCREENS = Object.freeze([
   }),
   define("payment-review", "payment", "default", "Revisar pagamento", "Pagamento", "paymentReview", {
     confirm: "payment-waiting",
+    "confirm-record": "orders-loaded",
     back: "payment-installments",
+    "back-direct": "payment-amount",
   }),
   define("payment-waiting", "payment", "loading", "Aguardando pagamento", "Pagamento", "paymentWaiting", {
     approved: "payment-approved",
