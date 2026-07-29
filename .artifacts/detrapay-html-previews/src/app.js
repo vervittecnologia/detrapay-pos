@@ -1,27 +1,30 @@
 import {
-  HAPPY_PATH,
+  JOURNEYS,
   getScreen,
   getScreensByFlow,
 } from "./catalog.js";
 import {
-  nextHappyPathScreen,
-  previousHappyPathScreen,
+  createNavigationState,
+  transition,
 } from "./navigation.js";
-import { renderGallery, renderScreen } from "./render.js";
+import {
+  renderGallery,
+  renderScreen,
+} from "./render.js";
 
 const params = new URLSearchParams(location.search);
-const state = {
-  view: params.get("view") === "focused" ? "focused" : "gallery",
-  flow: ["all", "access", "registration", "payment", "orders", "dialogs"].includes(params.get("flow"))
-    ? params.get("flow")
-    : "all",
-  screen: params.get("screen") || HAPPY_PATH[0],
-};
+const allowedFlows = ["all", "access", "orders", "registration", "payment", "simulator", "dialogs"];
+let state;
 
 try {
-  getScreen(state.screen);
+  state = createNavigationState({
+    view: params.get("view"),
+    flow: allowedFlows.includes(params.get("flow")) ? params.get("flow") : "all",
+    journey: params.get("journey"),
+    screen: params.get("screen"),
+  });
 } catch {
-  state.screen = HAPPY_PATH[0];
+  state = createNavigationState();
 }
 
 const gallery = document.querySelector("#gallery");
@@ -31,25 +34,33 @@ const flowFilter = document.querySelector("#flow-filter");
 function writeUrl() {
   const nextParams = state.view === "gallery"
     ? new URLSearchParams({ view: "gallery", flow: state.flow })
-    : new URLSearchParams({ view: "focused", screen: state.screen });
+    : new URLSearchParams({
+      view: "focused",
+      journey: state.journey,
+      screen: state.screen,
+    });
   history.replaceState(null, "", `?${nextParams}`);
 }
 
 function focusedMarkup() {
   const screen = getScreen(state.screen);
-  const onPath = HAPPY_PATH.includes(screen.id);
-  const previous = previousHappyPathScreen(screen.id);
-  const next = nextHappyPathScreen(screen.id);
   return `
+    <div class="journey-switcher" aria-label="Escolher jornada">
+      ${Object.values(JOURNEYS).map((journey) => `
+        <button type="button" data-journey="${journey.id}" aria-pressed="${journey.id === state.journey}">
+          ${journey.label}
+        </button>`).join("")}
+    </div>
     <div class="focus-shell">
       <aside class="focus-meta">
-        <span>${screen.eyebrow}</span><h2>${screen.title}</h2><p>Estado: ${screen.state}</p>
+        <span>${screen.eyebrow}</span>
+        <h2>${screen.title}</h2>
+        <p>Estado: ${screen.state}</p>
       </aside>
       ${renderScreen(screen)}
       <nav class="focus-nav" aria-label="Navegação da preview">
-        <button type="button" data-nav="previous" ${!onPath || previous === screen.id ? "disabled" : ""}>← Anterior</button>
         <button type="button" data-nav="gallery">Todas as telas</button>
-        <button type="button" data-nav="next" ${!onPath || next === screen.id ? "disabled" : ""}>Próxima →</button>
+        <button type="button" data-journey="${state.journey}">Reiniciar jornada</button>
       </nav>
     </div>`;
 }
@@ -58,8 +69,11 @@ function render() {
   const isGallery = state.view === "gallery";
   gallery.hidden = !isGallery;
   focused.hidden = isGallery;
-  if (isGallery) gallery.innerHTML = renderGallery(getScreensByFlow(state.flow));
-  else focused.innerHTML = focusedMarkup();
+  if (isGallery) {
+    gallery.innerHTML = renderGallery(getScreensByFlow(state.flow));
+  } else {
+    focused.innerHTML = focusedMarkup();
+  }
   flowFilter.value = state.flow;
   document.querySelectorAll("[data-view]").forEach((button) => {
     button.setAttribute("aria-pressed", String(button.dataset.view === state.view));
@@ -68,38 +82,42 @@ function render() {
 }
 
 document.addEventListener("click", (event) => {
-  const viewButton = event.target.closest("[data-view]");
-  if (viewButton) {
-    state.view = viewButton.dataset.view;
+  const view = event.target.closest("[data-view]")?.dataset.view;
+  if (view) {
+    state = transition(state, { type: "view", value: view });
     render();
     return;
   }
 
   const openCard = event.target.closest("[data-open-screen]");
   if (openCard && !event.target.closest("[data-action]")) {
-    state.screen = openCard.dataset.openScreen;
-    state.view = "focused";
+    state = transition(state, { type: "screen", value: openCard.dataset.openScreen });
+    state = transition(state, { type: "view", value: "focused" });
     render();
     return;
   }
 
-  const navigation = event.target.closest("[data-nav]")?.dataset.nav;
-  if (navigation === "gallery") {
-    state.view = "gallery";
-  } else if (navigation === "next") {
-    state.screen = nextHappyPathScreen(state.screen);
-  } else if (navigation === "previous") {
-    state.screen = previousHappyPathScreen(state.screen);
-  }
-  if (navigation) {
+  const actionElement = event.target.closest("[data-action]");
+  if (actionElement) {
+    const deviceScreen = actionElement.closest("[data-screen-id]")?.dataset.screenId;
+    if (deviceScreen && deviceScreen !== state.screen) {
+      state = transition(state, { type: "screen", value: deviceScreen });
+    }
+    state = transition(state, { type: "action", name: actionElement.dataset.action });
     render();
     return;
   }
 
-  const action = event.target.closest("[data-action]");
-  if (action) {
-    state.view = "focused";
-    state.screen = nextHappyPathScreen(state.screen);
+  const journey = event.target.closest("[data-journey]")?.dataset.journey;
+  if (journey) {
+    state = transition(state, { type: "journey", value: journey });
+    state = transition(state, { type: "view", value: "focused" });
+    render();
+    return;
+  }
+
+  if (event.target.closest("[data-nav='gallery']")) {
+    state = transition(state, { type: "view", value: "gallery" });
     render();
   }
 });
@@ -108,15 +126,14 @@ document.addEventListener("keydown", (event) => {
   const card = event.target.closest("[data-open-screen]");
   if (card && (event.key === "Enter" || event.key === " ")) {
     event.preventDefault();
-    state.screen = card.dataset.openScreen;
-    state.view = "focused";
+    state = transition(state, { type: "screen", value: card.dataset.openScreen });
+    state = transition(state, { type: "view", value: "focused" });
     render();
   }
 });
 
 flowFilter.addEventListener("change", (event) => {
-  state.flow = event.target.value;
-  state.view = "gallery";
+  state = transition(state, { type: "flow", value: event.target.value });
   render();
 });
 
