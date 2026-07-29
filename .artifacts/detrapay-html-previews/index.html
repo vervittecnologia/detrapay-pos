@@ -1,0 +1,60 @@
+<!doctype html>
+<!--
+THESIS: Uma prancha de revisão que transforma o Figma em um fluxo financeiro operável, sem esconder valores ou estados em decoração.
+OWN-WORLD: Azul Detrapay, superfícies brancas, fundo azul-gelo, cantos de 12–16px, linhas suaves e verde reservado ao sucesso.
+STORY: O revisor percorre acesso, pedidos, cobrança, parcelas e confirmação, incluindo todos os estados de recuperação.
+FIRST VIEWPORT: Cabeçalho de revisão compacto, filtros à direita e uma grade de SmartPOS em escala real logo abaixo.
+FORM: Galeria técnica em modo Operate, com foco navegável e comparação direta com três referências extraídas do Figma.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>Detrapay — Galeria de previews</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="review-header">
+      <div class="review-title">
+        <span class="review-kicker">Detrapay · revisão visual</span>
+        <h1>Figma na aparência.<br>Fluxo real na operação.</h1>
+        <p>18 telas e estados em 390 × 844, prontas para aprovação antes do Android.</p>
+      </div>
+      <div class="review-actions">
+        <nav class="view-switcher" aria-label="Modo de visualização">
+          <button type="button" data-view="gallery" aria-pressed="true">Todas as telas</button>
+          <button type="button" data-view="focused" aria-pressed="false">Fluxo navegável</button>
+        </nav>
+        <label class="filter-control">
+          <span>Filtrar fluxo</span>
+          <select id="flow-filter">
+            <option value="all">Todos</option>
+            <option value="access">Acesso</option>
+            <option value="orders">Pedidos</option>
+            <option value="payment">Pagamento</option>
+            <option value="simulator">Simulador</option>
+          </select>
+        </label>
+      </div>
+    </header>
+
+    <main class="review-main">
+      <section class="reference-note" aria-label="Referências do Figma">
+        <div>
+          <strong>Base visual verificada</strong>
+          <span>Login, início e confirmação extraídos do arquivo Detrapay (Copy).</span>
+        </div>
+        <button type="button" id="toggle-reference">Ver referências</button>
+        <div class="reference-strip" id="reference-strip" hidden>
+          <figure><img src="./assets/figma-login.png" alt="Tela de login no Figma"><figcaption>Login</figcaption></figure>
+          <figure><img src="./assets/figma-home.png" alt="Tela inicial no Figma"><figcaption>Início</figcaption></figure>
+          <figure><img src="./assets/figma-pix-success.png" alt="Confirmação de Pix no Figma"><figcaption>Resultado</figcaption></figure>
+        </div>
+      </section>
+      <section id="gallery" class="gallery" aria-live="polite"></section>
+      <section id="focused-preview" class="focused" hidden aria-live="polite"></section>
+    </main>
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
