@@ -11,6 +11,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
+import okhttp3.Interceptor
+import okhttp3.MultipartBody
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -27,16 +29,31 @@ object RetrofitModule {
         authInterceptor: AuthInterceptor? = null,
         sessionAuthenticator: SessionAuthenticator? = null,
     ): OkHttpClient {
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
+        val bodyLoggingInterceptor = HttpLoggingInterceptor().apply {
             level = if (BuildConfig.DEBUG) {
                 HttpLoggingInterceptor.Level.BODY
             } else {
                 HttpLoggingInterceptor.Level.NONE
             }
         }
+        val headersLoggingInterceptor = HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.HEADERS
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
+        }
+        val safeLoggingInterceptor = Interceptor { chain ->
+            val logger = if (chain.request().body is MultipartBody) {
+                headersLoggingInterceptor
+            } else {
+                bodyLoggingInterceptor
+            }
+            logger.intercept(chain)
+        }
 
         return OkHttpClient.Builder().apply {
-            addInterceptor(loggingInterceptor)
+            addInterceptor(safeLoggingInterceptor)
             authInterceptor?.let { addInterceptor(it) }
             sessionAuthenticator?.let { authenticator(it) }
         }

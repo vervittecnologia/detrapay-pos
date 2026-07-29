@@ -15,6 +15,7 @@ import com.detrapay.data.model.remote.OrderReceivableMutationResponse
 import com.detrapay.data.model.remote.OrderReceivableRequest
 import com.detrapay.data.model.remote.OrderRequest
 import com.detrapay.data.model.remote.OrderResponse
+import com.detrapay.data.model.remote.OrderDocumentResponse
 import com.detrapay.data.model.remote.OrderSimulationItemRequest
 import com.detrapay.data.model.remote.OrderSimulationRequest
 import com.detrapay.data.model.remote.PaymentMethodResponse
@@ -45,7 +46,11 @@ import com.detrapay.ui.util.Logger
 import com.google.gson.Gson
 import com.google.gson.JsonElement
 import okhttp3.ResponseBody
+import okhttp3.MultipartBody
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.asRequestBody
 import retrofit2.Response
+import java.io.File
 import java.io.IOException
 import javax.inject.Inject
 
@@ -162,6 +167,53 @@ class DetrapayRemoteDataSource @Inject constructor(
         } catch (e: Throwable) {
             Logger.d(e.toString())
             return Result.Error(IOException("Error getting stores", e))
+        }
+    }
+
+    suspend fun getOrderDocuments(orderId: Int): Result<List<OrderDocumentResponse>> {
+        return try {
+            val result = detrapayService.getOrderDocuments(orderId)
+            when {
+                result.isSuccessful -> {
+                    val documents = result.body()?.data.orEmpty()
+                    if (documents.any { it.id <= 0 || it.salesOrderId != orderId }) {
+                        Result.Error(Exception(DOCUMENTS_API_UNAVAILABLE_MESSAGE))
+                    } else {
+                        Result.Success(documents)
+                    }
+                }
+                result.code() == 401 -> Result.Error(UnauthorizedException())
+                result.code() in DOCUMENTS_API_MISSING_CODES ->
+                    Result.Error(Exception(DOCUMENTS_API_UNAVAILABLE_MESSAGE))
+                else -> Result.Error(Exception(ApiError(result.errorBody()).message))
+            }
+        } catch (e: Throwable) {
+            Logger.d(e.toString())
+            Result.Error(IOException("Erro ao carregar fotos do pedido", e))
+        }
+    }
+
+    suspend fun uploadOrderDocument(
+        orderId: Int,
+        file: File,
+    ): Result<OrderDocumentResponse> {
+        return try {
+            val body = file.asRequestBody("image/jpeg".toMediaType())
+            val part = MultipartBody.Part.createFormData("file", file.name, body)
+            val result = detrapayService.uploadOrderDocument(orderId, part)
+            when {
+                result.isSuccessful -> result.body()?.data
+                    ?.takeIf { it.id > 0 && it.salesOrderId == orderId && !it.fileUrl.isNullOrBlank() }
+                    ?.let { Result.Success(it) }
+                    ?: Result.Error(Exception(DOCUMENTS_API_UNAVAILABLE_MESSAGE))
+                result.code() == 401 -> Result.Error(UnauthorizedException())
+                result.code() in DOCUMENTS_API_MISSING_CODES ->
+                    Result.Error(Exception(DOCUMENTS_API_UNAVAILABLE_MESSAGE))
+                else -> Result.Error(Exception(ApiError(result.errorBody()).message))
+            }
+        } catch (e: Throwable) {
+            Logger.d(e.toString())
+            Result.Error(IOException("Erro ao enviar foto do pedido", e))
         }
     }
 
@@ -636,5 +688,11 @@ class DetrapayRemoteDataSource @Inject constructor(
         } catch (e: Throwable) {
             return Result.Error(IOException("Error downloading file", e))
         }
+    }
+
+    private companion object {
+        const val DOCUMENTS_API_UNAVAILABLE_MESSAGE =
+            "O cadastro de documentos ainda nao esta disponivel na API mobile."
+        val DOCUMENTS_API_MISSING_CODES = setOf(404, 405)
     }
 }

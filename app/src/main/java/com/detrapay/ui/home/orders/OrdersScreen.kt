@@ -21,6 +21,9 @@ import com.detrapay.ui.home.orders.OrderPresentation
 fun OrdersScreen(
     state: OrdersUiState,
     onAction: (OrderFlowAction) -> Unit,
+    cameraAvailable: Boolean = true,
+    cameraCaptureError: String? = null,
+    onTakeOrderPhoto: (Int) -> Unit = {},
     onRefresh: () -> Unit = {},
 ) {
     val local = state.local
@@ -53,9 +56,16 @@ fun OrdersScreen(
                     OrderFlowStep.Detail -> if (currentOrder != null) {
                         DetailScreen(
                             order = currentOrder,
+                            documentsState = state.orderDocuments,
+                            cameraAvailable = cameraAvailable,
+                            captureError = cameraCaptureError,
                             onBack = { onAction(OrderFlowAction.Back) },
                             onPay = { onAction(OrderFlowAction.OrderPay(currentOrder)) },
                             onDeletePayment = { onAction(OrderFlowAction.DeletePayment(it)) },
+                            onLoadDocuments = { onAction(OrderFlowAction.ReloadDocuments) },
+                            onTakePhoto = { onTakeOrderPhoto(currentOrder.id) },
+                            onRetryPhotoUpload = { onAction(OrderFlowAction.RetryPhotoUpload) },
+                            onDiscardPendingPhoto = { onAction(OrderFlowAction.DiscardPendingPhoto) },
                         )
                     }
                     OrderFlowStep.Amount -> if (

@@ -62,6 +62,19 @@ O processo de pagamento segue um fluxo unidirecional e desacoplado, garantindo q
 * Criação de tipo dentro da entidade de Método de Pagamento no backend + mobile
 * Caso não criem também é possível mover as lógicas de decisão do tipo de pagamento da UI para uma camada de adapter da resposta do backend, fazendo isso a camada de view só irá consumir a informação, evitando logicas repetidas.
 
+### Builds locais e cache de dependencias
+
+Os builds locais devem reutilizar o cache de dependencias do Gradle. O comando padrao para
+testar e gerar o APK debug e:
+
+```powershell
+.\gradlew.bat --offline testDebugUnitTest assembleDebug
+```
+
+Execute o Gradle sem `--offline` somente quando uma dependencia ainda nao estiver disponivel
+no cache local. Depois que o cache for preenchido, volte a usar o comando offline para evitar
+downloads repetidos e tornar o build mais previsivel.
+
 ### Como gerar uma nova versão do aplicativo?
 1. - Abra o build.gradle.kts
 2. - Atualize o versionName: sugestão de utilizar versionamento semantico (https://semver.org/lang/pt-BR/)

@@ -63,6 +63,7 @@ data class OrdersUiState(
     val paymentMethods: List<PaymentMethod>,
     val local: OrderFlowLocalState,
     val inPagePaymentState: UIState<PaymentData> = UIState.Idle(),
+    val orderDocuments: OrderDocumentsUiState = OrderDocumentsUiState(),
 )
 
 sealed interface OrderFlowAction {
@@ -72,6 +73,9 @@ sealed interface OrderFlowAction {
     data class OrderPay(val order: Order) : OrderFlowAction
     data class OrderDetail(val order: Order) : OrderFlowAction
     data class DeletePayment(val receivable: OrderReceivableItem) : OrderFlowAction
+    data object ReloadDocuments : OrderFlowAction
+    data object RetryPhotoUpload : OrderFlowAction
+    data object DiscardPendingPhoto : OrderFlowAction
     data object Back : OrderFlowAction
     data object ExitPayment : OrderFlowAction
     data class Key(val value: String) : OrderFlowAction

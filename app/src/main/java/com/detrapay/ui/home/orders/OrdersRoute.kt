@@ -35,6 +35,9 @@ fun OrdersRoute(
     invalidSimulatorAmountMessage: String,
     orderToOpen: Order?,
     onOrderOpened: () -> Unit,
+    cameraAvailable: Boolean,
+    cameraCaptureError: String?,
+    onTakeOrderPhoto: (Int) -> Unit,
     onEffect: (OrderFlowEffect) -> Unit,
 ) {
     var localState by remember { mutableStateOf(OrderFlowLocalState()) }
@@ -52,6 +55,7 @@ fun OrdersRoute(
     val feesState by viewModel.calculateFeesState.observeAsState()
     val paymentRecordState by viewModel.paymentRecordState.observeAsState()
     val deletePaymentState by viewModel.deletePaymentState.observeAsState()
+    val orderDocumentsState by viewModel.orderDocumentsState.observeAsState(OrderDocumentsUiState())
     val inPagePaymentState by paymentViewModel.paymentState.observeAsState(UIState.Idle())
 
     LaunchedEffect(Unit) {
@@ -311,7 +315,11 @@ fun OrdersRoute(
             paymentMethods = paymentMethods,
             local = localState,
             inPagePaymentState = inPagePaymentState,
+            orderDocuments = orderDocumentsState,
         ),
+        cameraAvailable = cameraAvailable,
+        cameraCaptureError = cameraCaptureError,
+        onTakeOrderPhoto = onTakeOrderPhoto,
         onAction = { action ->
             when (action) {
                 OrderFlowAction.Logout -> onEffect(OrderFlowEffect.ShowLogoutConfirmation)
@@ -330,6 +338,13 @@ fun OrdersRoute(
                         viewModel.deleteOfflinePayment(order.id, action.receivable)
                     }
                 }
+                OrderFlowAction.ReloadDocuments -> {
+                    localState.selectedOrder?.let { viewModel.loadOrderDocuments(it.id) }
+                }
+                OrderFlowAction.RetryPhotoUpload -> {
+                    localState.selectedOrder?.let { viewModel.retryOrderPhotoUpload(it.id) }
+                }
+                OrderFlowAction.DiscardPendingPhoto -> viewModel.discardPendingOrderPhoto()
                 OrderFlowAction.Back -> {
                     if (localState.step == OrderFlowStep.Waiting) {
                         paymentViewModel.abortPayment()

@@ -12,6 +12,8 @@ import com.detrapay.data.model.remote.CreateOrderRequest
 import com.detrapay.data.model.remote.CreateOrderResponse
 import com.detrapay.data.model.remote.CustomerSearchDataResponse
 import com.detrapay.data.model.remote.OrderRequest
+import com.detrapay.data.model.remote.OrderDocumentListResponse
+import com.detrapay.data.model.remote.OrderDocumentMutationResponse
 import com.detrapay.data.model.remote.OrderResponse
 import com.detrapay.data.model.remote.PaginatedOrderResponse
 import com.detrapay.data.model.remote.PaymentMethodResponse
@@ -33,11 +35,14 @@ import com.detrapay.data.model.remote.UpdateOrderSalesmanRequest
 import com.detrapay.data.model.remote.VehicleTypeListResponse
 import retrofit2.http.Url
 import okhttp3.ResponseBody
+import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Multipart
+import retrofit2.http.Part
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
@@ -95,6 +100,18 @@ interface DetrapayService {
 
     @POST("orders/{id}")
     suspend fun updateOrder(@Path("id") id: Int, @Body payload: OrderRequest): Response<CreateOrderResponse>
+
+    @GET("orders/{id}/documents")
+    suspend fun getOrderDocuments(
+        @Path("id") id: Int,
+    ): Response<OrderDocumentListResponse>
+
+    @Multipart
+    @POST("orders/{id}/documents")
+    suspend fun uploadOrderDocument(
+        @Path("id") id: Int,
+        @Part file: MultipartBody.Part,
+    ): Response<OrderDocumentMutationResponse>
 
     @POST("orders/{id}/receivables")
     suspend fun addOrderReceivable(

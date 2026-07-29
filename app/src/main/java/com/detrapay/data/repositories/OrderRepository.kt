@@ -7,6 +7,7 @@ import com.detrapay.data.datasources.remote.DetrapayRemoteDataSource
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.OrderCustomer
 import com.detrapay.data.model.OrderItem
+import com.detrapay.data.model.OrderDocument
 import com.detrapay.data.model.OrderReceivable
 import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.OrderReceivableItemStatus
@@ -26,6 +27,7 @@ import com.detrapay.data.model.remote.CreateOrderSimulationRequest
 import com.detrapay.data.model.remote.OrderCustomerRequest
 import com.detrapay.data.model.remote.OrderReceivableRequest
 import com.detrapay.data.model.remote.OrderResponse
+import com.detrapay.data.model.remote.OrderDocumentResponse
 import com.detrapay.data.model.remote.PaymentAttempt
 import com.detrapay.data.model.remote.OrderSimulationItemRequest
 import com.detrapay.data.model.remote.OrderSimulationRequest
@@ -33,6 +35,7 @@ import com.detrapay.data.model.remote.SplitConfigRequest
 import com.detrapay.ui.util.Logger
 import com.detrapay.ui.util.Mask
 import java.util.Locale
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -132,6 +135,32 @@ class OrderRepository @Inject constructor(
                 return Result.Error(Exception())
             }
         }
+    }
+
+    suspend fun getOrderDocuments(orderId: Int): Result<List<OrderDocument>> =
+        when (val result = detrapayRemoteDataSource.getOrderDocuments(orderId)) {
+            is Result.Success -> Result.Success(result.data.map(::parseOrderDocument))
+            is Result.Error -> result
+        }
+
+    suspend fun uploadOrderDocument(orderId: Int, file: File): Result<OrderDocument> =
+        when (val result = detrapayRemoteDataSource.uploadOrderDocument(orderId, file)) {
+            is Result.Success -> Result.Success(parseOrderDocument(result.data))
+            is Result.Error -> result
+        }
+
+    private fun parseOrderDocument(response: OrderDocumentResponse): OrderDocument {
+        val storedUrl = response.fileUrl.orEmpty()
+        return OrderDocument(
+            id = response.id,
+            salesOrderId = response.salesOrderId,
+            fileName = response.fileName?.takeIf { it.isNotBlank() } ?: "Foto do pedido",
+            fileUrl = storedUrl,
+            previewUrl = response.downloadUrl?.takeIf { it.isNotBlank() } ?: storedUrl,
+            mimeType = response.mimeType.orEmpty(),
+            fileSizeKb = response.fileSizeKb,
+            createdAt = response.createdAt,
+        )
     }
 
     suspend fun getReceivables(forceRefresh: Boolean = false): Result<List<OrderReceivable>> {

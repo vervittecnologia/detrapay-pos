@@ -7,6 +7,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.content.pm.PackageManager
+import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,6 +23,7 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.core.content.FileProvider
 import com.detrapay.BuildConfig
 import com.detrapay.R
 import com.detrapay.data.UnauthorizedException
@@ -34,6 +37,7 @@ import com.detrapay.ui.session_expired_dialog.SessionExpiredDialog
 import com.detrapay.ui.util.DebugConstants
 import com.detrapay.ui.util.DeviceUtils
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
 
 @AndroidEntryPoint
 class OrdersFragment : Fragment() {
@@ -42,11 +46,29 @@ class OrdersFragment : Fragment() {
     private val viewModel: OrdersViewModel by viewModels()
     private val paymentViewModel: PaymentDialogViewModel by activityViewModels()
     private var createdOrder by mutableStateOf<Order?>(null)
+    private var cameraCaptureError by mutableStateOf<String?>(null)
+    private var pendingPhotoFile: File? = null
+    private var pendingPhotoOrderId: Int? = null
     private val registrationLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult(),
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             createdOrder = getCreatedOrder(result.data)
+        }
+    }
+    private val cameraLauncher = registerForActivityResult(
+        ActivityResultContracts.TakePicture(),
+    ) { saved ->
+        val file = pendingPhotoFile
+        val orderId = pendingPhotoOrderId
+        pendingPhotoFile = null
+        pendingPhotoOrderId = null
+        if (saved && file?.exists() == true && file.length() > 0L && orderId != null) {
+            cameraCaptureError = null
+            viewModel.uploadOrderPhoto(orderId, file)
+        } else {
+            file?.delete()
+            cameraCaptureError = "Nao foi possivel salvar a foto. Tente novamente."
         }
     }
 
@@ -72,6 +94,9 @@ class OrdersFragment : Fragment() {
                     invalidSimulatorAmountMessage = "Informe um valor maior que zero.",
                     orderToOpen = createdOrder,
                     onOrderOpened = { createdOrder = null },
+                    cameraAvailable = hasCameraCapture(),
+                    cameraCaptureError = cameraCaptureError,
+                    onTakeOrderPhoto = ::openOrderCamera,
                     onEffect = ::handleEffect,
                 )
             }
@@ -119,6 +144,34 @@ class OrdersFragment : Fragment() {
 
     private fun openNewOrderFlow() {
         registrationLauncher.launch(Intent(requireContext(), RegistrationActivity::class.java))
+    }
+
+    private fun hasCameraCapture(): Boolean {
+        val context = requireContext()
+        return context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY) &&
+            Intent(MediaStore.ACTION_IMAGE_CAPTURE).resolveActivity(context.packageManager) != null
+    }
+
+    private fun openOrderCamera(orderId: Int) {
+        cameraCaptureError = null
+        runCatching {
+            val context = requireContext()
+            val directory = File(context.cacheDir, "order_photos").apply { mkdirs() }
+            val file = File.createTempFile("pedido_${orderId}_", ".jpg", directory)
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file,
+            )
+            pendingPhotoFile = file
+            pendingPhotoOrderId = orderId
+            cameraLauncher.launch(uri)
+        }.onFailure {
+            pendingPhotoFile?.delete()
+            pendingPhotoFile = null
+            pendingPhotoOrderId = null
+            cameraCaptureError = "Nao foi possivel abrir a camera deste terminal."
+        }
     }
 
     private fun getCreatedOrder(data: Intent?): Order? {
