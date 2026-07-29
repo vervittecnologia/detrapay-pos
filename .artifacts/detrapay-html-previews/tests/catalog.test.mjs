@@ -6,6 +6,10 @@ import {
   getScreen,
   getScreensByFlow,
 } from "../src/catalog.js";
+import {
+  nextHappyPathScreen,
+  previousHappyPathScreen,
+} from "../src/navigation.js";
 
 test("catalog contains every approved screen and state", () => {
   assert.deepEqual(
@@ -58,4 +62,12 @@ test("flow filtering returns stable catalog order", () => {
       "simulator-error",
     ],
   );
+});
+
+test("happy path navigation advances and stops at its boundaries", () => {
+  assert.equal(nextHappyPathScreen("login-default"), "orders-loaded");
+  assert.equal(nextHappyPathScreen("review-payment"), "payment-processing");
+  assert.equal(nextHappyPathScreen("payment-approved"), "payment-approved");
+  assert.equal(previousHappyPathScreen("login-default"), "login-default");
+  assert.equal(previousHappyPathScreen("payment-approved"), "payment-processing");
 });
