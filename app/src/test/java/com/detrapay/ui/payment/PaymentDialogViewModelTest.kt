@@ -111,7 +111,22 @@ class PaymentDialogViewModelTest {
         assertTrue(state is UIState.Success)
         assertEquals(PlugPag.TYPE_CREDITO, readInt(paymentSlot.captured, "paymentType", "type"))
         assertEquals(3, readInt(paymentSlot.captured, "installments"))
+        assertEquals("PED10", readString(paymentSlot.captured, "userReference"))
         coVerify(exactly = 1) { orderRepository.recordApprovedOnlinePayment("attempt-1", any()) }
+    }
+
+    @Test
+    fun `PagBank user reference uses last ten digits for long order ids`() {
+        val paymentSlot = slot<PlugPagPaymentData>()
+        arrangePreparedOnline()
+        every { plugPag.doPayment(capture(paymentSlot)) } returns approvedTransaction()
+        coEvery { orderRepository.recordApprovedOnlinePayment("attempt-1", any()) } returns
+            Result.Success(TestOrderFixtures.order())
+
+        viewModel.payOrder(request("pix", online = true, orderId = 1_234_567_890), "SER123")
+
+        viewModel.paymentState.getOrAwaitValueMatching { it is UIState.Success<*> }
+        assertEquals("1234567890", readString(paymentSlot.captured, "userReference"))
     }
 
     @Test
@@ -251,6 +266,7 @@ class PaymentDialogViewModelTest {
         viewModel.paymentState.getOrAwaitValueMatching { it is UIState.Success<*> }
         assertEquals(expectedPaymentType, readInt(terminalSlot.captured, "paymentType", "type"))
         assertEquals(2640, readInt(terminalSlot.captured, "amount"))
+        assertEquals("PED10", readString(terminalSlot.captured, "userReference"))
         assertEquals(26.40, approvalSlot.captured.amountFinal ?: 0.0, 0.0)
     }
 
@@ -259,8 +275,9 @@ class PaymentDialogViewModelTest {
         online: Boolean,
         installments: Int = 1,
         amountFinal: Double = 25.67,
+        orderId: Int = 10,
     ) = OrderPaymentRequest(
-        order = TestOrderFixtures.order(),
+        order = TestOrderFixtures.order().copy(id = orderId),
         paymentMethod = PaymentMethod(1, type, installments, 0.0, type, online),
         amount = 25.67,
         amountFinal = amountFinal,
@@ -316,5 +333,13 @@ class PaymentDialogViewModelTest {
         } ?: throw AssertionError("Field not found: ${target.javaClass.declaredFields.map { it.name }}")
         field.isAccessible = true
         return field.get(target) as Int
+    }
+
+    private fun readString(target: Any, vararg candidateNames: String): String? {
+        val field = target.javaClass.declaredFields.firstOrNull { field ->
+            candidateNames.any { it.equals(field.name, ignoreCase = true) }
+        } ?: throw AssertionError("Field not found: ${target.javaClass.declaredFields.map { it.name }}")
+        field.isAccessible = true
+        return field.get(target) as String?
     }
 }

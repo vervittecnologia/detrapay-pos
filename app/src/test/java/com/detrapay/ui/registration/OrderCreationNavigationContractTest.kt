@@ -15,6 +15,7 @@ class OrderCreationNavigationContractTest {
             .joinToString("\n") { it.readText() }
 
         assertFalse(registrationSources.contains("putExtra(\"isSuccess\", true)"))
-        assertTrue(registrationSources.contains("putExtra(\"isSuccess\", false)"))
+        assertFalse(registrationSources.contains("putExtra(\"isSuccess\", false)"))
+        assertTrue(registrationSources.contains("finishWithCreatedOrder"))
     }
 }

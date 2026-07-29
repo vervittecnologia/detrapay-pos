@@ -63,13 +63,14 @@ fun OrdersScreen(
                     ) {
                         KeypadScreen(
                             order = currentOrder,
-                            paymentMethodName = local.selectedPaymentMethod.name,
+                            paymentMethod = local.selectedPaymentMethod,
                             displayAmount = OrderPresentation.paymentDisplayAmount(local.paymentDigits),
                             pendingAmountLabel = OrderPresentation.formatCurrency(pendingAmount),
                             canPay = amount > 0.0,
                             isLoading = local.feesLoading,
                             errorMessage = local.feesError,
                             onBack = { onAction(OrderFlowAction.Back) },
+                            onClose = { onAction(OrderFlowAction.ExitPayment) },
                             onKey = { onAction(OrderFlowAction.Key(it)) },
                             onUsePendingAmount = { onAction(OrderFlowAction.UsePendingAmount) },
                             onContinue = { onAction(OrderFlowAction.ContinueAmount) },
@@ -80,6 +81,7 @@ fun OrdersScreen(
                             order = currentOrder,
                             paymentMethods = state.paymentMethods,
                             onBack = { onAction(OrderFlowAction.Back) },
+                            onClose = { onAction(OrderFlowAction.ExitPayment) },
                             onSelectPaymentMethod = { onAction(OrderFlowAction.SelectPaymentMethod(it)) },
                         )
                     }
@@ -87,7 +89,11 @@ fun OrdersScreen(
                         amount = amount,
                         installments = local.creditInstallments,
                         selectedInstallment = local.selectedInstallment,
+                        isLoading = local.feesLoading,
+                        errorMessage = local.feesError,
                         onBack = { onAction(OrderFlowAction.Back) },
+                        onClose = { onAction(OrderFlowAction.ExitPayment) },
+                        onRetry = { onAction(OrderFlowAction.ContinueAmount) },
                         onSelectInstallment = { onAction(OrderFlowAction.SelectInstallment(it)) },
                         onContinue = { onAction(OrderFlowAction.ContinueInstallments) },
                     )
@@ -99,6 +105,7 @@ fun OrdersScreen(
                             review = local.paymentReview,
                             isSubmitting = local.paymentSubmissionInFlight,
                             onBack = { onAction(OrderFlowAction.Back) },
+                            onClose = { onAction(OrderFlowAction.ExitPayment) },
                             onConfirm = { onAction(OrderFlowAction.ConfirmPayment) },
                         )
                     }
@@ -107,6 +114,7 @@ fun OrdersScreen(
                         paymentType = local.selectedPaymentMethod?.paymentType.orEmpty(),
                         paymentState = state.inPagePaymentState,
                         onBack = { onAction(OrderFlowAction.Back) },
+                        onClose = { onAction(OrderFlowAction.ExitPayment) },
                         onRetry = { onAction(OrderFlowAction.RetryInPagePayment) },
                         onDone = { onAction(OrderFlowAction.FinishInPagePayment) },
                         onCopyPixCode = { onAction(OrderFlowAction.CopyPaymentCode(it)) },

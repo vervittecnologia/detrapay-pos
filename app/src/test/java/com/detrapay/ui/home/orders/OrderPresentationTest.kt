@@ -11,12 +11,27 @@ import com.detrapay.data.model.Salesman
 import com.detrapay.data.model.VehicleType
 import com.detrapay.data.model.remote.InstallmentFee
 import com.detrapay.ui.home.orders.components.simulatorShareText
+import com.detrapay.ui.util.PaymentTypeRules
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OrderPresentationTest {
+
+    @Test
+    fun `review method label uses selected credit installments instead of configured name`() {
+        val credit = PaymentMethod(
+            id = 1,
+            name = "Crédito 1x",
+            installments = 1,
+            interestTax = 0.0,
+            paymentType = "credito",
+            isOnlinePayment = true,
+        )
+
+        assertEquals("Crédito 5x", OrderPresentation.paymentReviewMethodLabel(credit, 5))
+    }
 
     @Test
     fun `all orders includes every status sorted by newest id`() {
@@ -103,6 +118,36 @@ class OrderPresentationTest {
 
         assertEquals(2, OrderPresentation.exactPaymentMethod(methods, "pix", 3)?.id)
         assertEquals(null, OrderPresentation.exactPaymentMethod(methods, "pix", 6))
+    }
+
+    @Test
+    fun `payment method types keep one deterministic representative per normalized type`() {
+        val methods = listOf(
+            paymentMethod(id = 14, installments = 14, paymentType = "credito"),
+            paymentMethod(id = 10, installments = 10, paymentType = "credit"),
+            paymentMethod(id = 30, installments = 1, paymentType = "pix"),
+            paymentMethod(id = 32, installments = 1, paymentType = "pix"),
+            paymentMethod(id = 31, installments = 1, paymentType = "pix_manual"),
+        )
+
+        val types = OrderPresentation.paymentMethodTypes(methods)
+
+        assertEquals(listOf(10, 30, 31), types.map(PaymentMethod::id))
+        assertEquals(
+            listOf("credito", "pix", "pix_manual"),
+            types.map { PaymentTypeRules.normalize(it.paymentType) },
+        )
+    }
+
+    @Test
+    fun `payment method type label does not expose installment specific backend name`() {
+        val method = paymentMethod(
+            id = 1,
+            installments = 1,
+            paymentType = "credito",
+        ).copy(name = "Crédito 1x")
+
+        assertEquals("Crédito", OrderPresentation.paymentMethodTypeLabel(method))
     }
 
     @Test

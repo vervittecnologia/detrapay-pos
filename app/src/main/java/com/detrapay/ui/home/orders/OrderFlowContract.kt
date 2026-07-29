@@ -73,6 +73,7 @@ sealed interface OrderFlowAction {
     data class OrderDetail(val order: Order) : OrderFlowAction
     data class DeletePayment(val receivable: OrderReceivableItem) : OrderFlowAction
     data object Back : OrderFlowAction
+    data object ExitPayment : OrderFlowAction
     data class Key(val value: String) : OrderFlowAction
     data object UsePendingAmount : OrderFlowAction
     data object OpenMethods : OrderFlowAction

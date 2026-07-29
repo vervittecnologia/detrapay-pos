@@ -16,7 +16,6 @@ import com.detrapay.data.model.PaymentMethod
 import com.detrapay.ui.home.HomeViewModel
 import com.detrapay.ui.home.orders.OrderPresentation
 import com.detrapay.ui.home.orders.OrdersViewModel
-import com.detrapay.ui.order_details.OrderDetailsPaymentMethodPickerBottomSheet
 import com.detrapay.ui.payment.PaymentDialogViewModel
 import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.PaymentTypeRules
@@ -34,6 +33,8 @@ fun OrdersRoute(
     addPaymentLoadErrorMessage: String,
     paymentSuccessMessage: String,
     invalidSimulatorAmountMessage: String,
+    orderToOpen: Order?,
+    onOrderOpened: () -> Unit,
     onEffect: (OrderFlowEffect) -> Unit,
 ) {
     var localState by remember { mutableStateOf(OrderFlowLocalState()) }
@@ -205,6 +206,13 @@ fun OrdersRoute(
         }
     }
 
+    LaunchedEffect(orderToOpen) {
+        if (orderToOpen == null) return@LaunchedEffect
+        localState = OrderFlowReducer.showDetail(localState, orderToOpen)
+        orders = listOf(orderToOpen) + orders.filterNot { it.id == orderToOpen.id }
+        onOrderOpened()
+    }
+
     LaunchedEffect(deletePaymentState) {
         when (val state = deletePaymentState) {
             is UIState.Success -> {
@@ -328,6 +336,14 @@ fun OrdersRoute(
                     }
                     localState = OrderFlowReducer.back(localState)
                 }
+                OrderFlowAction.ExitPayment -> {
+                    if (localState.step == OrderFlowStep.Waiting) {
+                        paymentViewModel.abortPayment()
+                    }
+                    localState = OrderFlowReducer.exitPayment(localState)
+                    viewModel.clearFeesState()
+                    viewModel.clearPaymentState()
+                }
                 is OrderFlowAction.Key -> {
                     localState = OrderFlowReducer.applyPaymentKey(localState, action.value)
                 }
@@ -416,7 +432,7 @@ fun OrdersRoute(
                         if (!previous.feeRequestInFlight &&
                             next.feeRequestTarget == OrderFeeRequestTarget.Simulator
                         ) {
-                            viewModel.calculateFees(amount, OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CREDIT)
+                            viewModel.calculateFees(amount, "credito")
                         }
                     }
                 }

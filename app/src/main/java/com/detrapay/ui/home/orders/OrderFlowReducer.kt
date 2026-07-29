@@ -4,7 +4,6 @@ import com.detrapay.data.model.Order
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.remote.InstallmentFee
 import com.detrapay.ui.home.orders.OrderPresentation
-import com.detrapay.ui.order_details.OrderDetailsPaymentMethodPickerBottomSheet
 import com.detrapay.ui.util.PaymentTypeRules
 import kotlin.math.roundToLong
 
@@ -84,6 +83,7 @@ object OrderFlowReducer {
         }
 
         return state.copy(
+            step = OrderFlowStep.Installments,
             feesLoading = true,
             feesError = null,
             paymentReview = null,
@@ -115,7 +115,7 @@ object OrderFlowReducer {
 
         val amount = OrderPresentation.paymentAmount(state.paymentDigits)
         val isCredit = PaymentTypeRules.normalize(state.selectedPaymentMethod?.paymentType) ==
-            OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CREDIT
+            "credito"
         return if (isCredit) {
             state.copy(
                 step = OrderFlowStep.Installments,
@@ -179,7 +179,7 @@ object OrderFlowReducer {
             OrderFlowStep.Installments -> OrderFlowStep.Amount
             OrderFlowStep.Review -> if (
                 PaymentTypeRules.normalize(state.selectedPaymentMethod?.paymentType) ==
-                OrderDetailsPaymentMethodPickerBottomSheet.TYPE_CREDIT
+                "credito"
             ) {
                 OrderFlowStep.Installments
             } else {
@@ -188,7 +188,7 @@ object OrderFlowReducer {
             OrderFlowStep.Waiting -> OrderFlowStep.Review
         }
         val cancelCheckoutFeeRequest =
-            state.step == OrderFlowStep.Amount &&
+            state.step == OrderFlowStep.Installments &&
                 state.feeRequestTarget == OrderFeeRequestTarget.CheckoutCredit
         return state.copy(
             step = nextStep,
@@ -263,6 +263,22 @@ object OrderFlowReducer {
             simulatorInstallments = installments,
             simulatorSelectedInstallment = installments.lastOrNull()?.installmentNumber,
             simulatorError = if (installments.isEmpty()) emptyMessage else null,
+        )
+    }
+
+    fun exitPayment(state: OrderFlowLocalState): OrderFlowLocalState {
+        return state.copy(
+            step = OrderFlowStep.Detail,
+            paymentDigits = "",
+            selectedPaymentMethod = null,
+            selectedInstallment = null,
+            creditInstallments = emptyList(),
+            feesLoading = false,
+            feesError = null,
+            paymentReview = null,
+            feeRequestTarget = null,
+            activePaymentRequest = null,
+            paymentSubmissionInFlight = false,
         )
     }
 

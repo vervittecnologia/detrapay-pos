@@ -163,7 +163,7 @@ class PaymentDialogViewModel @Inject constructor(
                     amountFinalCents,
                     installmentType(request.installments),
                     request.installments,
-                    null,
+                    orderUserReference(request.order.id),
                     printReceipt = true,
                     partialPay = false,
                     isCarne = false,
@@ -267,6 +267,12 @@ class PaymentDialogViewModel @Inject constructor(
     }
 
     private fun amountInCents(amount: Double): Int = (amount * 100).roundToInt()
+
+    private fun orderUserReference(orderId: Int): String {
+        val digits = orderId.toString().filter { it.isDigit() }
+        val prefixed = "PED$digits"
+        return if (prefixed.length <= 10) prefixed else digits.takeLast(10)
+    }
 
     private fun terminalFailureMessage(result: PlugPagTransactionResult): String {
         val message = result.message?.trim().orEmpty()

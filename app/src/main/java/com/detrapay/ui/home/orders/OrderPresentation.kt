@@ -6,7 +6,6 @@ import com.detrapay.data.model.OrderReceivableItemStatus
 import com.detrapay.data.model.OrderStatus
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.model.remote.InstallmentFee
-import com.detrapay.ui.order_details.OrderPaymentTotals
 import com.detrapay.ui.util.InstallmentQuotePresenter
 import com.detrapay.ui.util.PaymentTypeRules
 import java.util.Locale
@@ -93,6 +92,44 @@ object OrderPresentation {
         return paymentMethods.firstOrNull { method ->
             PaymentTypeRules.normalize(method.paymentType) == normalizedType &&
                 method.installments == installments
+        }
+    }
+
+    fun paymentMethodTypes(paymentMethods: List<PaymentMethod>): List<PaymentMethod> {
+        return paymentMethods
+            .groupBy { method ->
+                PaymentTypeRules.normalize(method.paymentType ?: method.name)
+            }
+            .values
+            .mapNotNull { methods ->
+                methods.minWithOrNull(
+                    compareBy<PaymentMethod> { it.installments }
+                        .thenBy { it.id },
+                )
+            }
+    }
+
+    fun paymentMethodTypeLabel(paymentMethod: PaymentMethod): String {
+        return when (PaymentTypeRules.normalize(paymentMethod.paymentType ?: paymentMethod.name)) {
+            "credito" -> "Crédito"
+            "debito" -> "Débito"
+            "pix" -> "Pix"
+            "pix_manual" -> "Transferência Pix"
+            "dinheiro" -> "Dinheiro"
+            "store_credit" -> "Crédito loja"
+            else -> paymentMethod.name
+        }
+    }
+
+    fun paymentReviewMethodLabel(
+        paymentMethod: PaymentMethod,
+        installments: Int,
+    ): String {
+        val typeLabel = paymentMethodTypeLabel(paymentMethod)
+        return if (PaymentTypeRules.normalize(paymentMethod.paymentType ?: paymentMethod.name) == "credito") {
+            "$typeLabel ${installments.coerceAtLeast(1)}x"
+        } else {
+            typeLabel
         }
     }
 

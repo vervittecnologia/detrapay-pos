@@ -30,7 +30,6 @@ import com.detrapay.R
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.SimulationItem
 import com.detrapay.databinding.FragmentRegistrationOrderResumeBinding
-import com.detrapay.ui.order_details.OrderDetailsActivity
 import com.detrapay.ui.registration.RegistrationActivity
 import com.detrapay.ui.registration.RegistrationViewModel
 import com.detrapay.ui.registration.discount_dialog.DiscountDialogFragment
@@ -377,15 +376,7 @@ class RegistrationResumeFragment : Fragment() {
     }
 
     private fun openDetailsScreen(order: Order) {
-        val orderDetailsActivityIntent = android.content.Intent(
-            requireContext(),
-            OrderDetailsActivity::class.java
-        )
-        orderDetailsActivityIntent.putExtra("order", order)
-        orderDetailsActivityIntent.putExtra("orderId", order.id)
-        orderDetailsActivityIntent.putExtra("isSuccess", false)
-        startActivity(orderDetailsActivityIntent)
-        requireActivity().finish()
+        (requireActivity() as RegistrationActivity).finishWithCreatedOrder(order)
     }
 
     private fun updateItem(itemPosition: Int?) {

@@ -152,6 +152,21 @@ class OrderFlowReducerTest {
     }
 
     @Test
+    fun `credit quote opens installments immediately while loading`() {
+        val loading = OrderFlowReducer.startCheckoutQuote(
+            OrderFlowLocalState(
+                step = OrderFlowStep.Amount,
+                paymentDigits = "10000",
+                selectedPaymentMethod = paymentMethod("credito", true),
+            ),
+        )
+
+        assertEquals(OrderFlowStep.Installments, loading.step)
+        assertTrue(loading.feesLoading)
+        assertTrue(loading.creditInstallments.isEmpty())
+    }
+
+    @Test
     fun `direct payment opens zero fee review`() {
         val state = OrderFlowLocalState(
             step = OrderFlowStep.Amount,
@@ -374,6 +389,32 @@ class OrderFlowReducerTest {
         assertNull(consumed.feeRequestTarget)
         assertTrue(consumed.creditInstallments.isEmpty())
         assertNull(consumed.selectedInstallment)
+    }
+
+    @Test
+    fun `exit payment returns to selected order detail and clears wizard data`() {
+        val selectedOrder = order()
+        val state = OrderFlowLocalState(
+            step = OrderFlowStep.Installments,
+            selectedOrder = selectedOrder,
+            paymentDigits = "10000",
+            selectedPaymentMethod = paymentMethod("credito", true),
+            selectedInstallment = 2,
+            creditInstallments = listOf(installmentFee()),
+            feesLoading = true,
+            feeRequestTarget = OrderFeeRequestTarget.CheckoutCredit,
+        )
+
+        val exited = OrderFlowReducer.exitPayment(state)
+
+        assertEquals(OrderFlowStep.Detail, exited.step)
+        assertEquals(selectedOrder, exited.selectedOrder)
+        assertEquals("", exited.paymentDigits)
+        assertNull(exited.selectedPaymentMethod)
+        assertNull(exited.selectedInstallment)
+        assertTrue(exited.creditInstallments.isEmpty())
+        assertFalse(exited.feesLoading)
+        assertNull(exited.feeRequestTarget)
     }
 
     @Test

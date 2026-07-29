@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/home_navigation"
     app:startDestination="@id/ordersFragment">
 
@@ -10,8 +9,4 @@
         android:name="com.detrapay.ui.home.orders.OrdersFragment"
         android:label="Pedidos" />
 
-    <activity
-        android:id="@+id/registrationActivity"
-        android:name="com.detrapay.ui.registration.RegistrationActivity"
-        tools:layout="@layout/activity_registration" />
 </navigation>

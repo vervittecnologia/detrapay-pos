@@ -1,4 +1,4 @@
-﻿package com.detrapay.ui.order_details
+package com.detrapay.ui.home.orders
 
 import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.OrderReceivableItemStatus
@@ -16,7 +16,7 @@ class OrderPaymentTotalsTest {
                 receivable(status = OrderReceivableItemStatus.PAID, amountOriginal = 20.0),
                 receivable(status = OrderReceivableItemStatus.CANCELLED, amountOriginal = 30.0),
                 receivable(status = OrderReceivableItemStatus.REFUNDED, amountOriginal = 40.0),
-            )
+            ),
         )
 
         assertEquals(100.0, totals.declaredAmount, 0.0)
@@ -39,7 +39,7 @@ class OrderPaymentTotalsTest {
                     amountFinal = 25.0,
                     paymentType = "credit",
                 ),
-            )
+            ),
         )
 
         assertEquals(100.0, totals.paidAmount, 0.0)

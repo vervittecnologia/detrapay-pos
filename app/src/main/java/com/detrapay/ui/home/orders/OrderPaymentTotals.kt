@@ -1,4 +1,4 @@
-package com.detrapay.ui.order_details
+package com.detrapay.ui.home.orders
 
 import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.OrderReceivableItemStatus

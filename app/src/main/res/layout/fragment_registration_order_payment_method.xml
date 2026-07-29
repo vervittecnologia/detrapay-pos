@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/registration_payment_screen_background">
+    android:background="@color/seller_canvas">
 
     <LinearLayout
         android:id="@+id/headerLayout"
@@ -117,6 +117,7 @@
             </LinearLayout>
 
             <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.Detrapay.SellerCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"

@@ -13,10 +13,10 @@ class HomeNavigationContractTest {
 
         assertTrue(graph.contains("app:startDestination=\"@id/ordersFragment\""))
         assertTrue(graph.contains("com.detrapay.ui.home.orders.OrdersFragment"))
-        assertTrue(graph.contains("com.detrapay.ui.registration.RegistrationActivity"))
+        assertFalse(graph.contains("com.detrapay.ui.registration.RegistrationActivity"))
         assertFalse(graph.contains("BottomNavigationView"))
         assertEqualsCount(1, graph, "<fragment")
-        assertEqualsCount(1, graph, "<activity")
+        assertEqualsCount(0, graph, "<activity")
     }
 
     @Test

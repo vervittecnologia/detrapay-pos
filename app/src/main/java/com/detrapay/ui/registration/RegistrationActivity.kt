@@ -1,5 +1,6 @@
 package com.detrapay.ui.registration
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import androidx.activity.viewModels
@@ -71,6 +72,14 @@ class RegistrationActivity : AppCompatActivity() {
         }
     }
 
+    fun finishWithCreatedOrder(order: Order) {
+        setResult(
+            RESULT_OK,
+            Intent().putExtra(EXTRA_CREATED_ORDER, order),
+        )
+        finish()
+    }
+
     private fun setupObservers() {
         viewModel.registrationState.observe(this, Observer { state ->
             this.currentScreen = state.currentScreen
@@ -86,5 +95,9 @@ class RegistrationActivity : AppCompatActivity() {
         navHostFragment =
             supportFragmentManager.findFragmentById(R.id.registration_nav_host) as NavHostFragment
         navController = navHostFragment.navController
+    }
+
+    companion object {
+        const val EXTRA_CREATED_ORDER = "createdOrder"
     }
 }

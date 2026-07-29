@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/color_background"
+    android:background="@color/seller_canvas"
     tools:context=".ui.registration.order_data.RegistrationOrderDataFragment">
 
     <com.google.android.material.progressindicator.LinearProgressIndicator
@@ -62,8 +62,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/spacing_xs"
-                        android:text="@string/registration_title"
-                        android:textColor="@color/neutral_900"
+                        android:text="Dados do pedido"
+                        android:textColor="@color/seller_ink"
                         android:textSize="22sp"
                         android:textStyle="bold" />
 
@@ -96,7 +96,7 @@
                 android:textStyle="bold" />
 
             <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.DS.SurfaceCard"
+                style="@style/Widget.Detrapay.SellerCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_small">
@@ -133,7 +133,7 @@
 
                         <com.google.android.material.textfield.TextInputLayout
                             android:id="@+id/cpfCnpjTextInputLayout"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            style="@style/Widget.Detrapay.SellerWizardInput"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:hint="@string/cpf_cnpj_registration_order_input"
@@ -172,7 +172,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/clientNameTextInputLayout"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        style="@style/Widget.Detrapay.SellerWizardInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/spacing_small"
@@ -195,7 +195,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/whatsappTextInputLayout"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        style="@style/Widget.Detrapay.SellerWizardInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/spacing_small"
@@ -228,7 +228,7 @@
                 android:textStyle="bold" />
 
             <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.DS.SurfaceCard"
+                style="@style/Widget.Detrapay.SellerCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_small">
@@ -241,7 +241,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/invoiceDateTextInputLayout"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        style="@style/Widget.Detrapay.SellerWizardInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/invoice_date_order_input"
@@ -265,7 +265,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/vehicleValueTextInputLayout"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        style="@style/Widget.Detrapay.SellerWizardInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/spacing_small"
@@ -326,7 +326,7 @@
                 android:textStyle="bold" />
 
             <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.DS.SurfaceCard"
+                style="@style/Widget.Detrapay.SellerCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_small">
@@ -360,7 +360,7 @@
         android:id="@+id/footerView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/white"
+        android:background="@color/seller_canvas"
         android:elevation="8dp"
         android:orientation="vertical"
         android:padding="@dimen/spacing_medium"

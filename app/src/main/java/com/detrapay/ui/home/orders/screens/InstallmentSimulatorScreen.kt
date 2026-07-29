@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.detrapay.data.model.remote.InstallmentFee
 import com.detrapay.ui.home.orders.components.OrderFlowColors
+import com.detrapay.ui.home.orders.components.OrderFlowFintechTheme
 import com.detrapay.ui.home.orders.components.*
 import com.detrapay.ui.home.orders.OrderPresentation
 import com.detrapay.ui.util.InstallmentQuotePresenter
@@ -65,13 +66,13 @@ fun InstallmentSimulatorScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White),
+            .background(OrderFlowFintechTheme.Canvas),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(0.5.dp, OrderFlowColors.Border)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .background(OrderFlowFintechTheme.Canvas)
+                .padding(horizontal = 24.dp, vertical = 20.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(
@@ -83,9 +84,9 @@ fun InstallmentSimulatorScreen(
             Text(
                 modifier = Modifier.weight(1f),
                 text = "Simulação de Crédito",
-                color = OrderFlowColors.Ink,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
+                color = OrderFlowFintechTheme.Ink,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.SemiBold,
             )
             IconButton(onClick = onClose, modifier = Modifier.size(44.dp)) {
                 Icon(Icons.Default.Close, contentDescription = "Fechar", tint = OrderFlowColors.Text)
@@ -97,15 +98,14 @@ fun InstallmentSimulatorScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(OrderFlowColors.MutedSurface.copy(alpha = 0.55f))
-                        .border(0.5.dp, OrderFlowColors.Border)
+                        .background(OrderFlowFintechTheme.CardMuted)
                         .padding(horizontal = 20.dp, vertical = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     MethodIcon(Icons.Default.CreditCard, OrderFlowColors.Blue)
                     Column(modifier = Modifier.padding(start = 14.dp)) {
-                        Text("Crédito", color = OrderFlowColors.Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                        Text("Simular parcelamento em até 18x", color = OrderFlowColors.Muted, fontSize = 13.sp)
+                        Text("Crédito", color = OrderFlowFintechTheme.Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Simular parcelamento em até 18x", color = OrderFlowFintechTheme.Muted, fontSize = 13.sp)
                     }
                 }
 
@@ -113,7 +113,7 @@ fun InstallmentSimulatorScreen(
                     modifier = Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    Text("Valor", color = OrderFlowColors.Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Valor", color = OrderFlowFintechTheme.Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                     OutlinedTextField(
                         modifier = Modifier.fillMaxWidth(),
                         value = formattedAmount,
@@ -134,8 +134,8 @@ fun InstallmentSimulatorScreen(
                             onClick = onConsult,
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = OrderFlowColors.Blue.copy(alpha = 0.10f),
-                                contentColor = OrderFlowColors.Blue,
+                                containerColor = OrderFlowFintechTheme.PrimarySoft,
+                                contentColor = OrderFlowFintechTheme.Primary,
                             ),
                         ) {
                             Icon(Icons.Default.CreditCard, contentDescription = null, modifier = Modifier.size(16.dp))

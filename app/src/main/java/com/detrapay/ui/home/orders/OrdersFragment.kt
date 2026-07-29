@@ -1,28 +1,35 @@
 ﻿package com.detrapay.ui.home.orders
 
+import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
-import androidx.navigation.fragment.findNavController
 import com.detrapay.BuildConfig
 import com.detrapay.R
 import com.detrapay.data.UnauthorizedException
+import com.detrapay.data.model.Order
 import com.detrapay.ui.home.HomeViewModel
 import com.detrapay.ui.home.orders.OrdersViewModel
 import com.detrapay.ui.login.LoginActivity
 import com.detrapay.ui.payment.PaymentDialogViewModel
+import com.detrapay.ui.registration.RegistrationActivity
 import com.detrapay.ui.session_expired_dialog.SessionExpiredDialog
 import com.detrapay.ui.util.DebugConstants
 import com.detrapay.ui.util.DeviceUtils
@@ -34,6 +41,14 @@ class OrdersFragment : Fragment() {
     private val homeViewModel: HomeViewModel by activityViewModels()
     private val viewModel: OrdersViewModel by viewModels()
     private val paymentViewModel: PaymentDialogViewModel by activityViewModels()
+    private var createdOrder by mutableStateOf<Order?>(null)
+    private val registrationLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            createdOrder = getCreatedOrder(result.data)
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -55,6 +70,8 @@ class OrdersFragment : Fragment() {
                     addPaymentLoadErrorMessage = getString(R.string.order_details_add_payment_load_error),
                     paymentSuccessMessage = getString(R.string.order_details_payment_success_toast),
                     invalidSimulatorAmountMessage = "Informe um valor maior que zero.",
+                    orderToOpen = createdOrder,
+                    onOrderOpened = { createdOrder = null },
                     onEffect = ::handleEffect,
                 )
             }
@@ -101,14 +118,15 @@ class OrdersFragment : Fragment() {
     }
 
     private fun openNewOrderFlow() {
-        runCatching {
-            findNavController().navigate(R.id.registrationActivity)
-        }.onFailure {
-            Toast.makeText(
-                requireContext(),
-                getString(R.string.home_orders_empty_cta),
-                Toast.LENGTH_SHORT,
-            ).show()
+        registrationLauncher.launch(Intent(requireContext(), RegistrationActivity::class.java))
+    }
+
+    private fun getCreatedOrder(data: Intent?): Order? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            data?.getSerializableExtra(RegistrationActivity.EXTRA_CREATED_ORDER, Order::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            data?.getSerializableExtra(RegistrationActivity.EXTRA_CREATED_ORDER) as? Order
         }
     }
 

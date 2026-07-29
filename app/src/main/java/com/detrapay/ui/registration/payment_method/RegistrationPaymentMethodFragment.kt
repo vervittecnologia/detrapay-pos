@@ -1,6 +1,5 @@
 package com.detrapay.ui.registration.payment_method
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -13,7 +12,6 @@ import com.detrapay.R
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.SimulationPayment
 import com.detrapay.databinding.FragmentRegistrationOrderPaymentMethodBinding
-import com.detrapay.ui.order_details.OrderDetailsActivity
 import com.detrapay.ui.registration.RegistrationActivity
 import com.detrapay.ui.registration.RegistrationViewModel
 import com.detrapay.ui.state.UIState
@@ -246,16 +244,7 @@ class RegistrationPaymentMethodFragment : Fragment(), OnItemClickListener {
     }
 
     private fun openDetailsScreen(order: Order) {
-        val orderDetailsActivityIntent = Intent(
-            requireContext(),
-            OrderDetailsActivity::class.java,
-        )
-        orderDetailsActivityIntent.putExtra("order", order)
-        orderDetailsActivityIntent.putExtra("orderId", order.id)
-        orderDetailsActivityIntent.putExtra("isSuccess", false)
-
-        startActivity(orderDetailsActivityIntent)
-        requireActivity().finish()
+        (requireActivity() as RegistrationActivity).finishWithCreatedOrder(order)
     }
 
     override fun onAdd(item: SimulationPayment) {
