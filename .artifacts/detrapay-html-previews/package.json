@@ -1,0 +1,10 @@
+{
+  "name": "detrapay-html-previews",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:model": "node --test tests/catalog.test.mjs",
+    "test:browser": "playwright test",
+    "capture": "node scripts/capture.mjs"
+  }
+}
