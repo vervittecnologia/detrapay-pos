@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <color name="primary_800">#1E4E8C</color>
-    <color name="primary_500">#3182CE</color>
-    <color name="primary_400">#4299E1</color>
-    <color name="primary_300">#90CDF4</color>
-    <color name="primary_200">#BEE3F8</color>
-    <color name="primary_100">#EBF8FF</color>
+    <color name="primary_800">#1728DE</color>
+    <color name="primary_500">#2438FF</color>
+    <color name="primary_400">#4C5DFF</color>
+    <color name="primary_300">#8C98FF</color>
+    <color name="primary_200">#DCE4FF</color>
+    <color name="primary_100">#E8EEFF</color>
 
     <color name="neutral_900">#171923</color>
     <color name="neutral_800">#1A202C</color>
@@ -42,7 +42,7 @@
     <color name="payment_header_stroke">#D6E9FF</color>
     <color name="payment_shadow">#1A000000</color>
     <color name="payment_blue_gradient_start">@color/primary_400</color>
-    <color name="payment_blue_gradient_end">@color/primary_500</color>
+    <color name="payment_blue_gradient_end">@color/primary_800</color>
     <color name="payment_pending_gradient_start">#ED8936</color>
     <color name="payment_pending_gradient_end">#DD6B20</color>
     <color name="payment_paid_gradient_start">#48BB78</color>

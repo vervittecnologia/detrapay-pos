@@ -4,14 +4,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/registration_payment_screen_background"
+    android:background="@drawable/wallet_screen_background"
     tools:context=".ui.order_details.OrderDetailsActivity">
 
     <LinearLayout
         android:id="@+id/headerLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@color/white"
+        android:background="@drawable/wallet_blue_header_background"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="16dp"
@@ -31,7 +31,7 @@
             android:contentDescription="@string/order_details_back_content_description"
             android:padding="8dp"
             android:src="@drawable/ic_arrow_left"
-            app:tint="@color/neutral_800" />
+            app:tint="@color/white" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -43,7 +43,7 @@
                 android:id="@+id/orderTitleTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/neutral_900"
+                android:textColor="@color/white"
                 android:textSize="24sp"
                 android:textStyle="bold"
                 tools:text="Pedido #322" />
@@ -54,7 +54,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="@string/order_details_payments_subtitle"
-                android:textColor="@color/neutral_500"
+                android:textColor="@color/primary_200"
                 android:textSize="14sp"
                 tools:text="Pagamentos" />
         </LinearLayout>
@@ -78,7 +78,7 @@
                 android:layout_height="22dp"
                 android:contentDescription="@string/order_details_more_options_content_description"
                 android:src="@drawable/ic_more_vert"
-                app:tint="@color/neutral_500" />
+                app:tint="@color/white" />
         </LinearLayout>
     </LinearLayout>
 
@@ -86,7 +86,7 @@
         android:id="@+id/headerDivider"
         android:layout_width="0dp"
         android:layout_height="1dp"
-        android:background="@color/neutral_300"
+        android:background="@color/transparent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/headerLayout" />
@@ -114,9 +114,9 @@
                 android:layout_marginTop="12dp"
                 android:layout_marginEnd="16dp"
                 app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="22dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/neutral_300"
+                app:strokeColor="@color/primary_200"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -419,7 +419,7 @@
         android:id="@+id/successView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:background="@color/white"
+        android:background="@drawable/wallet_screen_background"
         android:gravity="center"
         android:orientation="vertical"
         android:padding="32dp"

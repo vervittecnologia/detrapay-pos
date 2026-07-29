@@ -4,14 +4,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/neutral_100"
+    android:background="@drawable/wallet_screen_background"
     tools:context=".ui.order_details.OrderReportActivity">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="@color/neutral_100"
+        android:background="@color/transparent"
         android:elevation="0dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -56,7 +56,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnPrintReport"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                style="@style/Widget.DS.SecondaryButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
@@ -64,16 +64,16 @@
                 app:icon="@drawable/ic_print_blue"
                 app:iconPadding="8dp"
                 app:iconTint="@color/neutral_900"
-                app:strokeColor="@color/neutral_300" />
+                app:strokeColor="@color/primary_200" />
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="14dp"
+                app:cardCornerRadius="20dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/neutral_200"
+                app:strokeColor="@color/primary_200"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -126,9 +126,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="14dp"
+                app:cardCornerRadius="20dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/neutral_200"
+                app:strokeColor="@color/primary_200"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -197,9 +197,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="14dp"
+                app:cardCornerRadius="20dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/neutral_200"
+                app:strokeColor="@color/primary_200"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -242,9 +242,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="14dp"
+                app:cardCornerRadius="20dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/neutral_200"
+                app:strokeColor="@color/primary_200"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -279,9 +279,9 @@
                 android:layout_marginTop="12dp"
                 android:layout_marginBottom="12dp"
                 app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="14dp"
+                app:cardCornerRadius="20dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/neutral_200"
+                app:strokeColor="@color/primary_200"
                 app:strokeWidth="1dp">
 
                 <LinearLayout

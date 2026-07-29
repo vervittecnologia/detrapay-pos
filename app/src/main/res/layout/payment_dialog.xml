@@ -45,7 +45,7 @@
         android:id="@+id/topDivider"
         android:layout_width="0dp"
         android:layout_height="1dp"
-        android:background="@color/neutral_300"
+        android:background="@color/primary_100"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/topBar" />
@@ -67,7 +67,7 @@
             android:id="@+id/paymentMethod"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/payment_method_chip_background"
+            android:background="@drawable/wallet_soft_blue_pill"
             android:paddingHorizontal="10dp"
             android:paddingVertical="4dp"
             android:textColor="@color/primary_500"
@@ -194,7 +194,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:layout_marginTop="20dp"
-                android:background="@drawable/default_button_background"
+                android:background="@drawable/registration_payment_primary_button_background"
                 android:text="@string/payment_dialog_retry_action"
                 android:textAllCaps="false"
                 android:textColor="@color/white"
@@ -251,7 +251,7 @@
                 app:cardBackgroundColor="@color/white"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/neutral_300"
+                app:strokeColor="@color/primary_200"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -339,7 +339,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:layout_marginTop="14dp"
-                android:background="@drawable/default_button_background"
+                android:background="@drawable/registration_payment_primary_button_background"
                 android:text="@string/payment_dialog_pix_copy_action"
                 android:textAllCaps="false"
                 android:textColor="@color/white"
@@ -353,7 +353,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:layout_marginTop="14dp"
-                android:background="@drawable/default_button_background"
+                android:background="@drawable/registration_payment_primary_button_background"
                 android:text="@string/payment_dialog_success_continue"
                 android:textAllCaps="false"
                 android:textColor="@color/white"

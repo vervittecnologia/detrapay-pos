@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.detrapay.data.model.PaymentData
 import com.detrapay.ui.home.orders.components.OrderFlowColors
+import com.detrapay.ui.home.orders.components.OrderFlowFintechTheme
 import com.detrapay.ui.home.orders.components.*
 import com.detrapay.ui.home.orders.OrderPresentation
 import com.detrapay.ui.state.UIState
@@ -80,7 +81,7 @@ fun WaitingScreen(
         animationSpec = infiniteRepeatable(tween(1400), RepeatMode.Reverse),
         label = "pulse",
     )
-    Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
+    Column(modifier = Modifier.fillMaxSize().background(OrderFlowFintechTheme.Canvas)) {
         NavBar("Pagamento", onBack)
         AmountCard(presentation.amountLabel, OrderPresentation.formatCurrency(total), Icons.Default.AttachMoney, OrderFlowColors.Blue)
         Column(
@@ -95,25 +96,25 @@ fun WaitingScreen(
                         .size(180.dp)
                         .graphicsLayer(scaleX = scale, scaleY = scale)
                         .clip(RoundedCornerShape(42.dp))
-                        .background(OrderFlowColors.BlueSoft.copy(alpha = 0.55f)),
+                        .background(OrderFlowFintechTheme.PrimarySoft.copy(alpha = 0.55f)),
                 )
                 Box(
                     modifier = Modifier
                         .size(118.dp)
                         .clip(RoundedCornerShape(28.dp))
-                        .background(OrderFlowColors.BlueSoft),
+                        .background(OrderFlowFintechTheme.PrimarySoft),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Default.Receipt, contentDescription = null, tint = OrderFlowColors.Blue, modifier = Modifier.size(54.dp))
+                    Icon(Icons.Default.Receipt, contentDescription = null, tint = OrderFlowFintechTheme.Primary, modifier = Modifier.size(54.dp))
                 }
             }
-            Text(presentation.title, color = OrderFlowColors.Ink, fontSize = 26.sp, fontWeight = FontWeight.Black)
+            Text(presentation.title, color = OrderFlowFintechTheme.Ink, fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
             Text(
                 presentation.subtitle,
                 modifier = Modifier
                     .padding(top = 8.dp)
                     .widthIn(max = 240.dp),
-                color = OrderFlowColors.Muted,
+                color = OrderFlowFintechTheme.Muted,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
             )

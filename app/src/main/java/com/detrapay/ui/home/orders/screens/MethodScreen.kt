@@ -15,13 +15,13 @@ import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.ui.home.orders.components.OrderFlowColors
+import com.detrapay.ui.home.orders.components.OrderFlowFintechTheme
 import com.detrapay.ui.util.PaymentTypeRules
 import com.detrapay.ui.home.orders.components.*
 
@@ -44,24 +44,24 @@ fun MethodScreen(
     val cash = recordOnly.firstOrNull {
         PaymentTypeRules.normalize(it.paymentType) in setOf("dinheiro", "cash")
     }
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
+    LazyColumn(modifier = Modifier.fillMaxSize().background(OrderFlowFintechTheme.Canvas)) {
         item {
-            Column(modifier = Modifier.background(Color.White)) {
+            Column(modifier = Modifier.background(OrderFlowFintechTheme.Canvas)) {
                 NavBar("Pedido #${order.id}", onBack)
             }
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Escolha a forma de pagamento", color = OrderFlowColors.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                Text("Pagamentos online", color = OrderFlowColors.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                Text("Escolha a forma de pagamento", color = OrderFlowFintechTheme.Ink, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+                Text("Pagamentos online", color = OrderFlowFintechTheme.Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
                 PaymentMethodRow("Crédito", "Parcelado ou à vista", Icons.Default.CreditCard, OrderFlowColors.Blue, credit != null) {
                     credit?.let(onSelectPaymentMethod)
                 }
-                PaymentMethodRow("Débito", "Pagamento imediato com taxa", Icons.Default.CreditCard, OrderFlowColors.Green, debit != null) {
+                PaymentMethodRow("Débito", "Pagamento imediato com taxa", Icons.Default.CreditCard, OrderFlowColors.BlueLight, debit != null) {
                     debit?.let(onSelectPaymentMethod)
                 }
                 PaymentMethodRow("Pix", "Recebimento rápido", Icons.Default.Bolt, OrderFlowColors.Teal, pix != null) {
                     pix?.let(onSelectPaymentMethod)
                 }
-                Text("Pagamentos para registro", modifier = Modifier.padding(top = 12.dp), color = OrderFlowColors.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                Text("Pagamentos para registro", modifier = Modifier.padding(top = 12.dp), color = OrderFlowFintechTheme.Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     SmallMethod(Modifier.weight(1f), "Transferência\nPix", Icons.Default.Bolt, OrderFlowColors.Teal, pixTransfer != null) {
                         pixTransfer?.let(onSelectPaymentMethod)
@@ -69,7 +69,7 @@ fun MethodScreen(
                     SmallMethod(Modifier.weight(1f), "Crédito Loja", Icons.Default.AccountBalance, OrderFlowColors.Purple, storeCredit != null) {
                         storeCredit?.let(onSelectPaymentMethod)
                     }
-                    SmallMethod(Modifier.weight(1f), "Dinheiro", Icons.Default.Payments, OrderFlowColors.Green, cash != null) {
+                    SmallMethod(Modifier.weight(1f), "Dinheiro", Icons.Default.Payments, OrderFlowColors.Blue, cash != null) {
                         cash?.let(onSelectPaymentMethod)
                     }
                 }

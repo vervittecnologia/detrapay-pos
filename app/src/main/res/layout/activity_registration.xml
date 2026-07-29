@@ -5,13 +5,14 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/wallet_screen_background"
     tools:context=".ui.registration.RegistrationActivity">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/registrationToolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/primary_500"
+        android:background="@drawable/wallet_blue_header_background"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

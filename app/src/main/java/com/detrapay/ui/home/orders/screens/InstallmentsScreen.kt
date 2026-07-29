@@ -26,6 +26,7 @@ import com.detrapay.ui.home.orders.components.AmountCard
 import com.detrapay.ui.home.orders.components.InstallmentRow
 import com.detrapay.ui.home.orders.components.NavBar
 import com.detrapay.ui.home.orders.components.OrderFlowColors
+import com.detrapay.ui.home.orders.components.OrderFlowFintechTheme
 
 @Composable
 fun InstallmentsScreen(
@@ -36,9 +37,9 @@ fun InstallmentsScreen(
     onSelectInstallment: (Int) -> Unit,
     onContinue: () -> Unit,
 ) {
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
+    LazyColumn(modifier = Modifier.fillMaxSize().background(OrderFlowFintechTheme.Canvas)) {
         item {
-            Column(modifier = Modifier.background(Color.White)) {
+            Column(modifier = Modifier.background(OrderFlowFintechTheme.Canvas)) {
                 NavBar("Parcelamento", onBack)
                 AmountCard(
                     "VALOR ORIGINAL",
@@ -50,9 +51,9 @@ fun InstallmentsScreen(
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     "Escolha o parcelamento",
-                    color = OrderFlowColors.Ink,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
+                    color = OrderFlowFintechTheme.Ink,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
                 )
                 installments.forEach { installment ->
                     InstallmentRow(
@@ -66,8 +67,8 @@ fun InstallmentsScreen(
                     modifier = Modifier.fillMaxWidth().height(58.dp),
                     onClick = onContinue,
                     enabled = installments.any { it.installmentNumber == selectedInstallment },
-                    shape = RoundedCornerShape(18.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = OrderFlowColors.Blue),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = OrderFlowFintechTheme.Primary),
                 ) {
                     Text("Revisar pagamento", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }

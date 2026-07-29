@@ -121,9 +121,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
                 app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp"
-                app:strokeColor="@color/neutral_300"
+            app:cardCornerRadius="22dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/primary_200"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -388,7 +388,7 @@
         android:id="@+id/statusFooter"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@drawable/registration_payment_footer_background"
+        android:background="@drawable/wallet_bottom_sheet_background"
         android:elevation="14dp"
         android:orientation="vertical"
         android:paddingStart="16dp"

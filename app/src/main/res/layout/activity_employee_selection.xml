@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/color_background"
+    android:background="@drawable/wallet_screen_background"
     tools:context=".ui.employee_selection.EmployeeSelectionActivity">
 
     <ImageView
@@ -28,11 +28,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/spacing_medium"
-            android:layout_marginTop="@dimen/spacing_xl"
+        android:layout_marginTop="@dimen/spacing_xl"
             android:layout_marginEnd="@dimen/spacing_medium"
             android:text="@string/employee_selection_title"
             android:textColor="@color/primary_500"
-            android:textSize="28sp"
+            android:textSize="30sp"
             android:textStyle="bold"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -44,7 +44,7 @@
             android:layout_marginTop="@dimen/spacing_medium"
             android:layout_marginEnd="@dimen/spacing_medium"
             android:text="@string/employee_selection_subtitle"
-            android:textColor="@color/neutral_700"
+            android:textColor="@color/neutral_600"
             android:textSize="16sp"
             app:layout_constraintTop_toBottomOf="@+id/title" />
 
@@ -55,7 +55,8 @@
             android:layout_marginTop="@dimen/spacing_medium"
             android:clipToPadding="false"
             android:contentDescription="@string/employee_list_content_description"
-            android:paddingBottom="@dimen/spacing_medium"
+            android:paddingTop="@dimen/spacing_small"
+            android:paddingBottom="@dimen/spacing_large"
             app:layoutManager="LinearLayoutManager"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/subtitle"
@@ -108,8 +109,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/spacing_large"
+            style="@style/Widget.DS.PrimaryButton"
             android:text="@string/reload_btn"
-            app:cornerRadius="@dimen/radius_medium" />
+            app:cornerRadius="@dimen/radius_large" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

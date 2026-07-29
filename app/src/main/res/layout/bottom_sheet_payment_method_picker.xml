@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/neutral_100"
+    android:background="@drawable/wallet_bottom_sheet_background"
     android:orientation="vertical"
     android:paddingTop="10dp"
     android:paddingBottom="16dp">
@@ -12,7 +12,7 @@
         android:layout_width="84dp"
         android:layout_height="8dp"
         android:layout_gravity="center_horizontal"
-        android:background="@drawable/payment_method_chip_background" />
+        android:background="@drawable/wallet_handle_background" />
 
     <TextView
         android:id="@+id/paymentPickerTitle"
@@ -45,7 +45,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="18dp"
         android:layout_marginEnd="16dp"
-        app:strokeColor="@color/neutral_300"
+        app:strokeColor="@color/primary_200"
         app:strokeWidth="1dp">
 
         <include layout="@layout/view_payment_method_credit_row" />
@@ -59,7 +59,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="10dp"
         android:layout_marginEnd="16dp"
-        app:strokeColor="@color/neutral_300"
+        app:strokeColor="@color/primary_200"
         app:strokeWidth="1dp">
 
         <include layout="@layout/view_payment_method_debit_row" />
@@ -73,7 +73,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="10dp"
         android:layout_marginEnd="16dp"
-        app:strokeColor="@color/neutral_300"
+        app:strokeColor="@color/primary_200"
         app:strokeWidth="1dp">
 
         <include layout="@layout/view_payment_method_pix_row" />
@@ -87,7 +87,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="10dp"
         android:layout_marginEnd="16dp"
-        app:strokeColor="@color/neutral_300"
+        app:strokeColor="@color/primary_200"
         app:strokeWidth="1dp">
 
         <include layout="@layout/view_payment_method_cash_row" />
@@ -101,7 +101,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="10dp"
         android:layout_marginEnd="16dp"
-        app:strokeColor="@color/neutral_300"
+        app:strokeColor="@color/primary_200"
         app:strokeWidth="1dp">
 
         <include layout="@layout/view_payment_method_store_credit_row" />
@@ -114,12 +114,12 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="18dp"
         android:layout_marginEnd="16dp"
-        android:backgroundTint="@color/neutral_200"
+        android:backgroundTint="@color/primary_100"
         android:insetTop="0dp"
         android:insetBottom="0dp"
         android:text="@string/registration_payment_picker_cancel"
         android:textAllCaps="false"
-        android:textColor="@color/neutral_800"
+        android:textColor="@color/primary_500"
         android:textSize="16sp"
         android:textStyle="bold"
         app:cornerRadius="14dp" />

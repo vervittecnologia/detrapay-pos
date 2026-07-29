@@ -41,6 +41,7 @@ import com.detrapay.data.model.Order
 import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.canBeDeleted
 import com.detrapay.ui.home.orders.components.OrderFlowColors
+import com.detrapay.ui.home.orders.components.OrderFlowFintechTheme
 import com.detrapay.ui.home.orders.components.*
 import com.detrapay.ui.home.orders.OrderPresentation
 import com.detrapay.ui.util.InstallmentQuotePresenter
@@ -58,16 +59,15 @@ fun DetailScreen(
     val isPending = status == "Pendente"
     var pendingDeletion by remember { mutableStateOf<OrderReceivableItem?>(null) }
 
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
+    LazyColumn(modifier = Modifier.fillMaxSize().background(OrderFlowFintechTheme.Canvas)) {
         item {
             NavBar("Pedido #${order.id}", onBack)
 
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Resumo financeiro", color = OrderFlowColors.Ink, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                Text("Resumo financeiro", color = OrderFlowFintechTheme.Ink, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
                 Card(
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, OrderFlowColors.Border),
                 ) {
                     Row(modifier = Modifier.fillMaxWidth()) {
                         MetricCell("TOTAL", OrderPresentation.formatCurrency(order.originalAmount), OrderFlowColors.Ink, Modifier.weight(1f))
@@ -100,7 +100,7 @@ fun DetailScreen(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Pagamentos registrados", modifier = Modifier.weight(1f), color = OrderFlowColors.Ink, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                    Text("Pagamentos registrados", modifier = Modifier.weight(1f), color = OrderFlowFintechTheme.Ink, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
                     Text(
                         order.receivables.size.toString(),
                         modifier = Modifier
@@ -163,7 +163,7 @@ fun DetailScreen(
                         modifier = Modifier.fillMaxWidth().height(58.dp),
                         onClick = onPay,
                         shape = RoundedCornerShape(18.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = OrderFlowColors.Blue),
+                    colors = ButtonDefaults.buttonColors(containerColor = OrderFlowFintechTheme.Primary),
                     ) {
                         Text("Pagar", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }

@@ -10,7 +10,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/neutral_200"
+        android:background="@drawable/wallet_transaction_card_background"
         android:padding="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -29,9 +29,10 @@
 
             <TextView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Forma de pgto."
-                android:textSize="@dimen/text_size_body"/>
+            android:layout_height="wrap_content"
+            android:text="Forma de pgto."
+            android:textColor="@color/neutral_600"
+            android:textSize="@dimen/text_size_body"/>
 
             <Spinner
                 android:id="@+id/paymentMethodSpinner"
@@ -47,6 +48,11 @@
             android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
             android:hint="Valor"
+            app:boxBackgroundColor="@color/white"
+            app:boxCornerRadiusBottomEnd="14dp"
+            app:boxCornerRadiusBottomStart="14dp"
+            app:boxCornerRadiusTopEnd="14dp"
+            app:boxCornerRadiusTopStart="14dp"
             app:hintTextAppearance="@style/HintText"
             app:layout_constraintEnd_toStartOf="@+id/actionButton"
             app:layout_constraintStart_toStartOf="@+id/paymentMethodLayout"
@@ -70,6 +76,7 @@
             android:layout_height="25dp"
             android:contentDescription="Adicionar pagamento"
             android:src="@android:drawable/ic_menu_add"
+            app:tint="@color/primary_500"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -92,6 +99,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Parcelamento"
+                android:textColor="@color/neutral_600"
                 android:textSize="@dimen/text_size_body" />
 
             <Spinner

@@ -42,25 +42,29 @@ fun NavBar(title: String, onBack: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
-            .padding(horizontal = 12.dp, vertical = 12.dp),
+            .background(OrderFlowFintechTheme.Canvas)
+            .padding(horizontal = 24.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(
             onClick = onBack,
             modifier = Modifier
-                .size(40.dp)
+                .size(47.dp)
                 .clip(CircleShape)
-                .background(OrderFlowColors.Key),
+                .background(OrderFlowFintechTheme.Muted.copy(alpha = 0.25f)),
         ) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "Voltar", tint = OrderFlowColors.Text)
+            Icon(Icons.Default.ArrowBack, contentDescription = "Voltar", tint = OrderFlowFintechTheme.Quiet)
         }
         Text(
             title,
-            modifier = Modifier.padding(start = 10.dp),
-            color = OrderFlowColors.Ink,
-            fontSize = 25.sp,
-            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 12.dp),
+            color = OrderFlowFintechTheme.Ink,
+            fontSize = 30.sp,
+            fontWeight = FontWeight.Black,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -71,24 +75,23 @@ fun AmountCard(label: String, amount: String, icon: ImageVector, iconColor: Colo
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 16.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(OrderFlowColors.Key)
-            .border(1.dp, OrderFlowColors.Border, RoundedCornerShape(18.dp))
-            .padding(16.dp),
+            .clip(RoundedCornerShape(30.dp))
+            .background(OrderFlowFintechTheme.Primary)
+            .padding(horizontal = 28.dp, vertical = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(iconColor.copy(alpha = 0.10f)),
+                .size(50.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(Color.White.copy(alpha = 0.18f)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, contentDescription = null, tint = iconColor)
+            Icon(icon, contentDescription = null, tint = Color.White)
         }
         Column(modifier = Modifier.padding(start = 14.dp)) {
-            Text(label, color = OrderFlowColors.Faint, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            Text(amount, color = OrderFlowColors.Ink, fontSize = 25.sp, fontWeight = FontWeight.Black)
+            Text(label, color = Color.White.copy(alpha = 0.68f), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+            Text(amount, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -106,12 +109,12 @@ fun PaymentMethodRow(
         modifier = Modifier
             .fillMaxWidth()
             .alpha(if (enabled) 1f else 0.45f)
-            .clip(RoundedCornerShape(18.dp))
-            .background(Color.White)
+            .clip(RoundedCornerShape(10.dp))
+            .background(OrderFlowFintechTheme.Card)
             .border(
                 if (title == "Crédito" && enabled) 2.dp else 1.dp,
                 if (title == "Crédito" && enabled) OrderFlowColors.Blue else OrderFlowColors.Border,
-                RoundedCornerShape(18.dp),
+                RoundedCornerShape(10.dp),
             )
             .clickable(enabled = enabled, onClick = onClick)
             .padding(16.dp),
@@ -119,10 +122,10 @@ fun PaymentMethodRow(
     ) {
         MethodIcon(icon, color)
         Column(modifier = Modifier.weight(1f).padding(start = 14.dp)) {
-            Text(title, color = OrderFlowColors.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Text(subtitle, color = OrderFlowColors.Muted, fontSize = 12.sp)
+            Text(title, color = OrderFlowFintechTheme.Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = OrderFlowFintechTheme.Muted, fontSize = 12.sp)
         }
-        Text("›", color = OrderFlowColors.Faint, fontSize = 28.sp)
+        Text("›", color = OrderFlowFintechTheme.Muted, fontSize = 28.sp)
     }
 }
 
@@ -131,9 +134,9 @@ fun SmallMethod(modifier: Modifier, title: String, icon: ImageVector, color: Col
     Column(
         modifier = modifier
             .alpha(if (enabled) 1f else 0.45f)
-            .clip(RoundedCornerShape(18.dp))
-            .background(Color.White)
-            .border(1.dp, OrderFlowColors.Border, RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(10.dp))
+            .background(OrderFlowFintechTheme.Card)
+            .border(1.dp, OrderFlowColors.Border, RoundedCornerShape(10.dp))
             .clickable(enabled = enabled, onClick = onClick)
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -142,7 +145,7 @@ fun SmallMethod(modifier: Modifier, title: String, icon: ImageVector, color: Col
         Text(
             title,
             modifier = Modifier.padding(top = 8.dp),
-            color = OrderFlowColors.Text,
+            color = OrderFlowFintechTheme.Ink,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,
@@ -155,8 +158,8 @@ fun MethodIcon(icon: ImageVector, color: Color) {
     Box(
         modifier = Modifier
             .size(42.dp)
-            .clip(RoundedCornerShape(14.dp))
-            .background(color.copy(alpha = 0.10f)),
+            .clip(RoundedCornerShape(5.dp))
+            .background(color.copy(alpha = 0.15f)),
         contentAlignment = Alignment.Center,
     ) {
         Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
@@ -174,9 +177,9 @@ fun InstallmentRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(Color.White)
-            .border(if (isSelected) 2.dp else 1.dp, if (isSelected) OrderFlowColors.Blue else OrderFlowColors.Border, RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(10.dp))
+            .background(OrderFlowFintechTheme.Card)
+            .border(if (isSelected) 2.dp else 1.dp, if (isSelected) OrderFlowColors.Blue else OrderFlowColors.Border, RoundedCornerShape(10.dp))
             .clickable(onClick = onClick)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -184,14 +187,14 @@ fun InstallmentRow(
         Text(
             "${installment.installmentNumber}x",
             modifier = Modifier.width(42.dp),
-            color = if (isSelected) OrderFlowColors.Blue else OrderFlowColors.Faint,
+            color = if (isSelected) OrderFlowFintechTheme.Primary else OrderFlowFintechTheme.Muted,
             fontSize = 17.sp,
             fontWeight = FontWeight.Black,
         )
         Column(modifier = Modifier.weight(1f)) {
-            Text(presentation.installmentLabel, color = OrderFlowColors.Ink, fontWeight = FontWeight.Bold)
-            Text(presentation.originalLabel, color = OrderFlowColors.Faint, fontSize = 12.sp)
-            Text(presentation.totalLabel, color = OrderFlowColors.Faint, fontSize = 12.sp)
+            Text(presentation.installmentLabel, color = OrderFlowFintechTheme.Ink, fontWeight = FontWeight.Bold)
+            Text(presentation.originalLabel, color = OrderFlowFintechTheme.Muted, fontSize = 12.sp)
+            Text(presentation.totalLabel, color = OrderFlowFintechTheme.Muted, fontSize = 12.sp)
         }
     }
 }
@@ -239,8 +242,8 @@ fun SummaryRow(label: String, value: String, strong: Boolean = false, subtitle: 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(if (strong) 14.dp else 0.dp))
-            .background(if (strong) OrderFlowColors.Key else Color.White)
+            .clip(RoundedCornerShape(if (strong) 10.dp else 0.dp))
+            .background(if (strong) OrderFlowFintechTheme.CardMuted else OrderFlowFintechTheme.Card)
             .padding(horizontal = 16.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
