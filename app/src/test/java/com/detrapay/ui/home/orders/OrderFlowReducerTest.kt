@@ -44,6 +44,16 @@ class OrderFlowReducerTest {
     }
 
     @Test
+    fun `show detail selects order and opens latest detail flow`() {
+        val order = order()
+
+        val state = OrderFlowReducer.showDetail(OrderFlowLocalState(), order)
+
+        assertEquals(order, state.selectedOrder)
+        assertEquals(OrderFlowStep.Detail, state.step)
+    }
+
+    @Test
     fun `payment key delegates to presentation rules`() {
         val state = OrderFlowLocalState(paymentDigits = "12")
 
@@ -54,7 +64,7 @@ class OrderFlowReducerTest {
 
     @Test
     fun `open methods moves to method`() {
-        val state = OrderFlowLocalState(step = OrderFlowStep.Orders)
+        val state = OrderFlowLocalState(step = OrderFlowStep.Detail)
 
         val next = OrderFlowReducer.openMethods(state)
 
@@ -175,6 +185,10 @@ class OrderFlowReducerTest {
 
     @Test
     fun `back follows current order flow step order`() {
+        assertEquals(
+            OrderFlowStep.Orders,
+            OrderFlowReducer.back(OrderFlowLocalState(step = OrderFlowStep.Detail)).step,
+        )
         assertEquals(
             OrderFlowStep.Orders,
             OrderFlowReducer.back(OrderFlowLocalState(step = OrderFlowStep.Method)).step,

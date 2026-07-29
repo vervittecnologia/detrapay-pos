@@ -13,7 +13,8 @@ import com.detrapay.R
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.SimulationPayment
 import com.detrapay.databinding.FragmentRegistrationOrderPaymentMethodBinding
-import com.detrapay.ui.order_details.OrderDetailsActivity
+import com.detrapay.ui.home.HomeActivity
+import com.detrapay.ui.home.orders.OrdersFragment
 import com.detrapay.ui.registration.RegistrationActivity
 import com.detrapay.ui.registration.RegistrationViewModel
 import com.detrapay.ui.state.UIState
@@ -246,15 +247,12 @@ class RegistrationPaymentMethodFragment : Fragment(), OnItemClickListener {
     }
 
     private fun openDetailsScreen(order: Order) {
-        val orderDetailsActivityIntent = Intent(
-            requireContext(),
-            OrderDetailsActivity::class.java,
+        startActivity(
+            Intent(requireContext(), HomeActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                putExtra(OrdersFragment.EXTRA_OPEN_ORDER, order)
+            },
         )
-        orderDetailsActivityIntent.putExtra("order", order)
-        orderDetailsActivityIntent.putExtra("orderId", order.id)
-        orderDetailsActivityIntent.putExtra("isSuccess", false)
-
-        startActivity(orderDetailsActivityIntent)
         requireActivity().finish()
     }
 

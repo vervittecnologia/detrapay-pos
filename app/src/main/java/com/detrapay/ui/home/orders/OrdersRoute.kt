@@ -34,9 +34,16 @@ fun OrdersRoute(
     addPaymentLoadErrorMessage: String,
     paymentSuccessMessage: String,
     invalidSimulatorAmountMessage: String,
+    initialOrder: Order? = null,
     onEffect: (OrderFlowEffect) -> Unit,
 ) {
-    var localState by remember { mutableStateOf(OrderFlowLocalState()) }
+    var localState by remember(initialOrder) {
+        mutableStateOf(
+            initialOrder?.let {
+                OrderFlowLocalState(selectedOrder = it, step = OrderFlowStep.Detail)
+            } ?: OrderFlowLocalState(),
+        )
+    }
     var orders by remember { mutableStateOf<List<Order>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
@@ -307,7 +314,7 @@ fun OrdersRoute(
                     viewModel.loadPaymentMethods()
                 }
                 is OrderFlowAction.OrderDetail -> {
-                    onEffect(OrderFlowEffect.OpenOfficialOrderDetails(action.order))
+                    localState = OrderFlowReducer.showDetail(localState, action.order)
                 }
                 is OrderFlowAction.DeletePayment -> {
                     localState.selectedOrder?.let { order ->

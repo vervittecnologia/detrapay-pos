@@ -19,10 +19,10 @@ import androidx.navigation.fragment.findNavController
 import com.detrapay.BuildConfig
 import com.detrapay.R
 import com.detrapay.data.UnauthorizedException
+import com.detrapay.data.model.Order
 import com.detrapay.ui.home.HomeViewModel
 import com.detrapay.ui.home.orders.OrdersViewModel
 import com.detrapay.ui.login.LoginActivity
-import com.detrapay.ui.order_details.OrderDetailsActivity
 import com.detrapay.ui.payment.PaymentDialogViewModel
 import com.detrapay.ui.session_expired_dialog.SessionExpiredDialog
 import com.detrapay.ui.util.DebugConstants
@@ -56,6 +56,7 @@ class OrdersFragment : Fragment() {
                     addPaymentLoadErrorMessage = getString(R.string.order_details_add_payment_load_error),
                     paymentSuccessMessage = getString(R.string.order_details_payment_success_toast),
                     invalidSimulatorAmountMessage = "Informe um valor maior que zero.",
+                    initialOrder = initialOrder(),
                     onEffect = ::handleEffect,
                 )
             }
@@ -66,7 +67,6 @@ class OrdersFragment : Fragment() {
         when (effect) {
             OrderFlowEffect.ShowLogoutConfirmation -> showLogoutConfirmation()
             OrderFlowEffect.NavigateToRegistration -> openNewOrderFlow()
-            is OrderFlowEffect.OpenOfficialOrderDetails -> openOfficialOrderDetails(effect.order)
             is OrderFlowEffect.CopyPaymentText -> copyPaymentText(effect.text)
             is OrderFlowEffect.CopySimulatorText -> copySimulatorText(effect.text)
             is OrderFlowEffect.ShareSimulatorText -> shareSimulatorText(effect.text)
@@ -114,15 +114,9 @@ class OrdersFragment : Fragment() {
         }
     }
 
-    private fun openOfficialOrderDetails(order: com.detrapay.data.model.Order) {
-        startActivity(
-            Intent(requireContext(), OrderDetailsActivity::class.java).apply {
-                putExtra("order", order)
-                putExtra("orderId", order.id)
-                putExtra("isSuccess", false)
-            },
-        )
-    }
+    @Suppress("DEPRECATION")
+    private fun initialOrder(): Order? =
+        requireActivity().intent.getSerializableExtra(EXTRA_OPEN_ORDER) as? Order
 
     private fun showLogoutConfirmation() {
         AlertDialog.Builder(requireContext())
@@ -150,5 +144,9 @@ class OrdersFragment : Fragment() {
         if (error is UnauthorizedException) {
             SessionExpiredDialog.showIfNeeded(requireActivity().supportFragmentManager, error)
         }
+    }
+
+    companion object {
+        const val EXTRA_OPEN_ORDER = "open_order_in_latest_flow"
     }
 }

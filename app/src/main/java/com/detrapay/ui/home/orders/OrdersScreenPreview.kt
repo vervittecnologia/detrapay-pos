@@ -16,6 +16,10 @@ private fun OrdersOrdersEmptyPreview() = PreviewContent(emptyList(), local = Ord
 @Composable
 private fun OrdersOrdersErrorPreview() = PreviewContent(emptyList(), "Falha ao carregar pedidos.", OrderFlowLocalState(step = OrderFlowStep.Orders))
 
+@Preview(name = "Orders - Detail", showBackground = true, widthDp = 390, heightDp = 844)
+@Composable
+private fun OrdersDetailPreview() = PreviewForOrder(OrderFlowStep.Detail)
+
 @Preview(name = "Orders - Amount", showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
 private fun OrdersAmountPreview() = PreviewForOrder(OrderFlowStep.Amount, selectedPaymentType = "pix")
@@ -106,7 +110,7 @@ private fun PreviewForOrder(
         local = OrderFlowLocalState(
             step = step,
             selectedOrder = previewOrders().first(),
-            paymentDigits = "12500",
+            paymentDigits = if (step == OrderFlowStep.Detail) "" else "12500",
             selectedPaymentMethod = previewPaymentMethods().firstOrNull {
                 it.paymentType == selectedPaymentType
             },

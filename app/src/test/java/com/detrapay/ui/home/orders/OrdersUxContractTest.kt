@@ -74,19 +74,25 @@ class OrdersUxContractTest {
     }
 
     @Test
-    fun `order details always use the official activity`() {
-        val duplicateScreen = File(
+    fun `order details always use the latest compose payment flow`() {
+        val detailScreen = File(
             "src/main/java/com/detrapay/ui/home/orders/screens/DetailScreen.kt",
         )
         val route = File(
             "src/main/java/com/detrapay/ui/home/orders/OrdersRoute.kt",
         ).readText()
-        val fragment = File(
-            "src/main/java/com/detrapay/ui/home/orders/OrdersFragment.kt",
+        val resume = File(
+            "src/main/java/com/detrapay/ui/registration/resume/RegistrationResumeFragment.kt",
+        ).readText()
+        val payment = File(
+            "src/main/java/com/detrapay/ui/registration/payment_method/RegistrationPaymentMethodFragment.kt",
         ).readText()
 
-        assertFalse(duplicateScreen.exists())
-        assertTrue(route.contains("OpenOfficialOrderDetails(action.order)"))
-        assertTrue(fragment.contains("OrderDetailsActivity::class.java"))
+        assertTrue(detailScreen.exists())
+        assertTrue(route.contains("OrderFlowReducer.showDetail(localState, action.order)"))
+        assertTrue(resume.contains("HomeActivity::class.java"))
+        assertTrue(payment.contains("HomeActivity::class.java"))
+        assertFalse(resume.contains("OrderDetailsActivity::class.java"))
+        assertFalse(payment.contains("OrderDetailsActivity::class.java"))
     }
 }

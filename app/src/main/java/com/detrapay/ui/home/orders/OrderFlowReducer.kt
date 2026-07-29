@@ -14,6 +14,10 @@ object OrderFlowReducer {
     const val SIMULATOR_REQUEST_BLOCKED_MESSAGE = "Aguarde o carregamento das taxas do checkout."
     const val CHECKOUT_REQUEST_BLOCKED_MESSAGE = "Aguarde o carregamento das taxas do simulador."
 
+    fun showDetail(state: OrderFlowLocalState, order: Order): OrderFlowLocalState {
+        return state.copy(selectedOrder = order, step = OrderFlowStep.Detail)
+    }
+
     fun startPayment(state: OrderFlowLocalState, order: Order): OrderFlowLocalState {
         return state.copy(
             selectedOrder = order,
@@ -203,6 +207,7 @@ object OrderFlowReducer {
     fun back(state: OrderFlowLocalState): OrderFlowLocalState {
         val nextStep = when (state.step) {
             OrderFlowStep.Orders -> OrderFlowStep.Orders
+            OrderFlowStep.Detail -> OrderFlowStep.Orders
             OrderFlowStep.Method -> OrderFlowStep.Orders
             OrderFlowStep.Amount -> OrderFlowStep.Method
             OrderFlowStep.Installments -> OrderFlowStep.Amount
