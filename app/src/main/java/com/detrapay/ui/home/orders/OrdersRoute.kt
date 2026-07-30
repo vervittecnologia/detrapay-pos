@@ -164,15 +164,7 @@ fun OrdersRoute(
         when (val state = inPagePaymentState) {
             is UIState.Success -> {
                 if (state.data?.pendingConfirmation == true) return@LaunchedEffect
-                onEffect(OrderFlowEffect.ShowToast(paymentSuccessMessage, long = false))
-                localState = localState.copy(
-                    step = OrderFlowStep.Orders,
-                    activePaymentRequest = null,
-                    paymentSubmissionInFlight = false,
-                )
-                viewModel.clearPaymentState()
-                isRefreshing = true
-                viewModel.loadOrders(forceRefresh = true)
+                // Keep the approved state visible until the seller confirms the conclusion.
             }
             is UIState.Error -> {
                 state.exception?.let { onEffect(OrderFlowEffect.ShowSessionExpired(it)) }

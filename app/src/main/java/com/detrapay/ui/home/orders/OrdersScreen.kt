@@ -121,6 +121,9 @@ fun OrdersScreen(
                     }
                     OrderFlowStep.Waiting -> WaitingScreen(
                         total = local.paymentReview?.amountFinal ?: amount,
+                        installments = local.activePaymentRequest?.installments
+                            ?: local.paymentReview?.installments
+                            ?: 1,
                         paymentType = local.selectedPaymentMethod?.paymentType.orEmpty(),
                         paymentState = state.inPagePaymentState,
                         onBack = { onAction(OrderFlowAction.Back) },

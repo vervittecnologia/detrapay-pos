@@ -36,7 +36,7 @@ class PaymentDialogViewModel @Inject constructor(
 
     private enum class PaymentStep(val message: String) {
         PREPARING("Aguarde, preparando a maquininha."),
-        WAITING("Siga as instrucoes na maquininha."),
+        WAITING("Aproxime ou insira seu cartao"),
         PROCESSING("Processando pagamento..."),
         RECORDING("Pagamento aprovado. Registrando no pedido..."),
     }
@@ -52,6 +52,8 @@ class PaymentDialogViewModel @Inject constructor(
 
     @Volatile
     private var terminalPaymentActive = false
+    @Volatile
+    private var lastTerminalMessage: String? = null
     private var pendingCompletion: PendingCompletion? = null
 
     fun init() {
@@ -94,6 +96,7 @@ class PaymentDialogViewModel @Inject constructor(
         }
 
         terminalPaymentActive = true
+        lastTerminalMessage = null
         postStep(PaymentStep.PREPARING)
         viewModelScope.launch(Dispatchers.IO) {
             when (
@@ -291,11 +294,13 @@ class PaymentDialogViewModel @Inject constructor(
 
     private fun finishWithError(message: String, exception: Exception? = null) {
         terminalPaymentActive = false
+        lastTerminalMessage = null
         _paymentState.postValue(UIState.Error(message, exception))
     }
 
     fun abortPayment() {
         terminalPaymentActive = false
+        lastTerminalMessage = null
         viewModelScope.launch(Dispatchers.Default) {
             plugPag.abort()
             plugPag.disposeSubscriber()
@@ -304,9 +309,13 @@ class PaymentDialogViewModel @Inject constructor(
 
     override fun onEvent(data: PlugPagEventData) {
         if (!terminalPaymentActive) return
-        val message = data.customMessage.orEmpty().trim()
-        _paymentState.postValue(
-            UIState.Loading(message.ifBlank { PaymentStep.PROCESSING.message }),
-        )
+        val message = PlugPagEventMessageResolver.resolve(data.eventCode, data.customMessage)
+        if (message == lastTerminalMessage) return
+        lastTerminalMessage = message
+        viewModelScope.launch(Dispatchers.Main.immediate) {
+            if (terminalPaymentActive) {
+                _paymentState.value = UIState.Loading(message)
+            }
+        }
     }
 }
