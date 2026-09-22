@@ -15,6 +15,12 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
+data class SessionScope(
+    val userId: String,
+    val companyId: Int,
+    val dispatcherId: Int?,
+)
+
 @Singleton
 class AuthRepository @Inject constructor(
     private var userLocalDataSource: UsersDao,
@@ -122,6 +128,16 @@ class AuthRepository @Inject constructor(
             return loggedInUser
         }
         return null
+    }
+
+    suspend fun currentSessionScope(): SessionScope? {
+        val loggedUser = getLoggedUser(false) ?: return null
+        val companyId = loggedUser.companies.firstOrNull()?.id ?: return null
+        return SessionScope(
+            userId = loggedUser.id,
+            companyId = companyId,
+            dispatcherId = loggedUser.dispatchers.firstOrNull()?.id,
+        )
     }
 
     private suspend fun updateStoredUserToken(token: String) {

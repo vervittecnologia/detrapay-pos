@@ -45,6 +45,44 @@ class OrderRepositoryTest {
             detrapayRemoteDataSource = remoteDataSource,
             authRepository = authRepository,
         )
+        coEvery { authRepository.currentSessionScope() } returns
+            SessionScope("user-1", 37, 35)
+    }
+
+    @Test
+    fun `user B never receives user A orders cache`() = runTest {
+        coEvery { authRepository.currentSessionScope() } returnsMany listOf(
+            SessionScope("user-a", 37, 35),
+            SessionScope("user-b", 37, 35),
+        )
+        coEvery { remoteDataSource.getOrders(37, 35) } returnsMany listOf(
+            Result.Success(listOf(OrderResponse(id = 1, status = "pending", customerName = "A"))),
+            Result.Success(listOf(OrderResponse(id = 2, status = "pending", customerName = "B"))),
+        )
+
+        repository.getOrders()
+        val second = repository.getOrders()
+
+        assertEquals(listOf(2), (second as Result.Success).data.map { it.id })
+        coVerify(exactly = 2) { remoteDataSource.getOrders(37, 35) }
+    }
+
+    @Test
+    fun `detail cache includes session identity`() = runTest {
+        coEvery { authRepository.currentSessionScope() } returnsMany listOf(
+            SessionScope("user-a", 37, 35),
+            SessionScope("user-b", 37, 35),
+        )
+        coEvery { remoteDataSource.getOrder(10) } returnsMany listOf(
+            Result.Success(OrderResponse(id = 10, status = "pending", customerName = "A")),
+            Result.Success(OrderResponse(id = 10, status = "pending", customerName = "B")),
+        )
+
+        repository.getOrder(10)
+        val second = repository.getOrder(10)
+
+        assertEquals("B", (second as Result.Success).data.customer.name)
+        coVerify(exactly = 2) { remoteDataSource.getOrder(10) }
     }
 
     @Test

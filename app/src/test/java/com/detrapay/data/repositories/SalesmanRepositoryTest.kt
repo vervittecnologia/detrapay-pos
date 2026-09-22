@@ -28,6 +28,29 @@ class SalesmanRepositoryTest {
             detrapayRemoteDataSource = remoteDataSource,
             authRepository = authRepository,
         )
+        coEvery { authRepository.currentSessionScope() } returns
+            SessionScope("user-1", 10, null)
+    }
+
+    @Test
+    fun `salesmen cache is isolated between sessions`() = runTest {
+        coEvery { authRepository.currentSessionScope() } returnsMany listOf(
+            SessionScope("user-a", 10, null),
+            SessionScope("user-b", 10, null),
+        )
+        coEvery { authRepository.getLoggedUser(false) } returnsMany listOf(
+            loggedUser(emptyList()).copy(id = "user-a"),
+            loggedUser(emptyList()).copy(id = "user-b"),
+        )
+        coEvery { remoteDataSource.getSalespeople(10) } returnsMany listOf(
+            Result.Success(listOf(SalespersonResponse(id = 1, name = "A", isActive = true))),
+            Result.Success(listOf(SalespersonResponse(id = 2, name = "B", isActive = true))),
+        )
+
+        repository.getSalesmen()
+        val second = repository.getSalesmen()
+
+        assertEquals(listOf(2), (second as Result.Success).data.map { it.id })
     }
 
     @Test

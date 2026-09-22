@@ -3,6 +3,8 @@ package com.detrapay.data.api
 import com.detrapay.data.repositories.AuthRepository
 import com.detrapay.data.model.remote.RefreshSessionRequest
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okhttp3.Authenticator
 import okhttp3.Request
 import okhttp3.Response
@@ -16,6 +18,7 @@ class SessionAuthenticator @Inject constructor(
     private val authRepository: AuthRepository,
     @Named("NoAuthDetrapayService") private val noAuthDetrapayService: DetrapayService,
 ) : Authenticator {
+    private val refreshMutex = Mutex()
 
     override fun authenticate(route: Route?, response: Response): Request? {
         if (responseCount(response) >= 2) return null
@@ -34,31 +37,32 @@ class SessionAuthenticator @Inject constructor(
                 .build()
         }
 
-        val refreshed = runBlocking {
-            val refreshToken = authRepository.currentRefreshToken()?.takeIf { it.isNotBlank() }
-                ?: return@runBlocking false
+        return runBlocking {
+            refreshMutex.withLock {
+                val tokenAfterLock = authRepository.currentAccessToken()
+                if (!tokenAfterLock.isNullOrBlank() && tokenAfterLock != requestToken) {
+                    return@withLock authorizedRequest(response.request, tokenAfterLock)
+                }
 
-            val refreshResponse = noAuthDetrapayService.refresh(
-                refreshTokenHeader = refreshToken,
-                payload = RefreshSessionRequest(refreshToken = refreshToken),
-            )
+                val refreshToken = authRepository.currentRefreshToken()?.takeIf { it.isNotBlank() }
+                    ?: return@withLock null
+                val refreshResponse = noAuthDetrapayService.refresh(
+                    refreshTokenHeader = refreshToken,
+                    payload = RefreshSessionRequest(refreshToken = refreshToken),
+                )
+                if (!refreshResponse.isSuccessful) return@withLock null
+                val refreshBody = refreshResponse.body() ?: return@withLock null
+                if (!authRepository.updateSessionFromRefresh(refreshBody)) return@withLock null
 
-            if (!refreshResponse.isSuccessful) {
-                return@runBlocking false
+                val refreshedToken = authRepository.currentAccessToken() ?: return@withLock null
+                authorizedRequest(response.request, refreshedToken)
             }
-
-            authRepository.updateSessionFromRefresh(
-                refreshResponse.body() ?: return@runBlocking false
-            )
         }
-
-        if (!refreshed) return null
-
-        val refreshedToken = authRepository.currentAccessToken() ?: return null
-        return response.request.newBuilder()
-            .header("Authorization", "${authRepository.currentTokenType()} $refreshedToken")
-            .build()
     }
+
+    private fun authorizedRequest(request: Request, token: String): Request = request.newBuilder()
+        .header("Authorization", "${authRepository.currentTokenType()} $token")
+        .build()
 
     private fun responseCount(response: Response): Int {
         var result = 1

@@ -48,41 +48,63 @@ class OrderRepository @Inject constructor(
     private data class CacheEntry<T>(
         val value: T,
         val timestampMs: Long,
+        val scope: SessionScope,
     )
 
     private val ordersCacheTtlMs = 30 * 1000L
+    private val cacheLock = Any()
+    private var cacheGeneration = 0L
     private var ordersCache: CacheEntry<List<Order>>? = null
-    private val orderDetailsCache = mutableMapOf<Int, Order>()
+    private val orderDetailsCache = mutableMapOf<Pair<SessionScope, Int>, Order>()
 
     private fun <T> CacheEntry<T>.isValid(ttlMs: Long): Boolean {
         return System.currentTimeMillis() - timestampMs <= ttlMs
     }
 
-    private fun updateOrdersCache(orders: List<Order>) {
-        ordersCache = CacheEntry(
-            value = orders,
-            timestampMs = System.currentTimeMillis()
-        )
+    private fun updateOrdersCache(
+        orders: List<Order>,
+        scope: SessionScope,
+        generationAtStart: Long,
+    ) = synchronized(cacheLock) {
+        if (cacheGeneration == generationAtStart) {
+            ordersCache = CacheEntry(
+                value = orders,
+                timestampMs = System.currentTimeMillis(),
+                scope = scope,
+            )
+        }
     }
 
-    private fun invalidateOrdersCache() {
+    private fun invalidateOrdersCache() = synchronized(cacheLock) {
+        cacheGeneration += 1
         ordersCache = null
     }
 
+    fun clearCache() = synchronized(cacheLock) {
+        cacheGeneration += 1
+        ordersCache = null
+        orderDetailsCache.clear()
+    }
+
+    private suspend fun cacheOrder(order: Order) {
+        val scope = authRepository.currentSessionScope() ?: return
+        synchronized(cacheLock) {
+            orderDetailsCache[scope to order.id] = order
+        }
+    }
+
     suspend fun getOrders(forceRefresh: Boolean = false): Result<List<Order>> {
-        ordersCache
-            ?.takeIf { !forceRefresh && it.isValid(ordersCacheTtlMs) }
+        val scope = authRepository.currentSessionScope()
+            ?: return Result.Error(Exception("Usuario nao configurado com empresa."))
+        val dispatcherId = scope.dispatcherId
+            ?: return Result.Error(Exception("Usuario nao configurado com despachante."))
+        val generationAtStart = synchronized(cacheLock) { cacheGeneration }
+
+        synchronized(cacheLock) { ordersCache }
+            ?.takeIf { !forceRefresh && it.scope == scope && it.isValid(ordersCacheTtlMs) }
             ?.let { return Result.Success(it.value) }
 
-        val user = authRepository.getLoggedUser(false)
-        val companyId = user?.companies?.firstOrNull()?.id
-        val dispatcherId = user?.dispatchers?.firstOrNull()?.id
-
-        if (companyId == null || dispatcherId == null) {
-            return Result.Error(Exception("UsuÃ¡rio nÃ£o configurado com empresa e despachante."))
-        }
-
-        when (val result = detrapayRemoteDataSource.getOrders(companyId, dispatcherId)) {
+        when (val result = detrapayRemoteDataSource.getOrders(scope.companyId, dispatcherId)) {
             is Result.Success -> {
                 try {
                     val orders: List<Order?> = result.data.map { orderResponse ->
@@ -93,7 +115,7 @@ class OrderRepository @Inject constructor(
                         }
                     }
                     val parsedOrders = orders.filterNotNull().sortedByDescending { it.id }
-                    updateOrdersCache(parsedOrders)
+                    updateOrdersCache(parsedOrders, scope, generationAtStart)
                     return Result.Success(parsedOrders)
                 } catch (e: Exception) {
                     Log.e("OrderRepository", "UNABLE TO GET ORDERS: ${e.message}")
@@ -112,7 +134,10 @@ class OrderRepository @Inject constructor(
     }
 
     suspend fun getOrder(orderId: Int, forceRefresh: Boolean = false): Result<Order> {
-        orderDetailsCache[orderId]
+        val scope = authRepository.currentSessionScope()
+            ?: return Result.Error(Exception("Usuario nao configurado com empresa."))
+        val generationAtStart = synchronized(cacheLock) { cacheGeneration }
+        synchronized(cacheLock) { orderDetailsCache[scope to orderId] }
             ?.takeIf { !forceRefresh }
             ?.let { return Result.Success(it) }
 
@@ -120,7 +145,11 @@ class OrderRepository @Inject constructor(
             is Result.Success -> {
                 try {
                     val order = parseOrder(result.data)
-                    orderDetailsCache[orderId] = order
+                    synchronized(cacheLock) {
+                        if (cacheGeneration == generationAtStart) {
+                            orderDetailsCache[scope to orderId] = order
+                        }
+                    }
                     return Result.Success(order)
                 } catch (e: Exception) {
                     Log.e("OrderRepository", "UNABLE TO GET ORDER: ${e.message}")
@@ -453,7 +482,7 @@ class OrderRepository @Inject constructor(
                 try {
                     val order = parseOrder(result.data.data)
                     invalidateOrdersCache()
-                    orderDetailsCache[order.id] = order
+                    cacheOrder(order)
                     Result.Success(order)
                 } catch (e: Exception) {
                     Logger.d("Error parsing order after creation: ${e.message}")
@@ -486,7 +515,7 @@ class OrderRepository @Inject constructor(
                     } else {
                         parsedOrder
                     }
-                    orderDetailsCache[order.id] = order
+                    cacheOrder(order)
                     return Result.Success(order)
                 } catch (e: Exception) {
                     Log.e("OrderRepository", "UNABLE TO GET ORDER: ${e.message}")
@@ -533,7 +562,7 @@ class OrderRepository @Inject constructor(
                 try {
                     val order = parseOrder(result.data)
                     invalidateOrdersCache()
-                    orderDetailsCache[order.id] = order
+                    cacheOrder(order)
                     Result.Success(order)
                 } catch (e: Exception) {
                     Log.e("OrderRepository", "UNABLE TO ADD ORDER RECEIVABLE: ${e.message}")
@@ -552,7 +581,7 @@ class OrderRepository @Inject constructor(
                 try {
                     invalidateOrdersCache()
                     val order = parseOrder(result.data)
-                    orderDetailsCache[order.id] = order
+                    cacheOrder(order)
                     return Result.Success(order)
                 } catch (e: Exception) {
                     Log.e("OrderRepository", "UNABLE TO GET ORDER: ${e.message}")
@@ -578,7 +607,7 @@ class OrderRepository @Inject constructor(
                 return try {
                     invalidateOrdersCache()
                     val order = parseOrder(result.data)
-                    orderDetailsCache[order.id] = order
+                    cacheOrder(order)
                     Result.Success(order)
                 } catch (e: Exception) {
                     Log.e("OrderRepository", "UNABLE TO DELETE ORDER RECEIVABLE: ${e.message}")
@@ -598,7 +627,7 @@ class OrderRepository @Inject constructor(
                 invalidateOrdersCache()
                 runCatching {
                     val order = parseOrder(result.data)
-                    orderDetailsCache[order.id] = order
+                    cacheOrder(order)
                     Result.Success(order)
                 }.getOrElse { Result.Error(it as Exception) }
             }
@@ -661,12 +690,12 @@ class OrderRepository @Inject constructor(
         )
     }
 
-    private fun parseAtomicPaymentResult(result: Result<OrderResponse>): Result<Order> {
+    private suspend fun parseAtomicPaymentResult(result: Result<OrderResponse>): Result<Order> {
         return when (result) {
             is Result.Success -> runCatching {
                 val order = parseOrder(result.data)
                 invalidateOrdersCache()
-                orderDetailsCache[order.id] = order
+                cacheOrder(order)
                 Result.Success(order)
             }.getOrElse { Result.Error(it as? Exception ?: Exception(it)) }
             is Result.Error -> result

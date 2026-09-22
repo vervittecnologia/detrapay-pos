@@ -8,6 +8,7 @@ import com.detrapay.data.Result
 import com.detrapay.data.repositories.AuthRepository
 import com.detrapay.data.repositories.RegistrationRepository
 import com.detrapay.data.repositories.SalesmanRepository
+import com.detrapay.data.repositories.SessionLifecycleCoordinator
 import com.detrapay.ui.state.UIState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +20,7 @@ class HomeViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val salesmanRepository: SalesmanRepository,
     private val registrationRepository: RegistrationRepository,
+    private val sessionLifecycleCoordinator: SessionLifecycleCoordinator,
 ) :
     ViewModel() {
 
@@ -63,7 +65,7 @@ class HomeViewModel @Inject constructor(
 
     fun logout() {
         viewModelScope.launch(Dispatchers.IO) {
-            authRepository.logout()
+            sessionLifecycleCoordinator.logout()
         }
     }
 }

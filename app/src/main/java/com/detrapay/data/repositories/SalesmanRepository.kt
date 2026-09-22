@@ -15,9 +15,12 @@ class SalesmanRepository @Inject constructor(
     private data class CacheEntry<T>(
         val value: T,
         val timestampMs: Long,
+        val scope: SessionScope,
     )
 
     private val cacheTtlMs = 10 * 60 * 1000L
+    private val cacheLock = Any()
+    private var cacheGeneration = 0L
     private var salesmenCache: CacheEntry<List<Salesman>>? = null
 
     private fun <T> CacheEntry<T>.isValid(ttlMs: Long): Boolean {
@@ -25,16 +28,18 @@ class SalesmanRepository @Inject constructor(
     }
 
     suspend fun getSalesmen(forceRefresh: Boolean = false): Result<List<Salesman>> {
-        salesmenCache
-            ?.takeIf { !forceRefresh && it.isValid(cacheTtlMs) }
+        val scope = authRepository.currentSessionScope()
+            ?: return Result.Error(Exception("ID da empresa nao encontrado."))
+        val generationAtStart = synchronized(cacheLock) { cacheGeneration }
+        synchronized(cacheLock) { salesmenCache }
+            ?.takeIf { !forceRefresh && it.scope == scope && it.isValid(cacheTtlMs) }
             ?.let { return Result.Success(it.value) }
 
         val user = authRepository.getLoggedUser(false)
-        val companyId = user?.companies?.firstOrNull()?.id
-            ?: return Result.Error(Exception("ID da empresa nao encontrado."))
+            ?: return Result.Error(Exception("Usuario nao autenticado."))
         val cachedSalesmen = user.salesmen
 
-        return when (val result = detrapayRemoteDataSource.getSalespeople(companyId)) {
+        return when (val result = detrapayRemoteDataSource.getSalespeople(scope.companyId)) {
             is Result.Success -> {
                 val activeSalesmen = result.data
                     .filter { it.attributes?.isActive ?: it.isActive ?: false }
@@ -48,24 +53,37 @@ class SalesmanRepository @Inject constructor(
                     }
 
                 val resolvedSalesmen = activeSalesmen.ifEmpty { cachedSalesmen }
-                salesmenCache = CacheEntry(
-                    value = resolvedSalesmen,
-                    timestampMs = System.currentTimeMillis()
-                )
+                updateCache(resolvedSalesmen, scope, generationAtStart)
                 Result.Success(resolvedSalesmen)
             }
 
             is Result.Error -> {
                 if (cachedSalesmen.isNotEmpty()) {
-                    salesmenCache = CacheEntry(
-                        value = cachedSalesmen,
-                        timestampMs = System.currentTimeMillis()
-                    )
+                    updateCache(cachedSalesmen, scope, generationAtStart)
                     Result.Success(cachedSalesmen)
                 } else {
                     result
                 }
             }
+        }
+    }
+
+    fun clearCache() = synchronized(cacheLock) {
+        cacheGeneration += 1
+        salesmenCache = null
+    }
+
+    private fun updateCache(
+        salesmen: List<Salesman>,
+        scope: SessionScope,
+        generationAtStart: Long,
+    ) = synchronized(cacheLock) {
+        if (cacheGeneration == generationAtStart) {
+            salesmenCache = CacheEntry(
+                value = salesmen,
+                timestampMs = System.currentTimeMillis(),
+                scope = scope,
+            )
         }
     }
 }
