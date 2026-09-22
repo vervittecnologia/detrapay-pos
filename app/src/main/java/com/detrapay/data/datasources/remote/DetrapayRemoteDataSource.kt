@@ -1,6 +1,7 @@
 ﻿package com.detrapay.data.datasources.remote
 
 import com.detrapay.data.Result
+import com.detrapay.data.ConflictException
 import com.detrapay.data.api.DetrapayService
 import com.detrapay.data.api.SupabaseService
 import com.detrapay.data.model.remote.AddOrderReceivableRequest
@@ -444,8 +445,17 @@ class DetrapayRemoteDataSource @Inject constructor(
                 ),
             )
             when {
-                response.isSuccessful -> response.body()?.data?.let { Result.Success(it) }
-                    ?: Result.Error(Exception("Resposta vazia ao preparar pagamento online."))
+                response.isSuccessful -> response.body()?.data?.let { attempt ->
+                    val terminalReference = attempt.terminalReference
+                    if (terminalReference.isBlank() ||
+                        terminalReference.length > 10 ||
+                        !terminalReference.matches(Regex("^[A-Z0-9]+$"))
+                    ) {
+                        Result.Error(Exception("Resposta com terminal_reference invalida."))
+                    } else {
+                        Result.Success(attempt)
+                    }
+                } ?: Result.Error(Exception("Resposta vazia ao preparar pagamento online."))
                 response.code() == 401 -> unauthorizedError("POST /orders/$orderId/payment-attempts", response.errorBody())
                 else -> Result.Error(Exception(ApiError(response.errorBody()).message))
             }
@@ -476,6 +486,9 @@ class DetrapayRemoteDataSource @Inject constructor(
                 response.isSuccessful -> response.body()?.let { Result.Success(extractUpdatedOrder(it)) }
                     ?: Result.Error(Exception("Resposta vazia ao concluir pagamento online."))
                 response.code() == 401 -> unauthorizedError("POST /payment-attempts/$attemptId/complete", response.errorBody())
+                response.code() == 409 -> Result.Error(
+                    ConflictException(ApiError(response.errorBody()).message)
+                )
                 else -> Result.Error(Exception(ApiError(response.errorBody()).message))
             }
         } catch (e: Throwable) {

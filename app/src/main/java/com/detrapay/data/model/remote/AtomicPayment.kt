@@ -23,6 +23,7 @@ data class PaymentAttempt(
     @SerializedName("amount_final") val amountFinal: Double,
     val installments: Int,
     @SerializedName("expires_at") val expiresAt: String,
+    @SerializedName("terminal_reference") val terminalReference: String = "",
 )
 
 data class CompleteOnlinePaymentRequest(

@@ -1,6 +1,7 @@
 ﻿package com.detrapay.data.datasources.remote
 
 import com.detrapay.data.Result
+import com.detrapay.data.ConflictException
 import com.detrapay.data.api.DetrapayService
 import com.detrapay.data.api.SupabaseService
 import com.detrapay.data.model.OrderReceivableItem
@@ -17,9 +18,13 @@ import com.detrapay.data.model.remote.FlatVehicleTypeResponse
 import com.detrapay.data.model.remote.OrderResponse
 import com.detrapay.data.model.remote.OrderReceivableMutationResponse
 import com.detrapay.data.model.remote.PaymentMethodResponse
+import com.detrapay.data.model.remote.PaymentAttempt
+import com.detrapay.data.model.remote.PaymentAttemptResponse
 import com.detrapay.data.model.remote.RefundOrderReceivableRequest
 import com.detrapay.data.model.remote.UpdateOrderSalesmanRequest
 import com.google.gson.JsonObject
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.ResponseBody.Companion.toResponseBody
 import io.mockk.coEvery
 import io.mockk.slot
 import io.mockk.mockk
@@ -67,6 +72,64 @@ class DetrapayRemoteDataSourceTest {
         val methods = (result as Result.Success).data
         assertEquals(1, methods.size)
         assertEquals("Credito", methods.single().name)
+    }
+
+    @Test
+    fun `prepare payment exposes terminal reference`() = runTest {
+        coEvery { detrapayService.prepareOnlinePayment(10, any()) } returns Response.success(
+            PaymentAttemptResponse(
+                PaymentAttempt(
+                    id = "attempt-1",
+                    status = "prepared",
+                    orderId = 10,
+                    paymentMethodId = 3,
+                    amountOriginal = 100.0,
+                    amountFinal = 100.0,
+                    installments = 1,
+                    expiresAt = "2026-09-22T18:00:00Z",
+                    terminalReference = "PABC123456",
+                )
+            )
+        )
+
+        val result = dataSource.prepareOnlinePayment(10, 3, 100.0, 1, "key")
+
+        assertEquals("PABC123456", (result as Result.Success).data.terminalReference)
+    }
+
+    @Test
+    fun `prepare payment rejects invalid terminal reference`() = runTest {
+        coEvery { detrapayService.prepareOnlinePayment(10, any()) } returns Response.success(
+            PaymentAttemptResponse(
+                PaymentAttempt(
+                    id = "attempt-1",
+                    status = "prepared",
+                    orderId = 10,
+                    paymentMethodId = 3,
+                    amountOriginal = 100.0,
+                    amountFinal = 100.0,
+                    installments = 1,
+                    expiresAt = "2026-09-22T18:00:00Z",
+                    terminalReference = "",
+                )
+            )
+        )
+
+        assertTrue(dataSource.prepareOnlinePayment(10, 3, 100.0, 1, "key") is Result.Error)
+    }
+
+    @Test
+    fun `complete payment maps integrity conflict`() = runTest {
+        coEvery { detrapayService.completeOnlinePayment("attempt-1", any()) } returns Response.error(
+            409,
+            """{"error":{"message":"external_transaction_conflict"}}"""
+                .toResponseBody("application/json".toMediaType())
+        )
+
+        val result = dataSource.completeOnlinePayment("attempt-1", paymentData())
+
+        assertTrue(result is Result.Error)
+        assertTrue((result as Result.Error).exception is ConflictException)
     }
 
     @Test
