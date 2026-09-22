@@ -2,6 +2,7 @@ package com.detrapay.di
 
 import com.detrapay.data.database.AppDatabase
 import com.detrapay.data.datasources.local.PaymentDAO
+import com.detrapay.data.datasources.local.PendingPaymentCompletionDao
 import com.detrapay.data.datasources.local.UsersDao
 import dagger.Module
 import dagger.Provides
@@ -23,4 +24,10 @@ object LocalDatasourceModule {
     fun providelPaymentLocalDataSource(appDatabase: AppDatabase) : PaymentDAO {
         return appDatabase.paymentDao()
     }
+
+    @Singleton
+    @Provides
+    fun providePendingPaymentCompletionDao(
+        appDatabase: AppDatabase,
+    ): PendingPaymentCompletionDao = appDatabase.pendingPaymentCompletionDao()
 }
