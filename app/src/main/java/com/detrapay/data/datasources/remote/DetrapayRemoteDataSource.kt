@@ -3,6 +3,9 @@
 import com.detrapay.data.Result
 import com.detrapay.data.ConflictException
 import com.detrapay.data.api.DetrapayService
+import com.detrapay.data.api.PublicImageValidator
+import com.detrapay.data.api.PublicMediaService
+import com.detrapay.data.api.PublicMediaUrlPolicy
 import com.detrapay.data.api.SupabaseService
 import com.detrapay.data.model.remote.AddOrderReceivableRequest
 import com.detrapay.data.model.remote.AtomicPaymentMutationResponse
@@ -57,16 +60,18 @@ import javax.inject.Inject
 
 class DetrapayRemoteDataSource @Inject constructor(
     private var detrapayService: DetrapayService,
-    private var supabaseService: SupabaseService
+    private var supabaseService: SupabaseService,
+    private val publicMediaService: PublicMediaService,
+    private val publicMediaUrlPolicy: PublicMediaUrlPolicy,
+    private val publicImageValidator: PublicImageValidator,
 ) {
     private fun unauthorizedError(
         endpoint: String,
         errorBody: ResponseBody? = null
     ): Result.Error {
-        val details = errorBody?.string().orEmpty()
-        val backendMessage = details.takeIf { it.isNotBlank() }
-        Logger.d("401 Unauthorized on $endpoint${backendMessage?.let { " -> $it" } ?: ""}")
-        return Result.Error(UnauthorizedException(endpoint, backendMessage))
+        errorBody?.close()
+        Logger.d("401 Unauthorized on $endpoint")
+        return Result.Error(UnauthorizedException(endpoint))
     }
 
     private fun extractUpdatedOrder(response: OrderReceivableMutationResponse): OrderResponse? {
@@ -105,17 +110,13 @@ class DetrapayRemoteDataSource @Inject constructor(
         try {
             val authRequest = AuthRequest(identifier = username, password = password)
             val result = detrapayService.auth(authRequest)
-            Logger.d(result.toString())
             if (result.isSuccessful) {
-                Logger.d((result.body() ?: "").toString())
                 return Result.Success(result.body()!!)
             } else {
-                Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             return Result.Error(IOException("Error Loggerging in", e))
         }
     }
@@ -124,15 +125,12 @@ class DetrapayRemoteDataSource @Inject constructor(
         try {
             val result = detrapayService.getCompanies()
             if (result.isSuccessful) {
-                Logger.d((result.body() ?: "").toString())
                 return Result.Success(result.body()!!)
             } else {
-                Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             return Result.Error(IOException("Error getting employees", e))
         }
     }
@@ -141,15 +139,12 @@ class DetrapayRemoteDataSource @Inject constructor(
         try {
             val result = detrapayService.getOrders(companyId, dispatcherId)
             if (result.isSuccessful) {
-                Logger.d((result.body() ?: "").toString())
                 return Result.Success(result.body()!!.data)
             } else {
-                Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             return Result.Error(IOException("Error getting stores", e))
         }
     }
@@ -158,15 +153,12 @@ class DetrapayRemoteDataSource @Inject constructor(
         try {
             val result = detrapayService.getOrder(orderId)
             if (result.isSuccessful) {
-                Logger.d((result.body() ?: "").toString())
                 return Result.Success(result.body()!!.data)
             } else {
-                Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             return Result.Error(IOException("Error getting stores", e))
         }
     }
@@ -189,7 +181,6 @@ class DetrapayRemoteDataSource @Inject constructor(
                 else -> Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             Result.Error(IOException("Erro ao carregar fotos do pedido", e))
         }
     }
@@ -213,7 +204,6 @@ class DetrapayRemoteDataSource @Inject constructor(
                 else -> Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             Result.Error(IOException("Erro ao enviar foto do pedido", e))
         }
     }
@@ -222,15 +212,12 @@ class DetrapayRemoteDataSource @Inject constructor(
         try {
             val result = detrapayService.getVehicleTypes()
             if (result.isSuccessful) {
-                Logger.d((result.body() ?: "").toString())
                 return Result.Success(result.body()!!.data)
             } else {
-                Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             return Result.Error(IOException("Error getting vehicleTypes", e))
         }
     }
@@ -239,15 +226,12 @@ class DetrapayRemoteDataSource @Inject constructor(
         try {
             val result = detrapayService.getPaymentMethods()
             if (result.isSuccessful) {
-                Logger.d((result.body() ?: "").toString())
                 return Result.Success(result.body()!!)
             } else {
-                Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             return Result.Error(IOException("Error getting payment methods", e))
         }
     }
@@ -256,15 +240,12 @@ class DetrapayRemoteDataSource @Inject constructor(
         try {
             val result = detrapayService.searchCustomer(cpfCnpj)
             if (result.isSuccessful) {
-                Logger.d((result.body() ?: "").toString())
                 return Result.Success(result.body()!!)
             } else {
-                Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             return Result.Error(IOException("Error getting customer data", e))
         }
     }
@@ -297,15 +278,12 @@ class DetrapayRemoteDataSource @Inject constructor(
             )
             val result = detrapayService.simulate(simulationRequest)
             if (result.isSuccessful) {
-                Logger.d((result.body() ?: "").toString())
                 return Result.Success(result.body()!!)
             } else {
-                Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             return Result.Error(IOException("Error simulating", e))
         }
     }
@@ -316,15 +294,12 @@ class DetrapayRemoteDataSource @Inject constructor(
         try {
             val result = detrapayService.createOrder(orderRequest)
             if (result.isSuccessful) {
-                Logger.d((result.body() ?: "").toString())
                 return Result.Success(result.body()!!)
             } else {
-                Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             return Result.Error(IOException("Error creating order", e))
         }
     }
@@ -347,15 +322,12 @@ class DetrapayRemoteDataSource @Inject constructor(
             )
             val result = detrapayService.updateOrder(orderId, orderRequest)
             if (result.isSuccessful) {
-                Logger.d((result.body() ?: "").toString())
                 return Result.Success(result.body()!!.data)
             } else {
-                Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             return Result.Error(IOException("Error creating order", e))
         }
     }
@@ -389,7 +361,6 @@ class DetrapayRemoteDataSource @Inject constructor(
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             return Result.Error(IOException("Erro no pagamento do pedido", e))
         }
     }
@@ -412,17 +383,14 @@ class DetrapayRemoteDataSource @Inject constructor(
                 )
             )
             if (result.isSuccessful) {
-                Logger.d((result.body() ?: "").toString())
                 val updatedOrder = result.body()?.let(::extractUpdatedOrder)
                     ?: return Result.Error(Exception("Resposta sem updatedOrder ao adicionar recebivel."))
                 return Result.Success(updatedOrder)
             } else {
-                Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             return Result.Error(IOException("Error adding receivable", e))
         }
     }
@@ -528,15 +496,12 @@ class DetrapayRemoteDataSource @Inject constructor(
         try {
             val result = detrapayService.getSalespeople(companyId = companyId)
             if (result.isSuccessful) {
-                Logger.d((result.body() ?: "").toString())
                 return Result.Success(result.body()!!.data)
             } else {
-                Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             return Result.Error(IOException("Error getting salespeople", e))
         }
     }
@@ -572,7 +537,6 @@ class DetrapayRemoteDataSource @Inject constructor(
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             return Result.Error(IOException("Erro ao gerar cobranca PIX", e))
         }
     }
@@ -596,7 +560,6 @@ class DetrapayRemoteDataSource @Inject constructor(
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             return Result.Error(IOException("Erro no reembolso do pagamento", e))
         }
     }
@@ -621,7 +584,6 @@ class DetrapayRemoteDataSource @Inject constructor(
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             return Result.Error(IOException("Erro ao atualizar recebivel do pedido", e))
         }
     }
@@ -638,7 +600,6 @@ class DetrapayRemoteDataSource @Inject constructor(
                 Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             return Result.Error(IOException("Erro ao excluir recebivel do pedido", e))
         }
     }
@@ -666,12 +627,10 @@ class DetrapayRemoteDataSource @Inject constructor(
                 Logger.d("updateSplitConfig success")
                 return Result.Success(Unit)
             } else {
-                Logger.d((result.errorBody() ?: "").toString())
                 if (result.code() == 401) return Result.Error(UnauthorizedException())
                 return Result.Error(Exception(ApiError(result.errorBody()).message))
             }
         } catch (e: Throwable) {
-            Logger.d(e.toString())
             return Result.Error(IOException("Error in update-split-config", e))
         }
     }
@@ -690,11 +649,13 @@ class DetrapayRemoteDataSource @Inject constructor(
         }
     }
 
-    suspend fun downloadFile(url: String): Result<ResponseBody> {
+    suspend fun downloadFile(url: String): Result<ByteArray> {
         try {
-            val result = detrapayService.downloadFile(url)
+            val validatedUrl = publicMediaUrlPolicy.validate(url)
+            val result = publicMediaService.download(validatedUrl.toString())
             if (result.isSuccessful) {
-                return Result.Success(result.body()!!)
+                val body = result.body() ?: return Result.Error(Exception("Empty image response"))
+                return Result.Success(publicImageValidator.read(body))
             } else {
                 return Result.Error(Exception("Error downloading file"))
             }

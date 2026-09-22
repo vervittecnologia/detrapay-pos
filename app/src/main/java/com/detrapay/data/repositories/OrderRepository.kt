@@ -32,7 +32,6 @@ import com.detrapay.data.model.remote.PaymentAttempt
 import com.detrapay.data.model.remote.OrderSimulationItemRequest
 import com.detrapay.data.model.remote.OrderSimulationRequest
 import com.detrapay.data.model.remote.SplitConfigRequest
-import com.detrapay.ui.util.Logger
 import com.detrapay.ui.util.Mask
 import java.util.Locale
 import java.io.File
@@ -475,7 +474,6 @@ class OrderRepository @Inject constructor(
             items = itemsRequest
         )
 
-        Logger.d("Sending CreateOrderRequest: $orderRequest")
 
         return when (val result = detrapayRemoteDataSource.createOrder(orderRequest)) {
             is Result.Success -> {
@@ -485,12 +483,10 @@ class OrderRepository @Inject constructor(
                     cacheOrder(order)
                     Result.Success(order)
                 } catch (e: Exception) {
-                    Logger.d("Error parsing order after creation: ${e.message}")
                     Result.Error(e)
                 }
             }
             is Result.Error -> {
-                Logger.d("Server returned error in createOrder: ${result.exception.message}")
                 result
             }
         }

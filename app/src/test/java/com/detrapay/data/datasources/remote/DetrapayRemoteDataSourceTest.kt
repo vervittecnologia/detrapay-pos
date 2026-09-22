@@ -4,6 +4,9 @@ import com.detrapay.data.Result
 import com.detrapay.data.ConflictException
 import com.detrapay.data.api.DetrapayService
 import com.detrapay.data.api.SupabaseService
+import com.detrapay.data.api.PublicImageValidator
+import com.detrapay.data.api.PublicMediaService
+import com.detrapay.data.api.PublicMediaUrlPolicy
 import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.OrderReceivableItemStatus
 import com.detrapay.data.model.PaymentData
@@ -40,6 +43,7 @@ class DetrapayRemoteDataSourceTest {
 
     private val detrapayService = mockk<DetrapayService>()
     private val supabaseService = mockk<SupabaseService>()
+    private val publicMediaService = mockk<PublicMediaService>()
 
     private lateinit var dataSource: DetrapayRemoteDataSource
 
@@ -47,7 +51,10 @@ class DetrapayRemoteDataSourceTest {
     fun setUp() {
         dataSource = DetrapayRemoteDataSource(
             detrapayService = detrapayService,
-            supabaseService = supabaseService
+            supabaseService = supabaseService,
+            publicMediaService = publicMediaService,
+            publicMediaUrlPolicy = PublicMediaUrlPolicy(),
+            publicImageValidator = PublicImageValidator(),
         )
     }
 

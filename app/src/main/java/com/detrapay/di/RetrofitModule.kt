@@ -3,6 +3,9 @@ package com.detrapay.di
 import com.detrapay.BuildConfig
 import com.detrapay.data.api.AuthInterceptor
 import com.detrapay.data.api.DetrapayService
+import com.detrapay.data.api.PublicMediaClientFactory
+import com.detrapay.data.api.PublicMediaService
+import com.detrapay.data.api.SafeHttpLogger
 import com.detrapay.data.api.SessionAuthenticator
 import com.detrapay.data.api.SupabaseService
 import com.detrapay.data.repositories.AuthRepository
@@ -11,9 +14,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
-import okhttp3.Interceptor
-import okhttp3.MultipartBody
-import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
@@ -28,32 +28,10 @@ object RetrofitModule {
         timeoutMs: Long,
         authInterceptor: AuthInterceptor? = null,
         sessionAuthenticator: SessionAuthenticator? = null,
+        safeHttpLogger: SafeHttpLogger? = null,
     ): OkHttpClient {
-        val bodyLoggingInterceptor = HttpLoggingInterceptor().apply {
-            level = if (BuildConfig.DEBUG) {
-                HttpLoggingInterceptor.Level.BODY
-            } else {
-                HttpLoggingInterceptor.Level.NONE
-            }
-        }
-        val headersLoggingInterceptor = HttpLoggingInterceptor().apply {
-            level = if (BuildConfig.DEBUG) {
-                HttpLoggingInterceptor.Level.HEADERS
-            } else {
-                HttpLoggingInterceptor.Level.NONE
-            }
-        }
-        val safeLoggingInterceptor = Interceptor { chain ->
-            val logger = if (chain.request().body is MultipartBody) {
-                headersLoggingInterceptor
-            } else {
-                bodyLoggingInterceptor
-            }
-            logger.intercept(chain)
-        }
-
         return OkHttpClient.Builder().apply {
-            addInterceptor(safeLoggingInterceptor)
+            if (BuildConfig.DEBUG) safeHttpLogger?.let { addInterceptor(it) }
             authInterceptor?.let { addInterceptor(it) }
             sessionAuthenticator?.let { authenticator(it) }
         }
@@ -70,19 +48,20 @@ object RetrofitModule {
     fun provideRetrofit(
         authInterceptor: AuthInterceptor,
         sessionAuthenticator: SessionAuthenticator,
+        safeHttpLogger: SafeHttpLogger,
     ): Retrofit = Retrofit.Builder()
         .baseUrl(BuildConfig.BASE_URL)
         .addConverterFactory(GsonConverterFactory.create())
-        .client(buildClient(timeoutMs = 10000L, authInterceptor = authInterceptor, sessionAuthenticator = sessionAuthenticator))
+        .client(buildClient(10000L, authInterceptor, sessionAuthenticator, safeHttpLogger))
         .build()
 
     @Provides
     @Singleton
     @Named("NoAuthDetrapayRetrofit")
-    fun provideNoAuthRetrofit(): Retrofit = Retrofit.Builder()
+    fun provideNoAuthRetrofit(safeHttpLogger: SafeHttpLogger): Retrofit = Retrofit.Builder()
         .baseUrl(BuildConfig.BASE_URL)
         .addConverterFactory(GsonConverterFactory.create())
-        .client(buildClient(timeoutMs = 10000L))
+        .client(buildClient(timeoutMs = 10000L, safeHttpLogger = safeHttpLogger))
         .build()
 
     @Provides
@@ -91,10 +70,19 @@ object RetrofitModule {
     fun provideSupabaseRetrofit(
         authInterceptor: AuthInterceptor,
         sessionAuthenticator: SessionAuthenticator,
+        safeHttpLogger: SafeHttpLogger,
     ): Retrofit = Retrofit.Builder()
         .baseUrl("https://ibulgxjbtpxratoodgtj.supabase.co/functions/v1/")
         .addConverterFactory(GsonConverterFactory.create())
-        .client(buildClient(timeoutMs = 15000L, authInterceptor = authInterceptor, sessionAuthenticator = sessionAuthenticator))
+        .client(buildClient(15000L, authInterceptor, sessionAuthenticator, safeHttpLogger))
+        .build()
+
+    @Provides
+    @Singleton
+    @Named("PublicMediaRetrofit")
+    fun providePublicMediaRetrofit(): Retrofit = Retrofit.Builder()
+        .baseUrl("https://localhost/")
+        .client(PublicMediaClientFactory.create())
         .build()
 
     @Provides
@@ -110,6 +98,12 @@ object RetrofitModule {
     @Provides
     @Singleton
     fun provideSupabaseService(@Named("SupabaseRetrofit") retrofit: Retrofit): SupabaseService = retrofit.create(SupabaseService::class.java)
+
+    @Provides
+    @Singleton
+    fun providePublicMediaService(
+        @Named("PublicMediaRetrofit") retrofit: Retrofit,
+    ): PublicMediaService = retrofit.create(PublicMediaService::class.java)
 
     @Provides
     @Singleton

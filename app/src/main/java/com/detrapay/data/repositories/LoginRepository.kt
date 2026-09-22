@@ -44,7 +44,7 @@ class LoginRepository @Inject constructor(
                                     ImageUtils.saveImage(
                                         context = context,
                                         name = logoKey,
-                                        bytes = logoResult.data.bytes()
+                                        bytes = logoResult.data
                                     )
                                 }
 

@@ -158,7 +158,4 @@ interface DetrapayService {
     @POST("update-split-config")
     suspend fun updateSplitConfig(@Body payload: SplitConfigRequest): Response<Unit>
 
-    @GET
-    suspend fun downloadFile(@Url url: String): Response<ResponseBody>
-
 }
