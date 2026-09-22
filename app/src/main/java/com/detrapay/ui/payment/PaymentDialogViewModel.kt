@@ -38,6 +38,7 @@ class PaymentDialogViewModel @Inject constructor(
     private val orderRepository: OrderRepository,
     private val pendingPaymentRepository: PendingPaymentRepository,
     private val authRepository: AuthRepository,
+    private val operationCoordinator: PaymentOperationCoordinator,
 ) : ViewModel(), PlugPagEventListener {
 
     private enum class PaymentStep(val message: String) {
@@ -51,9 +52,9 @@ class PaymentDialogViewModel @Inject constructor(
     val paymentState: LiveData<UIState<PaymentData>> = _paymentState
 
     @Volatile
-    private var terminalPaymentActive = false
-    @Volatile
     private var lastTerminalMessage: String? = null
+    @Volatile
+    private var activeOperationId: String? = null
 
     fun init() {
         plugPag.setPlugPagCustomPrinterLayout(
@@ -79,8 +80,6 @@ class PaymentDialogViewModel @Inject constructor(
             return
         }
 
-        if (terminalPaymentActive) return
-
         val confirmedAmountCents = if (request.amountFinal.isFinite()) {
             amountInCents(request.amountFinal)
         } else {
@@ -91,7 +90,8 @@ class PaymentDialogViewModel @Inject constructor(
             return
         }
 
-        terminalPaymentActive = true
+        if (!operationCoordinator.begin(request.idempotencyKey)) return
+        activeOperationId = request.idempotencyKey
         lastTerminalMessage = null
         postStep(PaymentStep.PREPARING)
         viewModelScope.launch(Dispatchers.IO) {
@@ -167,6 +167,13 @@ class PaymentDialogViewModel @Inject constructor(
         }
 
         try {
+            if (operationCoordinator.terminalStarted(request.idempotencyKey) !is
+                PaymentOperationState.TerminalActive
+            ) {
+                operationCoordinator.terminalRejected(request.idempotencyKey)
+                finishWithError("Pagamento cancelado.")
+                return
+            }
             postStep(PaymentStep.WAITING)
             val result = plugPag.doPayment(
                 PlugPagPaymentData(
@@ -191,6 +198,8 @@ class PaymentDialogViewModel @Inject constructor(
                     )
                 } else {
                     saveTransactionLog(request, result, amountFinal)
+                    operationCoordinator.terminalRejected(request.idempotencyKey)
+                    disposeTerminalSubscriber()
                     finishWithError(terminalFailureMessage(result))
                 }
                 return
@@ -198,9 +207,12 @@ class PaymentDialogViewModel @Inject constructor(
 
             val approval = paymentData(request, result, amountFinal)
             if (approval.transactionId.isNullOrBlank()) {
+                operationCoordinator.terminalRejected(request.idempotencyKey)
+                disposeTerminalSubscriber()
                 finishWithError("A aprovacao PagBank nao retornou transaction_id.")
                 return
             }
+            operationCoordinator.terminalApproved(request.idempotencyKey)
             val completion = pendingCompletion(
                 request = request,
                 attempt = attempt,
@@ -209,12 +221,22 @@ class PaymentDialogViewModel @Inject constructor(
                 paymentData = approval,
             )
             pendingPaymentRepository.saveApproved(completion)
+            operationCoordinator.persistenceSucceeded(request.idempotencyKey)
+            disposeTerminalSubscriber()
             runCatching { saveTransactionLog(request, result, amountFinal) }
             completeApprovedPayment(completion)
         } catch (_: PlugPagException) {
+            operationCoordinator.terminalRejected(request.idempotencyKey)
+            disposeTerminalSubscriber()
             finishWithError("Falha no pagamento.")
         } catch (e: Exception) {
-            finishWithError(e.message ?: "Erro inesperado", e)
+            if (operationCoordinator.currentState() !is
+                PaymentOperationState.ApprovedPendingPersistence
+            ) {
+                operationCoordinator.terminalRejected(request.idempotencyKey)
+                disposeTerminalSubscriber()
+            }
+            finishWithError(e.message ?: "Erro inesperado", e, releaseOperation = false)
         }
     }
 
@@ -232,6 +254,8 @@ class PaymentDialogViewModel @Inject constructor(
         }
 
         if (lastApproved == null) {
+            operationCoordinator.terminalRejected(request.idempotencyKey)
+            disposeTerminalSubscriber()
             finishWithError(
                 "${terminalFailureCode(failedResult)} - O PagBank nao respondeu e nao foi possivel " +
                     "confirmar a ultima transacao. Verifique a venda no PagBank antes de tentar novamente.",
@@ -240,6 +264,8 @@ class PaymentDialogViewModel @Inject constructor(
         }
 
         if (!matchesCurrentPayment(request, attempt, amountFinalCents, lastApproved)) {
+            operationCoordinator.terminalRejected(request.idempotencyKey)
+            disposeTerminalSubscriber()
             finishWithError(
                 "${terminalFailureCode(failedResult)} - O PagBank nao respondeu. A ultima transacao foi " +
                     "consultada e nenhuma aprovacao deste pedido foi encontrada. Tente novamente em instantes.",
@@ -249,6 +275,7 @@ class PaymentDialogViewModel @Inject constructor(
 
         val amountFinal = amountFinalCents / 100.0
         val recoveredPaymentData = paymentData(request, lastApproved, amountFinal)
+        operationCoordinator.terminalApproved(request.idempotencyKey)
         val completion = pendingCompletion(
             request = request,
             attempt = attempt,
@@ -257,6 +284,8 @@ class PaymentDialogViewModel @Inject constructor(
             paymentData = recoveredPaymentData,
         )
         pendingPaymentRepository.saveApproved(completion)
+        operationCoordinator.persistenceSucceeded(request.idempotencyKey)
+        disposeTerminalSubscriber()
         runCatching { saveTransactionLog(request, lastApproved, amountFinal) }
         completeApprovedPayment(completion)
     }
@@ -298,7 +327,8 @@ class PaymentDialogViewModel @Inject constructor(
     )
 
     private suspend fun completeApprovedPayment(completion: PendingPaymentCompletion) {
-        terminalPaymentActive = false
+        if (!operationCoordinator.resumeApproved(completion.idempotencyKey)) return
+        activeOperationId = completion.idempotencyKey
         postStep(PaymentStep.RECORDING)
         when (
             val result = orderRepository.recordApprovedOnlinePayment(
@@ -308,12 +338,19 @@ class PaymentDialogViewModel @Inject constructor(
         ) {
             is Result.Success -> {
                 pendingPaymentRepository.deleteCompleted(completion.attemptId)
+                operationCoordinator.completionSucceeded(completion.idempotencyKey)
+                activeOperationId = null
                 _paymentState.postValue(UIState.Success(completion.toPaymentData()))
             }
-            is Result.Error -> finishWithError(
-                result.exception.message ?: "Pagamento aprovado, mas ainda nao registrado. Tente novamente.",
-                result.exception,
-            )
+            is Result.Error -> {
+                _paymentState.postValue(
+                    UIState.Error(
+                        result.exception.message
+                            ?: "Pagamento aprovado, mas ainda nao registrado. Tente novamente.",
+                        result.exception,
+                    ),
+                )
+            }
         }
     }
 
@@ -437,30 +474,41 @@ class PaymentDialogViewModel @Inject constructor(
         _paymentState.postValue(UIState.Loading(step.message))
     }
 
-    private fun finishWithError(message: String, exception: Exception? = null) {
-        terminalPaymentActive = false
+    private fun finishWithError(
+        message: String,
+        exception: Exception? = null,
+        releaseOperation: Boolean = true,
+    ) {
+        if (releaseOperation) {
+            activeOperationId?.let(operationCoordinator::terminalRejected)
+            activeOperationId = null
+        }
         lastTerminalMessage = null
         _paymentState.postValue(UIState.Error(message, exception))
     }
 
     fun abortPayment() {
-        terminalPaymentActive = false
-        lastTerminalMessage = null
+        val operationId = activeOperationId ?: return
+        val state = operationCoordinator.requestAbort(operationId)
+        if (state !is PaymentOperationState.AbortRequested) return
         viewModelScope.launch(Dispatchers.Default) {
             plugPag.abort()
-            plugPag.disposeSubscriber()
         }
     }
 
     override fun onEvent(data: PlugPagEventData) {
-        if (!terminalPaymentActive) return
+        if (!operationCoordinator.acceptsTerminalEvents()) return
         val message = PlugPagEventMessageResolver.resolve(data.eventCode, data.customMessage)
         if (message == lastTerminalMessage) return
         lastTerminalMessage = message
         viewModelScope.launch(Dispatchers.Main.immediate) {
-            if (terminalPaymentActive) {
+            if (operationCoordinator.acceptsTerminalEvents()) {
                 _paymentState.value = UIState.Loading(message)
             }
         }
+    }
+
+    private fun disposeTerminalSubscriber() {
+        runCatching { plugPag.disposeSubscriber() }
     }
 }

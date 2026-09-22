@@ -33,6 +33,8 @@ import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import java.io.IOException
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -49,16 +51,19 @@ class PaymentDialogViewModelTest {
     private val orderRepository = mockk<OrderRepository>()
     private val pendingPaymentRepository = mockk<PendingPaymentRepository>(relaxed = true)
     private val authRepository = mockk<AuthRepository>()
+    private lateinit var operationCoordinator: PaymentOperationCoordinator
     private lateinit var viewModel: PaymentDialogViewModel
 
     @Before
     fun setUp() {
+        operationCoordinator = PaymentOperationCoordinator()
         viewModel = PaymentDialogViewModel(
             plugPag,
             paymentRepository,
             orderRepository,
             pendingPaymentRepository,
             authRepository,
+            operationCoordinator,
         )
         coEvery { authRepository.getLoggedUser(any()) } returns loggedUser()
         coEvery { pendingPaymentRepository.findForAttempt(any(), any()) } returns null
@@ -123,6 +128,35 @@ class PaymentDialogViewModelTest {
         viewModel.paymentState.getOrAwaitValueMatching { it is UIState.Error<*> }
         coVerify(exactly = 1) { pendingPaymentRepository.saveApproved(any()) }
         coVerify(exactly = 0) { pendingPaymentRepository.deleteCompleted("attempt-1") }
+    }
+
+    @Test
+    fun `approval racing with abort is persisted and blocks a second charge`() {
+        val terminalEntered = CountDownLatch(1)
+        val releaseTerminal = CountDownLatch(1)
+        arrangePreparedOnline()
+        every { plugPag.doPayment(any()) } answers {
+            terminalEntered.countDown()
+            releaseTerminal.await(2, TimeUnit.SECONDS)
+            approvedTransaction()
+        }
+        coEvery { orderRepository.recordApprovedOnlinePayment("attempt-1", any()) } returns
+            Result.Success(TestOrderFixtures.order())
+
+        viewModel.payOrder(request("credito", online = true), "SER123")
+        assertTrue(terminalEntered.await(2, TimeUnit.SECONDS))
+        viewModel.abortPayment()
+        viewModel.payOrder(
+            request("credito", online = true, idempotencyKey = "second-payment"),
+            "SER123",
+        )
+        releaseTerminal.countDown()
+
+        viewModel.paymentState.getOrAwaitValueMatching { it is UIState.Success<*> }
+        verify(exactly = 1) { plugPag.doPayment(any<PlugPagPaymentData>()) }
+        verify(exactly = 1) { plugPag.abort() }
+        coVerify(exactly = 1) { pendingPaymentRepository.saveApproved(any()) }
+        coVerify(exactly = 1) { orderRepository.prepareOnlinePayment(any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -408,13 +442,14 @@ class PaymentDialogViewModelTest {
         installments: Int = 1,
         amountFinal: Double = 25.67,
         orderId: Int = 10,
+        idempotencyKey: String = "stable-key",
     ) = OrderPaymentRequest(
         order = TestOrderFixtures.order().copy(id = orderId),
         paymentMethod = PaymentMethod(1, type, installments, 0.0, type, online),
         amount = 25.67,
         amountFinal = amountFinal,
         installments = installments,
-        idempotencyKey = "stable-key",
+        idempotencyKey = idempotencyKey,
     )
 
     private fun attempt(
