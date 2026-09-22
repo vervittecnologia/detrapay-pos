@@ -15,8 +15,12 @@ import br.com.uol.pagseguro.plugpagservice.wrapper.exception.PlugPagException
 import com.detrapay.data.Result
 import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.OrderReceivableItem
+import com.detrapay.data.model.local.PendingPaymentCompletion
+import com.detrapay.data.model.remote.PaymentAttempt
+import com.detrapay.data.repositories.AuthRepository
 import com.detrapay.data.repositories.OrderRepository
 import com.detrapay.data.repositories.PaymentRepository
+import com.detrapay.data.repositories.PendingPaymentRepository
 import com.detrapay.ui.home.orders.OrderPaymentRequest
 import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.PaymentTypeRules
@@ -32,6 +36,8 @@ class PaymentDialogViewModel @Inject constructor(
     private val plugPag: IPlugPagWrapper,
     private val paymentRepository: PaymentRepository,
     private val orderRepository: OrderRepository,
+    private val pendingPaymentRepository: PendingPaymentRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel(), PlugPagEventListener {
 
     private enum class PaymentStep(val message: String) {
@@ -41,12 +47,6 @@ class PaymentDialogViewModel @Inject constructor(
         RECORDING("Pagamento aprovado. Registrando no pedido..."),
     }
 
-    private data class PendingCompletion(
-        val idempotencyKey: String,
-        val attemptId: String,
-        val paymentData: PaymentData,
-    )
-
     private val _paymentState = MutableLiveData<UIState<PaymentData>>()
     val paymentState: LiveData<UIState<PaymentData>> = _paymentState
 
@@ -54,7 +54,6 @@ class PaymentDialogViewModel @Inject constructor(
     private var terminalPaymentActive = false
     @Volatile
     private var lastTerminalMessage: String? = null
-    private var pendingCompletion: PendingCompletion? = null
 
     fun init() {
         plugPag.setPlugPagCustomPrinterLayout(
@@ -73,11 +72,14 @@ class PaymentDialogViewModel @Inject constructor(
         plugPag.setEventListener(this)
     }
 
+    @Synchronized
     fun payOrder(request: OrderPaymentRequest, serial: String) {
         if (!request.paymentMethod.isOnlinePayment) {
             _paymentState.postValue(UIState.Error("Este pagamento deve ser apenas registrado."))
             return
         }
+
+        if (terminalPaymentActive) return
 
         val confirmedAmountCents = if (request.amountFinal.isFinite()) {
             amountInCents(request.amountFinal)
@@ -86,12 +88,6 @@ class PaymentDialogViewModel @Inject constructor(
         }
         if (confirmedAmountCents <= 0) {
             finishWithError("O valor confirmado para o pagamento e invalido.")
-            return
-        }
-
-        val retry = pendingCompletion
-        if (retry?.idempotencyKey == request.idempotencyKey) {
-            retryApprovedPayment(retry)
             return
         }
 
@@ -113,7 +109,8 @@ class PaymentDialogViewModel @Inject constructor(
                     prepared.exception,
                 )
                 is Result.Success -> {
-                    val preparedAmount = prepared.data.amountFinal
+                    val attempt = prepared.data
+                    val preparedAmount = attempt.amountFinal
                     if (!preparedAmount.isFinite() ||
                         amountInCents(preparedAmount) != confirmedAmountCents
                     ) {
@@ -122,7 +119,17 @@ class PaymentDialogViewModel @Inject constructor(
                                 "Atualize a configuracao antes de tentar novamente.",
                         )
                     } else {
-                        startPagBank(request, prepared.data.id, confirmedAmountCents, serial)
+                        val sessionUserId = authRepository.getLoggedUser()?.id
+                        if (sessionUserId.isNullOrBlank()) {
+                            finishWithError("Nenhum usuario autenticado, contate o suporte.")
+                            return@launch
+                        }
+                        val pending = pendingPaymentRepository.findForAttempt(attempt.id, sessionUserId)
+                        if (pending != null) {
+                            completeApprovedPayment(pending)
+                        } else {
+                            startPagBank(request, attempt, sessionUserId, confirmedAmountCents, serial)
+                        }
                     }
                 }
             }
@@ -140,12 +147,13 @@ class PaymentDialogViewModel @Inject constructor(
 
     private suspend fun startPagBank(
         request: OrderPaymentRequest,
-        attemptId: String,
+        attempt: PaymentAttempt,
+        sessionUserId: String,
         amountFinalCents: Int,
         serial: String,
     ) {
         val amountFinal = amountFinalCents / 100.0
-        when (val split = orderRepository.updatePaymentAttemptSplitConfig(attemptId, serial)) {
+        when (val split = orderRepository.updatePaymentAttemptSplitConfig(attempt.id, serial)) {
             is Result.Error -> {
                 finishWithError("Nao foi possivel configurar a maquininha: ${split.exception.message}", split.exception)
                 return
@@ -166,38 +174,42 @@ class PaymentDialogViewModel @Inject constructor(
                     amountFinalCents,
                     installmentType(request.installments),
                     request.installments,
-                    orderUserReference(request.order.id),
+                    attempt.terminalReference,
                     printReceipt = true,
                     partialPay = false,
                     isCarne = false,
                 ),
             )
             if (result.result != PlugPag.RET_OK) {
-                saveTransactionLog(request, result, amountFinal)
-                finishWithError(terminalFailureMessage(result))
+                if (isAmbiguousCommunicationFailure(result)) {
+                    reconcileAmbiguousTransaction(
+                        request,
+                        attempt,
+                        sessionUserId,
+                        amountFinalCents,
+                        result,
+                    )
+                } else {
+                    saveTransactionLog(request, result, amountFinal)
+                    finishWithError(terminalFailureMessage(result))
+                }
                 return
             }
 
-            val approval = PaymentData(
-                transactionId = result.transactionId,
-                transactionCode = result.transactionCode,
-                date = result.date,
-                time = result.time,
-                cardBrand = result.cardBrand,
-                cardLast4 = result.holder,
-                cardHolder = result.holderName,
-                pixTxIdCode = result.pixTxIdCode,
-                transactionLog = Gson().toJson(result),
-                amountOriginal = request.amount,
-                amountFinal = amountFinal,
-            )
+            val approval = paymentData(request, result, amountFinal)
             if (approval.transactionId.isNullOrBlank()) {
                 finishWithError("A aprovacao PagBank nao retornou transaction_id.")
                 return
             }
-            saveTransactionLog(request, result, amountFinal)
-            val completion = PendingCompletion(request.idempotencyKey, attemptId, approval)
-            pendingCompletion = completion
+            val completion = pendingCompletion(
+                request = request,
+                attempt = attempt,
+                sessionUserId = sessionUserId,
+                result = result,
+                paymentData = approval,
+            )
+            pendingPaymentRepository.saveApproved(completion)
+            runCatching { saveTransactionLog(request, result, amountFinal) }
             completeApprovedPayment(completion)
         } catch (_: PlugPagException) {
             finishWithError("Falha no pagamento.")
@@ -206,24 +218,97 @@ class PaymentDialogViewModel @Inject constructor(
         }
     }
 
-    private fun retryApprovedPayment(completion: PendingCompletion) {
-        terminalPaymentActive = false
-        postStep(PaymentStep.RECORDING)
-        viewModelScope.launch(Dispatchers.IO) { completeApprovedPayment(completion) }
+    private suspend fun reconcileAmbiguousTransaction(
+        request: OrderPaymentRequest,
+        attempt: PaymentAttempt,
+        sessionUserId: String,
+        amountFinalCents: Int,
+        failedResult: PlugPagTransactionResult,
+    ) {
+        val lastApproved = try {
+            plugPag.getLastApprovedTransaction()
+        } catch (_: Exception) {
+            null
+        }
+
+        if (lastApproved == null) {
+            finishWithError(
+                "${terminalFailureCode(failedResult)} - O PagBank nao respondeu e nao foi possivel " +
+                    "confirmar a ultima transacao. Verifique a venda no PagBank antes de tentar novamente.",
+            )
+            return
+        }
+
+        if (!matchesCurrentPayment(request, attempt, amountFinalCents, lastApproved)) {
+            finishWithError(
+                "${terminalFailureCode(failedResult)} - O PagBank nao respondeu. A ultima transacao foi " +
+                    "consultada e nenhuma aprovacao deste pedido foi encontrada. Tente novamente em instantes.",
+            )
+            return
+        }
+
+        val amountFinal = amountFinalCents / 100.0
+        val recoveredPaymentData = paymentData(request, lastApproved, amountFinal)
+        val completion = pendingCompletion(
+            request = request,
+            attempt = attempt,
+            sessionUserId = sessionUserId,
+            result = lastApproved,
+            paymentData = recoveredPaymentData,
+        )
+        pendingPaymentRepository.saveApproved(completion)
+        runCatching { saveTransactionLog(request, lastApproved, amountFinal) }
+        completeApprovedPayment(completion)
     }
 
-    private suspend fun completeApprovedPayment(completion: PendingCompletion) {
+    private fun matchesCurrentPayment(
+        request: OrderPaymentRequest,
+        attempt: PaymentAttempt,
+        amountFinalCents: Int,
+        result: PlugPagTransactionResult,
+    ): Boolean {
+        if (result.result != PlugPag.RET_OK || result.transactionId.isNullOrBlank()) return false
+        if (result.userReference?.trim() != attempt.terminalReference) return false
+        if (parseAmountInCents(result.amount) != amountFinalCents) return false
+        val recoveredPaymentType = result.paymentType
+        return recoveredPaymentType == null || recoveredPaymentType == paymentType(request)
+    }
+
+    private fun parseAmountInCents(rawAmount: String?): Int? {
+        val digits = rawAmount?.filter(Char::isDigit).orEmpty()
+        return digits.toIntOrNull()
+    }
+
+    private fun paymentData(
+        request: OrderPaymentRequest,
+        result: PlugPagTransactionResult,
+        amountFinal: Double,
+    ) = PaymentData(
+        transactionId = result.transactionId,
+        transactionCode = result.transactionCode,
+        date = result.date,
+        time = result.time,
+        cardBrand = result.cardBrand,
+        cardLast4 = result.holder,
+        cardHolder = result.holderName,
+        pixTxIdCode = result.pixTxIdCode,
+        transactionLog = Gson().toJson(result),
+        amountOriginal = request.amount,
+        amountFinal = amountFinal,
+    )
+
+    private suspend fun completeApprovedPayment(completion: PendingPaymentCompletion) {
         terminalPaymentActive = false
         postStep(PaymentStep.RECORDING)
         when (
             val result = orderRepository.recordApprovedOnlinePayment(
                 completion.attemptId,
-                completion.paymentData,
+                completion.toPaymentData(),
             )
         ) {
             is Result.Success -> {
-                pendingCompletion = null
-                _paymentState.postValue(UIState.Success(completion.paymentData))
+                pendingPaymentRepository.deleteCompleted(completion.attemptId)
+                _paymentState.postValue(UIState.Success(completion.toPaymentData()))
             }
             is Result.Error -> finishWithError(
                 result.exception.message ?: "Pagamento aprovado, mas ainda nao registrado. Tente novamente.",
@@ -231,6 +316,63 @@ class PaymentDialogViewModel @Inject constructor(
             )
         }
     }
+
+    fun resumePendingPayments() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val sessionUserId = authRepository.getLoggedUser()?.id ?: return@launch
+            pendingPaymentRepository.listPending(sessionUserId).forEach { completion ->
+                completeApprovedPayment(completion)
+            }
+        }
+    }
+
+    private fun pendingCompletion(
+        request: OrderPaymentRequest,
+        attempt: PaymentAttempt,
+        sessionUserId: String,
+        result: PlugPagTransactionResult,
+        paymentData: PaymentData,
+    ): PendingPaymentCompletion {
+        val now = System.currentTimeMillis()
+        return PendingPaymentCompletion(
+            attemptId = attempt.id,
+            sessionUserId = sessionUserId,
+            idempotencyKey = request.idempotencyKey,
+            terminalReference = attempt.terminalReference,
+            orderId = request.order.id,
+            transactionId = requireNotNull(paymentData.transactionId),
+            transactionCode = paymentData.transactionCode,
+            date = paymentData.date,
+            time = paymentData.time,
+            result = result.result,
+            paymentType = paymentType(request),
+            installments = request.installments,
+            cardBrand = paymentData.cardBrand,
+            cardLast4 = paymentData.cardLast4,
+            cardHolder = paymentData.cardHolder,
+            pixTxIdCode = paymentData.pixTxIdCode,
+            transactionLog = paymentData.transactionLog,
+            amountOriginal = paymentData.amountOriginal ?: request.amount,
+            amountFinal = paymentData.amountFinal ?: attempt.amountFinal,
+            status = PendingPaymentCompletion.STATUS_APPROVED,
+            createdAt = now,
+            updatedAt = now,
+        )
+    }
+
+    private fun PendingPaymentCompletion.toPaymentData() = PaymentData(
+        transactionId = transactionId,
+        transactionCode = transactionCode,
+        date = date,
+        time = time,
+        cardBrand = cardBrand,
+        cardLast4 = cardLast4,
+        cardHolder = cardHolder,
+        pixTxIdCode = pixTxIdCode,
+        transactionLog = transactionLog,
+        amountOriginal = amountOriginal,
+        amountFinal = amountFinal,
+    )
 
     private suspend fun saveTransactionLog(
         request: OrderPaymentRequest,
@@ -271,12 +413,6 @@ class PaymentDialogViewModel @Inject constructor(
 
     private fun amountInCents(amount: Double): Int = (amount * 100).roundToInt()
 
-    private fun orderUserReference(orderId: Int): String {
-        val digits = orderId.toString().filter { it.isDigit() }
-        val prefixed = "PED$digits"
-        return if (prefixed.length <= 10) prefixed else digits.takeLast(10)
-    }
-
     private fun terminalFailureMessage(result: PlugPagTransactionResult): String {
         val message = result.message?.trim().orEmpty()
         val errorCode = result.errorCode?.trim().orEmpty()
@@ -287,6 +423,15 @@ class PaymentDialogViewModel @Inject constructor(
             else -> "Falha no pagamento."
         }
     }
+
+    private fun isAmbiguousCommunicationFailure(result: PlugPagTransactionResult): Boolean {
+        val errorCode = result.errorCode?.trim()
+        return errorCode.equals("A011", ignoreCase = true) ||
+            result.result == 1019 || result.result == -1019
+    }
+
+    private fun terminalFailureCode(result: PlugPagTransactionResult): String =
+        result.errorCode?.trim()?.takeIf(String::isNotBlank) ?: "A011"
 
     private fun postStep(step: PaymentStep) {
         _paymentState.postValue(UIState.Loading(step.message))

@@ -60,6 +60,7 @@ fun OrdersRoute(
 
     LaunchedEffect(Unit) {
         paymentViewModel.init()
+        paymentViewModel.resumePendingPayments()
         viewModel.loadOrders(forceRefresh = false)
         viewModel.prefetchRegistrationData()
     }
