@@ -30,17 +30,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import dagger.Lazy
 import kotlin.math.roundToInt
 
 @HiltViewModel
 class PaymentDialogViewModel @Inject constructor(
-    private val plugPag: IPlugPagWrapper,
+    private val plugPagLazy: Lazy<IPlugPagWrapper>,
     private val paymentRepository: PaymentRepository,
     private val orderRepository: OrderRepository,
     private val pendingPaymentRepository: PendingPaymentRepository,
     private val authRepository: AuthRepository,
     private val operationCoordinator: PaymentOperationCoordinator,
 ) : ViewModel(), PlugPagEventListener {
+
+    private val plugPag by lazy { plugPagLazy.get() }
 
     private enum class PaymentStep(val message: String) {
         PREPARING("Aguarde, preparando a maquininha."),
@@ -99,6 +102,12 @@ class PaymentDialogViewModel @Inject constructor(
         lastTerminalMessage = null
         postStep(PaymentStep.PREPARING)
         viewModelScope.launch(Dispatchers.IO) {
+            try {
+                init()
+            } catch (error: Exception) {
+                finishWithError("Nao foi possivel iniciar a maquininha neste dispositivo.", error)
+                return@launch
+            }
             when (
                 val prepared = orderRepository.prepareOnlinePayment(
                     orderId = request.order.id,
@@ -542,7 +551,7 @@ class PaymentDialogViewModel @Inject constructor(
         val state = operationCoordinator.requestAbort(operationId)
         if (state !is PaymentOperationState.AbortRequested) return
         viewModelScope.launch(Dispatchers.Default) {
-            plugPag.abort()
+            runCatching { plugPag.abort() }
         }
     }
 

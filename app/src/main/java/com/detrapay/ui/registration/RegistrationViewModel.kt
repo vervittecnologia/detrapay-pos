@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import br.com.uol.pagseguro.plugpagservice.wrapper.IPlugPagWrapper
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPag
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagPrinterData
-import br.com.uol.pagseguro.plugpagservice.wrapper.exception.PlugPagException
 import com.detrapay.BuildConfig
 import com.detrapay.data.Result
 import com.detrapay.data.model.CustomerSearchData
@@ -41,6 +40,7 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.Locale
 import javax.inject.Inject
+import dagger.Lazy
 
 private data class FeesCacheKey(
     val value: Double,
@@ -61,8 +61,9 @@ class RegistrationViewModel @Inject constructor(
     private val orderRepository: OrderRepository,
     private val authRepository: AuthRepository,
     private val salesmanRepository: SalesmanRepository,
-    private val plugPag: IPlugPagWrapper
+    private val plugPagLazy: Lazy<IPlugPagWrapper>
 ) : ViewModel() {
+    private val plugPag by lazy { plugPagLazy.get() }
     private val locale = Locale("pt", "BR")
 
     var inEditMode = false
@@ -747,7 +748,7 @@ class RegistrationViewModel @Inject constructor(
                 } else {
                     _orderResumePrintState.postValue(UIState.Error(result.errorCode + result.message))
                 }
-            } catch (e: PlugPagException) {
+            } catch (e: Exception) {
                 _orderResumePrintState.postValue(UIState.Error(e.message ?: "Falha na impressão!"))
             }
         }

@@ -57,7 +57,7 @@ class RegistrationViewModelTest {
             orderRepository = orderRepository,
             authRepository = authRepository,
             salesmanRepository = salesmanRepository,
-            plugPag = plugPag,
+            plugPagLazy = dagger.Lazy { plugPag },
         )
     }
 

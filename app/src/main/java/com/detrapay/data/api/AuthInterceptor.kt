@@ -12,18 +12,20 @@ import javax.inject.Singleton
 class AuthInterceptor @Inject constructor(
     private var authRepository: AuthRepository
 ) : Interceptor {
+    private val deviceSerial by lazy { DeviceUtils.getSerialNumber() }
+
     override fun intercept(chain: Interceptor.Chain): Response {
         val requestUrl = chain.request().url.encodedPath
         if (requestUrl.endsWith("/auth/local") || requestUrl.endsWith("/auth/refresh")) {
             return chain.proceed(
                 chain.request().newBuilder()
-                    .addHeader("x-device-serial", DeviceUtils.getSerialNumber())
+                    .addHeader("x-device-serial", deviceSerial)
                     .build()
             )
         }
 
         val request = chain.request().newBuilder()
-            .addHeader("x-device-serial", DeviceUtils.getSerialNumber())
+            .addHeader("x-device-serial", deviceSerial)
 
         val accessToken = authRepository.currentAccessToken() ?: runBlocking {
             authRepository.getLoggedUser()?.sessionToken

@@ -7,17 +7,18 @@ import androidx.lifecycle.viewModelScope
 import br.com.uol.pagseguro.plugpagservice.wrapper.IPlugPagWrapper
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPag
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagPrinterData
-import br.com.uol.pagseguro.plugpagservice.wrapper.exception.PlugPagException
 import com.detrapay.ui.state.UIState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import dagger.Lazy
 
 @HiltViewModel
 class OrderReportViewModel @Inject constructor(
-    private val plugPag: IPlugPagWrapper
+    private val plugPagLazy: Lazy<IPlugPagWrapper>
 ) : ViewModel() {
+    private val plugPag by lazy { plugPagLazy.get() }
 
     private val _printState = MutableLiveData<UIState<String>>(UIState.Idle())
     val printState: LiveData<UIState<String>> = _printState
@@ -39,7 +40,7 @@ class OrderReportViewModel @Inject constructor(
                 } else {
                     _printState.postValue(UIState.Error(result.errorCode.toString() + result.message))
                 }
-            } catch (e: PlugPagException) {
+            } catch (e: Exception) {
                 _printState.postValue(UIState.Error(e.message ?: "Falha ao iniciar impressao"))
             }
         }

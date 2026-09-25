@@ -59,7 +59,7 @@ class PaymentDialogViewModelTest {
     fun setUp() {
         operationCoordinator = PaymentOperationCoordinator()
         viewModel = PaymentDialogViewModel(
-            plugPag,
+            dagger.Lazy { plugPag },
             paymentRepository,
             orderRepository,
             pendingPaymentRepository,
@@ -166,6 +166,24 @@ class PaymentDialogViewModelTest {
 
         verify(exactly = 1) { plugPag.setEventListener(viewModel) }
         verify(exactly = 1) { plugPag.setPlugPagCustomPrinterLayout(any()) }
+    }
+
+    @Test
+    fun `unavailable terminal fails before preparing a payment attempt`() {
+        val unavailableTerminal = PaymentDialogViewModel(
+            dagger.Lazy { throw SecurityException("receiver flags") },
+            paymentRepository,
+            orderRepository,
+            pendingPaymentRepository,
+            authRepository,
+            operationCoordinator,
+        )
+
+        unavailableTerminal.payOrder(request("credito", online = true), "SER123")
+
+        val state = unavailableTerminal.paymentState.getOrAwaitValueMatching { it is UIState.Error<*> }
+        assertTrue(state.message.orEmpty().contains("maquininha"))
+        coVerify(exactly = 0) { orderRepository.prepareOnlinePayment(any(), any(), any(), any(), any()) }
     }
 
     @Test
