@@ -35,7 +35,7 @@ object OrderFlowReducer {
     }
 
     fun usePendingAmount(state: OrderFlowLocalState, order: Order): OrderFlowLocalState {
-        if (state.feesLoading) return state
+        if (state.feesLoading || state.paymentSubmissionInFlight) return state
         val pendingAmount = OrderPresentation.summary(order).missingAmount
         return state.copy(
             paymentDigits = (pendingAmount * 100).roundToLong().toString(),
@@ -44,7 +44,7 @@ object OrderFlowReducer {
     }
 
     fun applyPaymentKey(state: OrderFlowLocalState, key: String): OrderFlowLocalState {
-        if (state.feesLoading) return state
+        if (state.feesLoading || state.paymentSubmissionInFlight) return state
         return state.copy(
             paymentDigits = OrderPresentation.nextPaymentDigits(state.paymentDigits, key),
             creditInstallments = emptyList(),
@@ -129,7 +129,7 @@ object OrderFlowReducer {
             )
         } else {
             state.copy(
-                step = OrderFlowStep.Review,
+                step = OrderFlowStep.Amount,
                 feesLoading = false,
                 feeRequestTarget = null,
                 feeRequestInFlight = false,
@@ -141,10 +141,11 @@ object OrderFlowReducer {
         }
     }
 
-    fun openDirectReview(state: OrderFlowLocalState): OrderFlowLocalState {
+    fun prepareDirectPayment(state: OrderFlowLocalState): OrderFlowLocalState {
+        if (state.paymentSubmissionInFlight || state.feesLoading) return state
         val amount = OrderPresentation.paymentAmount(state.paymentDigits)
         return state.copy(
-            step = OrderFlowStep.Review,
+            step = OrderFlowStep.Amount,
             selectedInstallment = null,
             paymentReview = OrderPresentation.directPaymentReview(amount),
             feesLoading = false,
@@ -152,12 +153,12 @@ object OrderFlowReducer {
         )
     }
 
-    fun openInstallmentReview(state: OrderFlowLocalState): OrderFlowLocalState {
+    fun prepareInstallmentPayment(state: OrderFlowLocalState): OrderFlowLocalState {
+        if (state.paymentSubmissionInFlight || state.feesLoading) return state
         val installment = state.creditInstallments.firstOrNull {
             it.installmentNumber == state.selectedInstallment
-        } ?: return state.copy(feesError = "Selecione uma opcao de parcelamento.")
+        } ?: return state.copy(paymentReview = null, feesError = "Selecione uma opcao de parcelamento.")
         return state.copy(
-            step = OrderFlowStep.Review,
             paymentReview = OrderPresentation.paymentReview(
                 OrderPresentation.paymentAmount(state.paymentDigits),
                 installment,
@@ -167,7 +168,12 @@ object OrderFlowReducer {
     }
 
     fun selectInstallment(state: OrderFlowLocalState, installment: Int): OrderFlowLocalState {
-        return state.copy(selectedInstallment = installment, activePaymentRequest = null)
+        if (state.paymentSubmissionInFlight) return state
+        return state.copy(
+            selectedInstallment = installment,
+            feesError = null,
+            activePaymentRequest = state.activePaymentRequest.takeIf { state.selectedInstallment == installment },
+        )
     }
 
     fun back(state: OrderFlowLocalState): OrderFlowLocalState {
@@ -177,7 +183,7 @@ object OrderFlowReducer {
             OrderFlowStep.Method -> OrderFlowStep.Orders
             OrderFlowStep.Amount -> OrderFlowStep.Method
             OrderFlowStep.Installments -> OrderFlowStep.Amount
-            OrderFlowStep.Review -> if (
+            OrderFlowStep.Waiting -> if (
                 PaymentTypeRules.normalize(state.selectedPaymentMethod?.paymentType) ==
                 "credito"
             ) {
@@ -185,13 +191,13 @@ object OrderFlowReducer {
             } else {
                 OrderFlowStep.Amount
             }
-            OrderFlowStep.Waiting -> OrderFlowStep.Review
         }
         val cancelCheckoutFeeRequest =
             state.step == OrderFlowStep.Installments &&
                 state.feeRequestTarget == OrderFeeRequestTarget.CheckoutCredit
         return state.copy(
             step = nextStep,
+            paymentSubmissionInFlight = false,
             feesLoading = if (cancelCheckoutFeeRequest) false else state.feesLoading,
             feeRequestTarget = if (cancelCheckoutFeeRequest) null else state.feeRequestTarget,
         )

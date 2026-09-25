@@ -21,7 +21,7 @@ object PaymentTypeRules {
 
     fun isDirectNoFeePaymentType(rawType: String?): Boolean {
         return when (normalize(rawType)) {
-            "dinheiro", "store_credit" -> true
+            "dinheiro", "store_credit", "pix", "pix_manual" -> true
             else -> false
         }
     }

@@ -136,7 +136,7 @@ private fun PaymentSummaryCard(total: Double, installments: Int) {
             Text(
                 "VALOR DO PAGAMENTO",
                 color = OrderFlowFintechTheme.Muted,
-                fontSize = 12.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.8.sp,
             )
@@ -155,7 +155,7 @@ private fun PaymentSummaryCard(total: Double, installments: Int) {
                     .background(OrderFlowFintechTheme.CardMuted)
                     .padding(horizontal = 14.dp, vertical = 5.dp),
                 color = OrderFlowFintechTheme.Muted,
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
             )
         }
@@ -440,7 +440,7 @@ private fun PaymentStatusPill(status: String, icon: ImageVector, topPadding: Int
     ) {
         Icon(icon, contentDescription = null, tint = OrderFlowColors.Blue, modifier = Modifier.size(16.dp))
         Spacer(modifier = Modifier.width(8.dp))
-        Text(status, color = OrderFlowColors.Blue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Text(status, color = OrderFlowColors.Blue, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -491,7 +491,7 @@ private fun PaymentActionBanner(
                 support,
                 modifier = Modifier.padding(top = 3.dp),
                 color = contentColor,
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 lineHeight = 17.sp,
                 fontWeight = FontWeight.Medium,
             )
@@ -519,7 +519,11 @@ private fun PixPaymentContent(
             modifier = Modifier.size(64.dp),
         )
         Text(
-            presentation.title,
+            if (paymentState is UIState.Success && paymentData?.pendingConfirmation != true) {
+                "Pix confirmado"
+            } else {
+                presentation.title
+            },
             modifier = Modifier.padding(top = 14.dp),
             color = OrderFlowFintechTheme.Ink,
             fontSize = 25.sp,
@@ -528,6 +532,20 @@ private fun PixPaymentContent(
         when {
             paymentData?.pendingConfirmation == true -> PixGeneratedContent(paymentData, onCopyPixCode, onDone)
             paymentState is UIState.Error -> PaymentErrorContent(paymentState.message.orEmpty(), onRetry)
+            paymentState is UIState.Success -> {
+                Text(
+                    "Pagamento confirmado e registrado no pedido.",
+                    modifier = Modifier.padding(top = 18.dp),
+                    color = OrderFlowColors.Blue,
+                    fontWeight = FontWeight.Bold,
+                )
+                OutlinedButton(
+                    onClick = onDone,
+                    modifier = Modifier.fillMaxWidth().padding(top = 18.dp).height(48.dp),
+                ) {
+                    Text("Voltar para pedidos", fontWeight = FontWeight.Bold)
+                }
+            }
             else -> PaymentStatusPill(
                 (paymentState as? UIState.Loading)?.message ?: presentation.status,
                 Icons.Default.Wifi,
@@ -589,7 +607,7 @@ private fun PixGeneratedContent(
                     pixCode,
                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(OrderFlowColors.MutedSurface).padding(12.dp),
                     color = OrderFlowColors.Text,
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
                     textAlign = TextAlign.Center,
                 )
                 Button(

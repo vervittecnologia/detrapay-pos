@@ -1,0 +1,17 @@
+{
+  "name": "detrapay-pos-material3-proposal",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node build.cjs",
+    "check": "node --check app.js && node --check concept3.js && node verify.cjs && node browser-smoke.mjs"
+  },
+  "dependencies": {
+    "@fontsource/roboto": "^5.2.0",
+    "@material/web": "2.5.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "happy-dom": "^20.14.5"
+  }
+}

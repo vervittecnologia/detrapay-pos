@@ -40,10 +40,10 @@ private fun OrdersAmountErrorPreview() = PreviewForOrder(OrderFlowStep.Amount, s
 @Composable
 private fun OrdersInstallmentsPreview() = PreviewForOrder(OrderFlowStep.Installments, selectedPaymentType = "credito", creditInstallments = previewInstallments(), selectedInstallment = 3)
 
-@Preview(name = "Orders - Review", showBackground = true, widthDp = 390, heightDp = 844)
+@Preview(name = "Orders - Credit payment", showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
-private fun OrdersReviewPreview() = PreviewForOrder(
-    OrderFlowStep.Review,
+private fun OrdersCreditPaymentPreview() = PreviewForOrder(
+    OrderFlowStep.Waiting,
     selectedPaymentType = "credito",
     paymentReview = OrderPaymentReview(125.0, 135.0, 10.0, 3, 45.0),
 )

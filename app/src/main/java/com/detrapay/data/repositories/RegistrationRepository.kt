@@ -321,9 +321,7 @@ class RegistrationRepository @Inject constructor(
                 ?: attributes?.companies?.data?.attributes?.tradeName
                 ?: "",
             creationDate = orderResponse.createdAt ?: attributes?.createdAt.orEmpty(),
-            status = runCatching {
-                OrderStatus.valueOf((orderResponse.status ?: attributes?.status).orEmpty().uppercase())
-            }.getOrDefault(OrderStatus.PENDING),
+            status = OrderStatus.fromApi(orderResponse.status ?: attributes?.status),
             vehiclePrice = 0.0,
             billingDate = orderResponse.billingDate ?: attributes?.billingDate.orEmpty(),
             originalAmount = orderResponse.originalAmount ?: attributes?.originalAmount ?: 0.0,

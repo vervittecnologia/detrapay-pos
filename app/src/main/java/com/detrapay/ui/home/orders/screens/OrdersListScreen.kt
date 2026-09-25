@@ -6,13 +6,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
@@ -30,6 +29,8 @@ import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
@@ -48,16 +49,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.detrapay.R
+import com.detrapay.ui.theme.DetrapayFontFamily
 import com.detrapay.data.model.Order
 import com.detrapay.ui.home.orders.OrderPresentation
+import com.detrapay.ui.home.orders.SellerHomeSection
 import com.detrapay.ui.home.orders.components.EmptyBlock
 import com.detrapay.ui.home.orders.components.LoadingBlock
 import java.time.LocalDate
@@ -73,15 +75,9 @@ private val SellerPrimary = Color(0xFF0F64B3)
 private val SellerSearchSurface = Color(0x99EEF2F6)
 private val SellerWarningSurface = Color(0xFFFEF6E7)
 private val SellerWarningText = Color(0xFF73510D)
-private val SellerSuccess = Color(0xFF35A748)
+private val SellerSuccess = Color(0xFF23813B)
 private val SellerDanger = Color(0xFFC92D32)
-private val SellerExactFontFamily = FontFamily(
-    Font(R.font.inter, FontWeight.Normal),
-    Font(R.font.inter, FontWeight.Medium),
-    Font(R.font.inter, FontWeight.SemiBold),
-    Font(R.font.inter, FontWeight.Bold),
-    Font(R.font.inter, FontWeight.ExtraBold),
-)
+private val SellerExactFontFamily = DetrapayFontFamily
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,6 +96,7 @@ fun OrdersListScreen(
     onOpenSimulator: () -> Unit,
     onOrderPay: (Order) -> Unit,
     onOrderDetail: (Order) -> Unit,
+    onSectionSelected: (SellerHomeSection) -> Unit = {},
     initialShowSearch: Boolean = false,
     initialQuery: String = "",
     initialShowFabMenu: Boolean = false,
@@ -130,11 +127,11 @@ fun OrdersListScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
                     start = 16.dp,
-                    top = 16.dp,
+                    top = 12.dp,
                     end = 16.dp,
-                    bottom = 176.dp,
+                    bottom = 96.dp,
                 ),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 item {
                     SellerHeader(
@@ -142,6 +139,7 @@ fun OrdersListScreen(
                         query = query,
                         onQueryChange = { query = it },
                         onSearchClick = { showSearch = !showSearch },
+                        onProfileClick = { onSectionSelected(SellerHomeSection.Profile) },
                     )
                 }
 
@@ -178,15 +176,9 @@ fun OrdersListScreen(
                 }
             }
 
-            SellerFloatingActionButton(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 20.dp, bottom = 96.dp),
-                onClick = onNewOrder,
-            )
-
-            SellerBottomNavigation(
+            SellerNewOrderButton(
                 modifier = Modifier.align(Alignment.BottomCenter),
+                onClick = onNewOrder,
             )
         }
     }
@@ -198,16 +190,17 @@ private fun SellerHeader(
     query: String,
     onQueryChange: (String) -> Unit,
     onSearchClick: () -> Unit,
+    onProfileClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 28.dp),
+            .padding(bottom = 12.dp),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(44.dp),
+                .heightIn(min = 48.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -219,16 +212,25 @@ private fun SellerHeader(
                 fontWeight = FontWeight.Bold,
             )
             SellerSearchButton(onClick = onSearchClick)
+            IconButton(onClick = onProfileClick) {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = "Abrir perfil",
+                    tint = SellerPrimary,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
         }
 
         if (showSearch) {
             OutlinedTextField(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 12.dp),
+                    .padding(top = 12.dp)
+                    .heightIn(min = 56.dp),
                 value = query,
                 onValueChange = onQueryChange,
-                textStyle = LocalTextStyle.current.copy(fontFamily = SellerExactFontFamily),
+                textStyle = LocalTextStyle.current.copy(fontFamily = SellerExactFontFamily, fontSize = 20.sp),
                 leadingIcon = {
                     Icon(
                         Icons.Default.Search,
@@ -241,7 +243,8 @@ private fun SellerHeader(
                     Text(
                         text = "Buscar por cliente ou pedido",
                         color = SellerMuted,
-                        fontSize = 14.sp,
+                        fontSize = 16.sp,
+                        lineHeight = 20.sp,
                     )
                 },
                 singleLine = true,
@@ -263,7 +266,7 @@ private fun SellerSearchButton(onClick: () -> Unit) {
     IconButton(
         onClick = onClick,
         modifier = Modifier
-            .size(44.dp)
+            .size(48.dp)
             .clip(CircleShape)
             .background(SellerSearchSurface),
     ) {
@@ -284,15 +287,14 @@ private fun SellerOrderCard(order: Order, onClick: () -> Unit) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 129.dp)
+            .heightIn(min = 120.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         color = SellerCard,
         border = androidx.compose.foundation.BorderStroke(1.dp, SellerBorder),
-        shadowElevation = 1.dp,
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -319,15 +321,15 @@ private fun SellerOrderCard(order: Order, onClick: () -> Unit) {
                             Icons.Default.CalendarToday,
                             contentDescription = null,
                             tint = SellerMuted,
-                            modifier = Modifier.size(12.dp),
+                            modifier = Modifier.size(14.dp),
                         )
                         Text(
                             text = sellerShortDate(
                                 order.creationDate.ifBlank { order.billingDate },
                             ),
                             color = SellerMuted,
-                            fontSize = 11.sp,
-                            lineHeight = 16.5.sp,
+                            fontSize = 12.sp,
+                            lineHeight = 18.sp,
                             fontWeight = FontWeight.Medium,
                         )
                     }
@@ -336,20 +338,45 @@ private fun SellerOrderCard(order: Order, onClick: () -> Unit) {
             }
 
             Text(
-                modifier = Modifier.padding(top = 6.dp),
+                modifier = Modifier.padding(top = 5.dp),
                 text = order.customer.name.ifBlank {
                     order.customer.cpfCnpj.ifBlank { "Cliente" }
                 },
                 color = SellerInk,
                 fontSize = 16.sp,
-                lineHeight = 20.sp,
-                fontWeight = FontWeight.Bold,
+                lineHeight = 21.sp,
+                fontWeight = FontWeight.SemiBold,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
 
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = "PAGAMENTO",
+                    color = SellerMuted,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    modifier = Modifier.weight(1f).padding(start = 8.dp),
+                    text = card.paymentStatusLabel,
+                    color = if (card.isFullyPaid) SellerSuccess else SellerWarningText,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.End,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+
             SellerMetricsGrid(
-                modifier = Modifier.padding(top = 6.dp),
+                modifier = Modifier.padding(top = 5.dp),
                 total = card.totalLabel,
                 paid = card.paidLabel,
                 balanceTitle = card.balanceTitle,
@@ -369,6 +396,9 @@ private fun SellerMetricsGrid(
     balance: String,
     isFullyPaid: Boolean,
 ) {
+    val expanded = LocalDensity.current.fontScale > 1.1f ||
+        LocalConfiguration.current.screenWidthDp < 400
+
     Column(
         modifier = modifier.fillMaxWidth(),
     ) {
@@ -379,46 +409,63 @@ private fun SellerMetricsGrid(
                 .background(SellerBorder),
         )
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
             verticalAlignment = Alignment.Top,
         ) {
-            SellerMetric(
-                modifier = Modifier.weight(1f),
-                label = "Total",
-                value = total,
-                valueColor = SellerInk,
-            )
+            SellerMetric(Modifier.weight(1f), "Total", total, SellerInk)
             SellerMetricDivider()
-            SellerMetric(
-                modifier = Modifier.weight(1f),
-                label = "Pago",
-                value = paid,
-                valueColor = SellerInk,
-                trend = SellerTrend.Up,
+            SellerMetric(Modifier.weight(1f), "Pago", paid, SellerInk, SellerTrend.Up)
+            if (!expanded) {
+                SellerMetricDivider()
+                SellerMetric(
+                    modifier = Modifier.weight(1f),
+                    label = balanceTitle,
+                    value = balance,
+                    valueColor = if (isFullyPaid) SellerSuccess else SellerWarningText,
+                    trend = if (isFullyPaid) null else SellerTrend.Down,
+                )
+            }
+        }
+        if (expanded) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                    .height(1.dp).background(SellerBorder),
             )
-            SellerMetricDivider()
-            SellerMetric(
-                modifier = Modifier.weight(1f),
-                label = balanceTitle,
-                value = balance,
-                valueColor = if (isFullyPaid) SellerSuccess else SellerDanger,
-                trend = if (isFullyPaid) null else SellerTrend.Down,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = balanceTitle.uppercase(),
+                    modifier = Modifier.weight(1f),
+                    color = SellerMuted,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = balance,
+                    color = if (isFullyPaid) SellerSuccess else SellerWarningText,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun SellerStatusBadge(status: String) {
-    val isPending = status == "Pendente"
-    val background = if (isPending) SellerWarningSurface else Color(0xFFEAF7EC)
-    val foreground = if (isPending) SellerWarningText else SellerSuccess
+    val (background, foreground) = when (status) {
+        "Pendente" -> SellerWarningSurface to SellerWarningText
+        "Em Progresso" -> Color(0xFFE8F3FD) to SellerPrimary
+        "Concluído" -> Color(0xFFEAF7EC) to SellerSuccess
+        else -> Color(0xFFFDECEE) to SellerDanger
+    }
 
     Row(
         modifier = Modifier
-            .requiredWidth(148.dp)
+            .widthIn(min = 112.dp)
             .clip(CircleShape)
             .background(background)
             .padding(horizontal = 8.dp, vertical = 4.dp),
@@ -426,20 +473,19 @@ private fun SellerStatusBadge(status: String) {
         horizontalArrangement = Arrangement.Center,
     ) {
         Icon(
-            if (isPending) Icons.Default.Storefront else Icons.Default.Receipt,
+            if (status == "Pendente") Icons.Default.Storefront else Icons.Default.Receipt,
             contentDescription = null,
             tint = foreground,
-            modifier = Modifier.size(12.dp),
+            modifier = Modifier.size(14.dp),
         )
         Text(
             modifier = Modifier.padding(start = 4.dp),
-            text = "PENDENTE VENDEDOR",
+            text = status.uppercase(),
             color = foreground,
-            fontSize = 10.sp,
-            lineHeight = 15.sp,
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -458,7 +504,7 @@ private fun SellerMetric(
     trend: SellerTrend? = null,
 ) {
     Column(
-        modifier = modifier.padding(horizontal = 8.dp),
+        modifier = modifier.padding(horizontal = 2.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -468,26 +514,25 @@ private fun SellerMetric(
                 Icon(
                     if (it == SellerTrend.Up) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
                     contentDescription = null,
-                    tint = if (it == SellerTrend.Up) SellerSuccess else SellerDanger,
-                    modifier = Modifier.size(10.dp),
+                    tint = if (it == SellerTrend.Up) SellerSuccess else SellerWarningText,
+                    modifier = Modifier.size(12.dp),
                 )
             }
             Text(
                 text = label.uppercase(),
-                color = SellerInk.copy(alpha = 0.60f),
-                fontSize = 10.sp,
-                lineHeight = 15.sp,
+                color = SellerMuted,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
                 fontWeight = FontWeight.Medium,
             )
         }
         Text(
             text = value,
             color = valueColor,
-            fontSize = 12.sp,
-            lineHeight = 16.sp,
-            fontWeight = FontWeight.ExtraBold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            fontSize = 14.sp,
+            lineHeight = 18.sp,
+            fontWeight = FontWeight.SemiBold,
+            softWrap = true,
         )
     }
 }
@@ -497,89 +542,42 @@ private fun SellerMetricDivider() {
     Box(
         modifier = Modifier
             .width(1.dp)
-            .height(31.dp)
+            .height(34.dp)
             .background(SellerBorder),
     )
 }
 
 @Composable
-private fun SellerFloatingActionButton(
+private fun SellerNewOrderButton(
     modifier: Modifier,
     onClick: () -> Unit,
 ) {
-    IconButton(
-        onClick = onClick,
-        modifier = modifier
-            .size(56.dp)
-            .clip(CircleShape)
-            .background(SellerPrimary),
-    ) {
-        Icon(
-            Icons.Default.Add,
-            contentDescription = "Novo pedido",
-            tint = Color.White,
-            modifier = Modifier.size(28.dp),
-        )
-    }
-}
-
-@Composable
-private fun SellerBottomNavigation(modifier: Modifier) {
     Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(73.dp),
-        color = Color.White.copy(alpha = 0.96f),
-        shadowElevation = 10.dp,
+        modifier = modifier.fillMaxWidth(),
+        color = Color.White,
+        shadowElevation = 8.dp,
     ) {
-        Row(
+        Button(
+            onClick = onClick,
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .navigationBarsPadding()
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp)
+                .height(56.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = SellerPrimary),
         ) {
-            SellerBottomItem("Início", Icons.Default.Home, selected = false, Modifier.weight(1f))
-            SellerBottomItem("Pedidos", Icons.Default.Receipt, selected = true, Modifier.weight(1f))
-            SellerBottomItem("Perfil", Icons.Default.Person, selected = false, Modifier.weight(1f))
-        }
-    }
-}
-
-@Composable
-private fun SellerBottomItem(
-    label: String,
-    icon: ImageVector,
-    selected: Boolean,
-    modifier: Modifier,
-) {
-    val color = if (selected) SellerPrimary else SellerMuted
-    Column(
-        modifier = modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Icon(
-            icon,
-            contentDescription = label,
-            tint = color,
-            modifier = Modifier.size(22.dp),
-        )
-        Text(
-            modifier = Modifier.padding(top = 3.dp),
-            text = label,
-            color = color,
-            fontSize = 11.sp,
-            lineHeight = 16.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-        )
-        if (selected) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Box(
-                modifier = Modifier
-                    .width(22.dp)
-                    .height(2.dp)
-                    .clip(CircleShape)
-                    .background(SellerPrimary),
+            Icon(
+                Icons.Default.Add,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+            )
+            Text(
+                modifier = Modifier.padding(start = 8.dp),
+                text = "Novo pedido",
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                lineHeight = 20.sp,
             )
         }
     }

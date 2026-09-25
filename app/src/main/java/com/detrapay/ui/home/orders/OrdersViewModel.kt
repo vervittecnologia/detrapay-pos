@@ -35,6 +35,7 @@ data class OrderPaymentRequest(
 
 data class OrderDocumentsUiState(
     val documents: List<OrderDocument> = emptyList(),
+    val hasLoaded: Boolean = false,
     val isLoading: Boolean = false,
     val isUploading: Boolean = false,
     val pendingPhotoPath: String? = null,
@@ -49,6 +50,8 @@ class OrdersViewModel @Inject constructor(
 ) : ViewModel() {
 
     private var paymentMethods: List<PaymentMethod> = emptyList()
+    @Volatile
+    private var paymentMethodsLoading = false
     private val _orderListState = MutableLiveData<UIState<List<Order>>>()
     val orderListState: LiveData<UIState<List<Order>>> = _orderListState
     private val _paymentMethodsState = MutableLiveData<UIState<List<PaymentMethod>>>(UIState.Idle())
@@ -66,8 +69,15 @@ class OrdersViewModel @Inject constructor(
     private var pendingPhoto: File? = null
 
     fun loadOrders(forceRefresh: Boolean = false) {
-        if (!forceRefresh) _orderListState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
+            if (!forceRefresh) {
+                val cached = orderRepository.cachedOrders()
+                if (cached != null) {
+                    _orderListState.postValue(UIState.Success(OrderPresentation.allOrders(cached)))
+                } else {
+                    _orderListState.postValue(UIState.Loading())
+                }
+            }
             when (val result = orderRepository.getOrders(forceRefresh)) {
                 is Result.Success -> _orderListState.postValue(
                     UIState.Success(OrderPresentation.allOrders(result.data)),
@@ -80,19 +90,30 @@ class OrdersViewModel @Inject constructor(
     }
 
     fun loadPaymentMethods(forceRefresh: Boolean = false) {
+        if (!forceRefresh && paymentMethods.isNotEmpty()) {
+            _paymentMethodsState.postValue(UIState.Success(paymentMethods))
+            return
+        }
+        if (paymentMethodsLoading) return
+
+        paymentMethodsLoading = true
         _paymentMethodsState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
-            when (val result = registrationRepository.loadPaymentMethods(forceRefresh)) {
-                is Result.Success -> {
-                    paymentMethods = result.data
-                    _paymentMethodsState.postValue(UIState.Success(result.data))
+            try {
+                when (val result = registrationRepository.loadPaymentMethods(forceRefresh)) {
+                    is Result.Success -> {
+                        paymentMethods = result.data
+                        _paymentMethodsState.postValue(UIState.Success(result.data))
+                    }
+                    is Result.Error -> _paymentMethodsState.postValue(
+                        UIState.Error(
+                            result.exception.message ?: "Nao foi possivel carregar os meios de pagamento.",
+                            result.exception,
+                        ),
+                    )
                 }
-                is Result.Error -> _paymentMethodsState.postValue(
-                    UIState.Error(
-                        result.exception.message ?: "Nao foi possivel carregar os meios de pagamento.",
-                        result.exception,
-                    ),
-                )
+            } finally {
+                paymentMethodsLoading = false
             }
         }
     }
@@ -211,12 +232,14 @@ class OrdersViewModel @Inject constructor(
                 is Result.Success -> updateOrderDocumentsState {
                     it.copy(
                         documents = result.data,
+                        hasLoaded = true,
                         isLoading = false,
                         errorMessage = null,
                     )
                 }
                 is Result.Error -> updateOrderDocumentsState {
                     it.copy(
+                        hasLoaded = true,
                         isLoading = false,
                         errorMessage = result.exception.message
                             ?: "Nao foi possivel carregar as fotos do pedido.",
@@ -224,6 +247,15 @@ class OrdersViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun resetOrderDocuments() {
+        synchronized(orderDocumentsLock) {
+            orderDocumentsSnapshot = OrderDocumentsUiState()
+        }
+        pendingPhoto?.delete()
+        pendingPhoto = null
+        _orderDocumentsState.postValue(orderDocumentsSnapshot)
     }
 
     fun uploadOrderPhoto(orderId: Int, file: File) {
@@ -300,10 +332,7 @@ class OrdersViewModel @Inject constructor(
     }
 
     fun prefetchRegistrationData() {
-        viewModelScope.launch(Dispatchers.IO) {
-            registrationRepository.loadVehicleTypes()
-            salesmanRepository.getSalesmen()
-        }
+        loadPaymentMethods()
     }
 
     private fun updateOrderDocumentsState(

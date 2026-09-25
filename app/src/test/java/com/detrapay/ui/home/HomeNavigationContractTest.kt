@@ -8,15 +8,14 @@ import org.junit.Test
 class HomeNavigationContractTest {
 
     @Test
-    fun `orders is the only Home fragment destination`() {
-        val graph = File("src/main/res/navigation/home_navigation.xml").readText()
+    fun `home hosts orders directly in compose`() {
+        val home = File("src/main/java/com/detrapay/ui/home/HomeActivity.kt").readText()
 
-        assertTrue(graph.contains("app:startDestination=\"@id/ordersFragment\""))
-        assertTrue(graph.contains("com.detrapay.ui.home.orders.OrdersFragment"))
-        assertFalse(graph.contains("com.detrapay.ui.registration.RegistrationActivity"))
-        assertFalse(graph.contains("BottomNavigationView"))
-        assertEqualsCount(1, graph, "<fragment")
-        assertEqualsCount(0, graph, "<activity")
+        assertTrue(home.contains("setContent"))
+        assertTrue(home.contains("OrdersRoute("))
+        assertTrue(home.contains("DetrapayTheme"))
+        assertFalse(File("src/main/res/navigation/home_navigation.xml").exists())
+        assertFalse(File("src/main/java/com/detrapay/ui/home/orders/OrdersFragment.kt").exists())
     }
 
     @Test
@@ -34,8 +33,19 @@ class HomeNavigationContractTest {
         }
     }
 
-    private fun assertEqualsCount(expected: Int, source: String, token: String) {
-        val actual = source.windowed(token.length).count { it == token }
-        assertTrue("Expected $expected occurrences of $token but found $actual", actual == expected)
+    @Test
+    fun `compose home exposes functional top level sections`() {
+        val contract = File(
+            "src/main/java/com/detrapay/ui/home/orders/OrderFlowContract.kt",
+        ).readText()
+        val screen = File(
+            "src/main/java/com/detrapay/ui/home/orders/OrdersScreen.kt",
+        ).readText()
+
+        assertTrue(contract.contains("enum class SellerHomeSection"))
+        assertTrue(contract.contains("SelectHomeSection"))
+        assertTrue(screen.contains("SellerHomeSection.Orders -> OrdersListScreen"))
+        assertTrue(screen.contains("SellerHomeSection.Profile -> SellerProfileScreen"))
+        assertFalse(contract.contains("Home,"))
     }
 }

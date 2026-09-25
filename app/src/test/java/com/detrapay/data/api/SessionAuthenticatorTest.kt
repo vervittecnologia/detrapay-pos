@@ -29,11 +29,12 @@ class SessionAuthenticatorTest {
         every { authRepository.currentAccessToken() } answers { currentToken.get() }
         every { authRepository.currentRefreshToken() } returns "refresh"
         every { authRepository.currentTokenType() } returns "Bearer"
+        every { authRepository.currentSessionGeneration() } returns 7L
         coEvery { service.refresh(any(), any()) } answers {
             Thread.sleep(100)
             RetrofitResponse.success(SessionRefreshResponse(accessToken = "new"))
         }
-        coEvery { authRepository.updateSessionFromRefresh(any()) } answers {
+        coEvery { authRepository.updateSessionFromRefresh(any(), 7L) } answers {
             currentToken.set("new")
             true
         }
@@ -53,6 +54,7 @@ class SessionAuthenticatorTest {
     fun `failed refresh returns null without retry loop`() {
         every { authRepository.currentAccessToken() } returns "old"
         every { authRepository.currentRefreshToken() } returns "refresh"
+        every { authRepository.currentSessionGeneration() } returns 7L
         coEvery { service.refresh(any(), any()) } returns
             RetrofitResponse.error(401, "unauthorized".toResponseBody())
         val authenticator = SessionAuthenticator(authRepository, service)

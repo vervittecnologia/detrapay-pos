@@ -68,6 +68,23 @@ class OrderRepositoryTest {
     }
 
     @Test
+    fun `cached orders are visible only to the current session`() = runTest {
+        coEvery { authRepository.currentSessionScope() } returnsMany listOf(
+            SessionScope("user-a", 37, 35),
+            SessionScope("user-a", 37, 35),
+            SessionScope("user-b", 37, 35),
+        )
+        coEvery { remoteDataSource.getOrders(37, 35) } returns Result.Success(
+            listOf(OrderResponse(id = 1, status = "pending", customerName = "A")),
+        )
+
+        repository.getOrders()
+
+        assertEquals(listOf(1), repository.cachedOrders()?.map { it.id })
+        assertNull(repository.cachedOrders())
+    }
+
+    @Test
     fun `detail cache includes session identity`() = runTest {
         coEvery { authRepository.currentSessionScope() } returnsMany listOf(
             SessionScope("user-a", 37, 35),
@@ -164,7 +181,7 @@ class OrderRepositoryTest {
         assertTrue(result is Result.Success)
         val order = (result as Result.Success).data.single()
         assertEquals(123, order.id)
-        assertEquals(OrderStatus.PAID, order.status)
+        assertEquals(OrderStatus.IN_PROGRESS, order.status)
         assertEquals("Joao Silva", order.customer.name)
         assertEquals("12345678901", order.customer.cpfCnpj)
         assertEquals("Carro", order.vehicleType.name)
@@ -383,7 +400,7 @@ class OrderRepositoryTest {
 
         assertTrue(result is Result.Success)
         val order = (result as Result.Success).data
-        assertEquals(OrderStatus.PAID, order.status)
+        assertEquals(OrderStatus.IN_PROGRESS, order.status)
         assertEquals("Maria", order.salesman?.name)
         assertEquals(1, order.receivables.size)
         assertEquals("9999", order.receivables.single().authorizationCode)

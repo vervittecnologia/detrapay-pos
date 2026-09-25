@@ -738,7 +738,7 @@ class RegistrationViewModel @Inject constructor(
                 val result = plugPag.printFromFile(
                     printerData = PlugPagPrinterData(
                         path,
-                        100,
+                        4,
                         PlugPag.MIN_PRINTER_STEPS
                     )
                 )

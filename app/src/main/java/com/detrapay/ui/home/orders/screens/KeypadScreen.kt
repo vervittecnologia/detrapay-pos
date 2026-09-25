@@ -11,17 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -32,26 +28,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.detrapay.data.model.Order
-import com.detrapay.data.model.PaymentMethod
-import com.detrapay.ui.home.orders.OrderPresentation
 import com.detrapay.ui.home.orders.components.OrderFlowColors
 import com.detrapay.ui.home.orders.components.OrderFlowFintechTheme
 import com.detrapay.ui.home.orders.components.*
 
 @Composable
 fun KeypadScreen(
-    order: Order,
-    paymentMethod: PaymentMethod,
     displayAmount: String,
-    pendingAmountLabel: String,
     canPay: Boolean,
     isLoading: Boolean,
     errorMessage: String?,
     onBack: () -> Unit,
     onClose: () -> Unit,
     onKey: (String) -> Unit,
-    onUsePendingAmount: () -> Unit,
     onContinue: () -> Unit,
 ) {
     CompositionLocalProvider(
@@ -59,94 +48,25 @@ fun KeypadScreen(
     ) {
         Column(modifier = Modifier.fillMaxSize().background(OrderFlowFintechTheme.Canvas)) {
             NavBar("Novo pagamento", onBack, onClose)
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
-                shape = RoundedCornerShape(22.dp),
-                color = OrderFlowFintechTheme.Card,
-                shadowElevation = 2.dp,
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(CircleShape)
-                                .background(OrderFlowFintechTheme.PrimarySoft),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                Icons.Default.Person,
-                                contentDescription = null,
-                                tint = OrderFlowFintechTheme.Primary,
-                                modifier = Modifier.size(23.dp),
-                            )
-                        }
-                        Column(modifier = Modifier.padding(start = 12.dp)) {
-                            Text(
-                                order.customer.name.ifBlank { "Cliente" },
-                                color = OrderFlowFintechTheme.Ink,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Text(
-                                "Pedido #${order.id}",
-                                color = OrderFlowFintechTheme.Muted,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                            )
-                        }
-                        Spacer(modifier = Modifier.weight(1f))
-                        Text(
-                            OrderPresentation.paymentMethodTypeLabel(paymentMethod),
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(999.dp))
-                                .background(OrderFlowFintechTheme.PrimarySoft)
-                                .padding(horizontal = 12.dp, vertical = 7.dp),
-                            color = OrderFlowFintechTheme.PrimaryDark,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                    Text(
-                        "VALOR DO PAGAMENTO",
-                        modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 14.dp),
-                        color = OrderFlowFintechTheme.Quiet,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
-                    )
-                    Text(
-                        displayAmount,
-                        modifier = Modifier.align(Alignment.CenterHorizontally),
-                        color = OrderFlowFintechTheme.Ink,
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.Black,
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column {
-                            Text("VALOR PENDENTE", color = OrderFlowFintechTheme.Quiet, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                            Text(pendingAmountLabel, color = OrderFlowFintechTheme.Muted, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                        }
-                        Spacer(modifier = Modifier.weight(1f))
-                        Text(
-                            "USAR VALOR",
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(OrderFlowFintechTheme.PrimarySoft)
-                                .clickable(enabled = !isLoading, onClick = onUsePendingAmount)
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
-                            color = OrderFlowFintechTheme.Primary,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 0.5.sp,
-                        )
-                    }
-                }
+                Text(
+                    "VALOR DO PAGAMENTO",
+                    color = OrderFlowFintechTheme.Quiet,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    letterSpacing = 1.sp,
+                )
+                Text(
+                    displayAmount,
+                    modifier = Modifier.padding(top = 12.dp),
+                    color = OrderFlowFintechTheme.Ink,
+                    fontSize = 40.sp,
+                    lineHeight = 48.sp,
+                    fontWeight = FontWeight.Bold,
+                )
             }
             Column(modifier = Modifier.padding(horizontal = 20.dp)) {
                 if (errorMessage != null) {
@@ -155,7 +75,6 @@ fun KeypadScreen(
             }
             SellerNativeKeypad(
                 modifier = Modifier.weight(1f),
-                keyHeight = 44.dp,
                 enabled = !isLoading,
                 onKey = onKey,
             )
@@ -187,29 +106,29 @@ fun KeypadScreen(
 @Composable
 private fun SellerNativeKeypad(
     modifier: Modifier = Modifier,
-    keyHeight: androidx.compose.ui.unit.Dp = 82.dp,
     enabled: Boolean = true,
     onKey: (String) -> Unit,
 ) {
-    val keys = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0", "DEL")
+    val keys = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "00", "0", "DEL")
     Column(
         modifier = modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
     ) {
         keys.chunked(3).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 row.forEach { key ->
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(keyHeight.coerceAtLeast(56.dp))
+                            .height(56.dp)
                             .clip(RoundedCornerShape(14.dp))
                             .background(
                                 if (key == "DEL") {
                                     OrderFlowFintechTheme.PrimarySoft
-                                } else {
-                                    Color.Transparent
-                                },
+                                } else Color.White,
                             )
                             .clickable(enabled = enabled) { onKey(key) },
                         contentAlignment = Alignment.Center,

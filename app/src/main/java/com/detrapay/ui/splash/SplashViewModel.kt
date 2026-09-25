@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import com.detrapay.data.repositories.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,7 +20,6 @@ class SplashViewModel @Inject constructor(private val authRepository: AuthReposi
     fun getLoggedUser() {
         viewModelScope.launch(Dispatchers.IO) {
             val loggedInUser = authRepository.getLoggedUser()
-            delay(2000)
             if (loggedInUser != null) {
                 _authResult.postValue(
                     SplashAuthResult(

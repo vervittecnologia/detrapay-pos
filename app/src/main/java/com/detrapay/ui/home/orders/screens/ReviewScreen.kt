@@ -160,7 +160,7 @@ private fun SellerPaymentReviewCard(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                             text = "Aguardando confirmação",
                             color = OrderFlowFintechTheme.Muted,
-                            fontSize = 10.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
                         )
                     }
@@ -208,7 +208,7 @@ private fun ReviewLine(
             modifier = Modifier.weight(1f),
             text = label,
             color = if (strong) OrderFlowFintechTheme.Ink else OrderFlowFintechTheme.Muted,
-            fontSize = if (strong) 13.sp else 12.sp,
+            fontSize = if (strong) 14.sp else 13.sp,
             fontWeight = if (strong) FontWeight.Bold else FontWeight.Normal,
         )
         Text(

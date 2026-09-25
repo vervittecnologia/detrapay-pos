@@ -53,7 +53,7 @@ fun NavBar(
     ) {
         IconButton(
             onClick = onBack,
-            modifier = Modifier.size(44.dp),
+            modifier = Modifier.size(48.dp),
         ) {
             Icon(Icons.Default.ArrowBack, contentDescription = "Voltar", tint = OrderFlowFintechTheme.Ink)
         }
@@ -63,7 +63,8 @@ fun NavBar(
                 .weight(1f)
                 .padding(start = 4.dp),
             color = OrderFlowFintechTheme.Ink,
-            fontSize = 21.sp,
+            fontSize = 20.sp,
+            lineHeight = 26.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -71,7 +72,7 @@ fun NavBar(
         if (onClose != null) {
             IconButton(
                 onClick = onClose,
-                modifier = Modifier.size(44.dp),
+                modifier = Modifier.size(48.dp),
             ) {
                 Icon(
                     Icons.Default.Close,
@@ -105,7 +106,7 @@ fun AmountCard(label: String, amount: String, icon: ImageVector, iconColor: Colo
             Icon(icon, contentDescription = null, tint = iconColor)
         }
         Column(modifier = Modifier.padding(start = 14.dp)) {
-            Text(label.uppercase(), color = OrderFlowFintechTheme.Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text(label.uppercase(), color = OrderFlowFintechTheme.Muted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             Text(amount, color = OrderFlowFintechTheme.Ink, fontSize = 26.sp, fontWeight = FontWeight.Bold)
         }
     }
@@ -138,7 +139,7 @@ fun PaymentMethodRow(
         MethodIcon(icon, color)
         Column(modifier = Modifier.weight(1f).padding(start = 14.dp)) {
             Text(title, color = OrderFlowFintechTheme.Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, color = OrderFlowFintechTheme.Muted, fontSize = 12.sp)
+            Text(subtitle, color = OrderFlowFintechTheme.Muted, fontSize = 13.sp)
         }
         Text("›", color = OrderFlowFintechTheme.Muted, fontSize = 28.sp)
     }
@@ -161,7 +162,7 @@ fun SmallMethod(modifier: Modifier, title: String, icon: ImageVector, color: Col
             title,
             modifier = Modifier.padding(top = 8.dp),
             color = OrderFlowFintechTheme.Ink,
-            fontSize = 12.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,
         )
@@ -225,7 +226,7 @@ fun InstallmentRow(
             Text(
                 "por parcela · ${if (installment.noInterest) "sem juros" else "com juros"}",
                 color = if (installment.noInterest) OrderFlowFintechTheme.Green else OrderFlowFintechTheme.Muted,
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
             )
         }
@@ -234,7 +235,7 @@ fun InstallmentRow(
             Text(
                 OrderPresentation.formatCurrency(presentation.totalValue),
                 color = if (isSelected) OrderFlowFintechTheme.Primary else OrderFlowFintechTheme.Muted,
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
             )
         }
@@ -244,7 +245,7 @@ fun InstallmentRow(
 @Composable
 fun Metric(label: String, value: String, color: Color, alignEnd: Boolean = false) {
     Column(horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start) {
-        Text(label, color = OrderFlowColors.Muted, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = OrderFlowColors.Muted, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         Text(value, color = color, fontSize = 18.sp, fontWeight = FontWeight.Bold)
     }
 }
@@ -256,7 +257,7 @@ fun DetailCell(label: String, value: String, modifier: Modifier = Modifier) {
             .border(0.5.dp, OrderFlowColors.Border)
             .padding(horizontal = 18.dp, vertical = 14.dp),
     ) {
-        Text(label.uppercase(), color = OrderFlowColors.Muted, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Text(label.uppercase(), color = OrderFlowColors.Muted, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         Text(
             value,
             modifier = Modifier.padding(top = 6.dp),
@@ -274,7 +275,7 @@ fun MetricCell(label: String, value: String, color: Color, modifier: Modifier = 
     Column(
         modifier = modifier.padding(horizontal = 10.dp, vertical = 16.dp),
     ) {
-        Text(label, color = OrderFlowColors.Muted, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = OrderFlowColors.Muted, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         Text(value, color = color, fontSize = 16.sp, fontWeight = FontWeight.Black, maxLines = 1)
     }
 }
@@ -296,7 +297,7 @@ fun SummaryRow(label: String, value: String, strong: Boolean = false, subtitle: 
                     subtitle,
                     modifier = Modifier.padding(top = 3.dp),
                     color = OrderFlowColors.Blue,
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
             }

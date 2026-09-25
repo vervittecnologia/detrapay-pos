@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b4f96">
+  <title>Detrapay · Protótipo de UX</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="workspace">
+    <aside class="sidebar" aria-label="Navegação do protótipo">
+      <div class="brand"><span class="brand-mark">D<span>·</span></span><div><strong>detrapay</strong><small>PROTÓTIPO DE UX</small></div></div>
+      <div class="sidebar-intro"><span class="eyebrow">CONCEITO 01 · SET 2026</span><h1>Uma operação mais clara, do pedido ao comprovante.</h1><p>Toque nas telas para percorrer os fluxos. Valores e clientes são exemplos fictícios.</p></div>
+      <nav id="screen-menu"></nav>
+      <div class="sidebar-note"><strong>Direção de UX</strong><p>Uma decisão por tela. Saldo e total sempre claros. Confirmação protegida. Resultado inequívoco.</p></div>
+    </aside>
+    <main class="stage">
+      <div class="stage-top"><div><span class="eyebrow">SMARTPOS · PRÉVIA NAVEGÁVEL</span><h2 id="stage-title">Pedidos</h2><p id="stage-subtitle">Início da operação</p></div><div class="stage-actions"><button class="text-button" id="reset-demo">Reiniciar demonstração</button><span class="live-badge"><i></i> Protótipo local</span></div></div>
+      <div class="stage-body">
+        <div class="phone-shell"><div class="phone" id="phone"><div class="statusbar"><span>09:41</span><span class="status-icons">▰ ᴡɪꜰɪ ▣ 86%</span></div><div id="app" class="app"></div><div class="systembar"><span></span></div></div></div>
+        <div class="inspector"><span class="eyebrow">MAPA DA JORNADA</span><h3 id="inspector-title">Pedidos</h3><p id="inspector-description"></p><div class="inspector-label">O que muda</div><ul id="inspector-points"></ul><div class="demo-note">Interações nesta página alteram apenas o protótipo. Nenhum dado é enviado ao backend e nenhuma cobrança é iniciada.</div></div>
+      </div>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -85,11 +85,9 @@ class OrderRepository @Inject constructor(
         orderDetailsCache.clear()
     }
 
-    private suspend fun cacheOrder(order: Order) {
-        val scope = authRepository.currentSessionScope() ?: return
-        synchronized(cacheLock) {
-            orderDetailsCache[scope to order.id] = order
-        }
+    suspend fun cachedOrders(): List<Order>? {
+        val scope = authRepository.currentSessionScope() ?: return null
+        return synchronized(cacheLock) { ordersCache?.takeIf { it.scope == scope }?.value }
     }
 
     suspend fun getOrders(forceRefresh: Boolean = false): Result<List<Order>> {
@@ -361,9 +359,7 @@ class OrderRepository @Inject constructor(
     }
 
     private fun parseOrderStatus(rawStatus: String?): OrderStatus {
-        return runCatching {
-            OrderStatus.valueOf(rawStatus.orEmpty().uppercase())
-        }.getOrDefault(OrderStatus.PENDING)
+        return OrderStatus.fromApi(rawStatus)
     }
 
     private fun parseReceivableStatus(rawStatus: String?): OrderReceivableItemStatus {
@@ -480,7 +476,6 @@ class OrderRepository @Inject constructor(
                 try {
                     val order = parseOrder(result.data.data)
                     invalidateOrdersCache()
-                    cacheOrder(order)
                     Result.Success(order)
                 } catch (e: Exception) {
                     Result.Error(e)
@@ -511,7 +506,6 @@ class OrderRepository @Inject constructor(
                     } else {
                         parsedOrder
                     }
-                    cacheOrder(order)
                     return Result.Success(order)
                 } catch (e: Exception) {
                     Log.e("OrderRepository", "UNABLE TO GET ORDER: ${e.message}")
@@ -558,7 +552,6 @@ class OrderRepository @Inject constructor(
                 try {
                     val order = parseOrder(result.data)
                     invalidateOrdersCache()
-                    cacheOrder(order)
                     Result.Success(order)
                 } catch (e: Exception) {
                     Log.e("OrderRepository", "UNABLE TO ADD ORDER RECEIVABLE: ${e.message}")
@@ -577,7 +570,6 @@ class OrderRepository @Inject constructor(
                 try {
                     invalidateOrdersCache()
                     val order = parseOrder(result.data)
-                    cacheOrder(order)
                     return Result.Success(order)
                 } catch (e: Exception) {
                     Log.e("OrderRepository", "UNABLE TO GET ORDER: ${e.message}")
@@ -603,7 +595,6 @@ class OrderRepository @Inject constructor(
                 return try {
                     invalidateOrdersCache()
                     val order = parseOrder(result.data)
-                    cacheOrder(order)
                     Result.Success(order)
                 } catch (e: Exception) {
                     Log.e("OrderRepository", "UNABLE TO DELETE ORDER RECEIVABLE: ${e.message}")
@@ -623,7 +614,6 @@ class OrderRepository @Inject constructor(
                 invalidateOrdersCache()
                 runCatching {
                     val order = parseOrder(result.data)
-                    cacheOrder(order)
                     Result.Success(order)
                 }.getOrElse { Result.Error(it as Exception) }
             }
@@ -691,7 +681,6 @@ class OrderRepository @Inject constructor(
             is Result.Success -> runCatching {
                 val order = parseOrder(result.data)
                 invalidateOrdersCache()
-                cacheOrder(order)
                 Result.Success(order)
             }.getOrElse { Result.Error(it as? Exception ?: Exception(it)) }
             is Result.Error -> result

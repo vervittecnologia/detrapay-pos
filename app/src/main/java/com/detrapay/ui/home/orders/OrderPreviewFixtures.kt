@@ -13,8 +13,8 @@ import com.detrapay.data.model.remote.InstallmentFee
 
 internal fun previewOrders(): List<Order> = listOf(
     previewOrder(101, "Marina Costa", 3200.0, OrderStatus.PENDING, 1700.0),
-    previewOrder(102, "Rafael Lima", 1280.0, OrderStatus.AUTHORIZED, 0.0),
-    previewOrder(103, "Bianca Souza", 860.0, OrderStatus.PAID, 860.0),
+    previewOrder(102, "Rafael Lima", 1280.0, OrderStatus.IN_PROGRESS, 0.0),
+    previewOrder(103, "Bianca Souza", 860.0, OrderStatus.COMPLETED, 860.0),
 )
 
 internal fun previewSellerParityOrders(): List<Order> = listOf(

@@ -4,6 +4,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.detrapay.data.Result
 import com.detrapay.data.model.OrderStatus
 import com.detrapay.data.model.OrderDocument
+import com.detrapay.data.model.PaymentMethod
 import com.detrapay.data.repositories.OrderRepository
 import com.detrapay.data.repositories.RegistrationRepository
 import com.detrapay.data.repositories.SalesmanRepository
@@ -13,6 +14,7 @@ import com.detrapay.ui.state.UIState
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -38,6 +40,7 @@ class OrdersViewModelTest {
         val cancelled = TestOrderFixtures.order().copy(id = 21, status = OrderStatus.CANCELLED)
         coEvery { orderRepository.getOrders(false) } returns
             Result.Success(listOf(pending, paid, cancelled))
+        coEvery { orderRepository.cachedOrders() } returns null
         val viewModel = OrdersViewModel(
             orderRepository,
             registrationRepository,
@@ -48,6 +51,70 @@ class OrdersViewModelTest {
 
         val state = viewModel.orderListState.getOrAwaitValueMatching { it is UIState.Success }
         assertEquals(listOf(22, 21, 20), (state as UIState.Success).data?.map { it.id })
+    }
+
+    @Test
+    fun `cached orders remain available while fresh orders are loading`() {
+        val freshRequest = CompletableDeferred<Unit>()
+        val cached = TestOrderFixtures.order().copy(id = 20)
+        val fresh = TestOrderFixtures.order().copy(id = 21)
+        coEvery { orderRepository.cachedOrders() } returns listOf(cached)
+        coEvery { orderRepository.getOrders(false) } coAnswers {
+            freshRequest.await()
+            Result.Success(listOf(fresh))
+        }
+        val viewModel = OrdersViewModel(orderRepository, registrationRepository, salesmanRepository)
+
+        viewModel.loadOrders()
+
+        val cachedState = viewModel.orderListState.getOrAwaitValueMatching {
+            it is UIState.Success && it.data?.singleOrNull()?.id == 20
+        }
+        assertEquals(20, cachedState.data?.single()?.id)
+        freshRequest.complete(Unit)
+        val freshState = viewModel.orderListState.getOrAwaitValueMatching {
+            it is UIState.Success && it.data?.singleOrNull()?.id == 21
+        }
+        assertEquals(21, freshState.data?.single()?.id)
+    }
+
+    @Test
+    fun `registration prefetch warms payment methods before checkout`() {
+        val methods = listOf(paymentMethod("pix", online = true))
+        coEvery { registrationRepository.loadPaymentMethods(false) } returns
+            Result.Success(methods)
+        val viewModel = OrdersViewModel(
+            orderRepository,
+            registrationRepository,
+            salesmanRepository,
+        )
+
+        viewModel.prefetchRegistrationData()
+
+        val state = viewModel.paymentMethodsState.getOrAwaitValueMatching {
+            it is UIState.Success
+        }
+        assertEquals(methods, state.data)
+        coVerify(exactly = 1) { registrationRepository.loadPaymentMethods(false) }
+    }
+
+    @Test
+    fun `loaded payment methods are reused without a second repository call`() {
+        val methods = listOf(paymentMethod("pix", online = true))
+        coEvery { registrationRepository.loadPaymentMethods(false) } returns
+            Result.Success(methods)
+        val viewModel = OrdersViewModel(
+            orderRepository,
+            registrationRepository,
+            salesmanRepository,
+        )
+
+        viewModel.loadPaymentMethods()
+        viewModel.paymentMethodsState.getOrAwaitValueMatching { it is UIState.Success }
+        viewModel.loadPaymentMethods()
+
+        assertEquals(methods, viewModel.availablePaymentMethods())
+        coVerify(exactly = 1) { registrationRepository.loadPaymentMethods(false) }
     }
 
     @Test
@@ -142,4 +209,13 @@ class OrdersViewModelTest {
         assertTrue(discarded.documents.isEmpty())
         assertTrue(!photo.exists())
     }
+
+    private fun paymentMethod(type: String, online: Boolean) = PaymentMethod(
+        id = 141,
+        name = "PIX",
+        installments = 1,
+        interestTax = 0.0,
+        paymentType = type,
+        isOnlinePayment = online,
+    )
 }

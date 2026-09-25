@@ -3,6 +3,7 @@
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import br.com.uol.pagseguro.plugpagservice.wrapper.IPlugPagWrapper
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPag
+import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagEventData
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagPaymentData
 import br.com.uol.pagseguro.plugpagservice.wrapper.PlugPagTransactionResult
 import com.detrapay.data.Result
@@ -207,9 +208,59 @@ class PaymentDialogViewModelTest {
     }
 
     @Test
+    fun `pix terminal events keep pix instructions until final result`() {
+        val terminalEntered = CountDownLatch(1)
+        val releaseTerminal = CountDownLatch(1)
+        arrangePreparedOnline()
+        every { plugPag.doPayment(any()) } answers {
+            terminalEntered.countDown()
+            releaseTerminal.await(2, TimeUnit.SECONDS)
+            declinedTransaction()
+        }
+
+        try {
+            viewModel.payOrder(request("pix", online = true), "SER123")
+            assertTrue(terminalEntered.await(2, TimeUnit.SECONDS))
+            val waiting = viewModel.paymentState.getOrAwaitValueMatching {
+                it is UIState.Loading && it.message == "Aguardando pagamento via Pix..."
+            }
+            assertEquals("Aguardando pagamento via Pix...", waiting.message)
+
+            viewModel.onEvent(mockk<PlugPagEventData> {
+                every { eventCode } returns PlugPagEventData.EVENT_CODE_WAITING_CARD
+                every { customMessage } returns "Insira o cartão"
+            })
+            val eventState = viewModel.paymentState.getOrAwaitValueMatching {
+                it is UIState.Loading && it.message == "Aguardando confirmação do Pix..."
+            }
+            assertEquals("Aguardando confirmação do Pix...", eventState.message)
+        } finally {
+            releaseTerminal.countDown()
+        }
+    }
+
+    @Test
     fun `A011 checks last approved transaction before allowing retry`() {
         arrangePreparedOnline()
         every { plugPag.doPayment(any()) } returns timeoutTransaction()
+        every { plugPag.getLastApprovedTransaction() } returns declinedTransaction()
+
+        viewModel.payOrder(request("pix", online = true), "SER123")
+
+        val state = viewModel.paymentState.getOrAwaitValueMatching { it is UIState.Error<*> }
+        assertTrue(state.message.orEmpty().contains("ultima transacao foi consultada"))
+        verify(exactly = 1) { plugPag.getLastApprovedTransaction() }
+        coVerify(exactly = 0) { orderRepository.recordApprovedOnlinePayment(any(), any()) }
+    }
+
+    @Test
+    fun `M9024 with invalid response checks last approved transaction`() {
+        arrangePreparedOnline()
+        every { plugPag.doPayment(any()) } returns mockk<PlugPagTransactionResult> {
+            every { result } returns -1005
+            every { errorCode } returns "M9024"
+            every { message } returns "PROBLEMA NA COMUNICACAO"
+        }
         every { plugPag.getLastApprovedTransaction() } returns declinedTransaction()
 
         viewModel.payOrder(request("pix", online = true), "SER123")

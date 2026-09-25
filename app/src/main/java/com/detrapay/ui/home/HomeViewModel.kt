@@ -24,41 +24,35 @@ class HomeViewModel @Inject constructor(
 ) :
     ViewModel() {
 
-    private var firstInitialization = true
     private val _homeState = MutableLiveData<UIState<HomeState>>()
     val homeState: LiveData<UIState<HomeState>> = _homeState
 
     fun loadScreenContent() {
         _homeState.postValue(UIState.Loading())
         viewModelScope.launch(Dispatchers.IO) {
-            // Force refresh from local DB but also trigger a refresh if needed
-            val result = authRepository.getLoggedUser(forceRefresh = true)
+            val result = authRepository.getLoggedUser(forceRefresh = false)
             if (result != null) {
                 val company = result.companies.firstOrNull()
-                val companyName = company?.name ?: ""
-                val dispatcherName = result.dispatchers.firstOrNull()?.name ?: ""
-                val salesmen = when (val salesmenResult = salesmanRepository.getSalesmen()) {
-                    is Result.Success -> salesmenResult.data
-                    is Result.Error -> emptyList()
-                }
-                viewModelScope.launch {
-                    registrationRepository.loadVehicleTypes()
-                }
-                _homeState.postValue(
-                    UIState.Success(
-                        HomeState(
-                            companyName = companyName,
-                            companyDocument = result.cpfCnpj,
-                            dispatcherName = dispatcherName,
-                            companyLogoKey = company?.logoKey,
-                            salesmen = salesmen,
-                        )
-                    )
+                val initial = HomeState(
+                    companyName = company?.name.orEmpty(),
+                    companyDocument = result.cpfCnpj,
+                    dispatcherName = result.dispatchers.firstOrNull()?.name.orEmpty(),
+                    companyLogoKey = company?.logoKey,
+                    salesmen = result.salesmen,
                 )
+                _homeState.postValue(UIState.Success(initial))
+                launch {
+                    when (val salesmenResult = salesmanRepository.getSalesmen()) {
+                        is Result.Success -> _homeState.postValue(
+                            UIState.Success(initial.copy(salesmen = salesmenResult.data)),
+                        )
+                        is Result.Error -> Unit
+                    }
+                }
+                launch { registrationRepository.loadVehicleTypes() }
             } else {
                 _homeState.postValue(UIState.Error("Ops! Algo deu errado, tente novamente."))
             }
-            firstInitialization = false
         }
     }
 

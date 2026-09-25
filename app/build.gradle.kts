@@ -10,6 +10,9 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+val clearTestPackageData = providers.gradleProperty("clearTestPackageData").orElse("false")
+val useTestOrchestrator = providers.gradleProperty("useTestOrchestrator").orElse("false")
+
 android {
     namespace = "com.detrapay"
     compileSdk = 35
@@ -21,7 +24,9 @@ android {
         versionCode = 7
         versionName = "1.5.1"
         testInstrumentationRunner = "com.detrapay.testing.DetrapayTestRunner"
-        testInstrumentationRunnerArguments["clearPackageData"] = "true"
+        // Preserve the POS session by default. Opt in to destructive isolation with
+        // -PclearTestPackageData=true on a dedicated test device.
+        testInstrumentationRunnerArguments["clearPackageData"] = clearTestPackageData.get()
 
         vectorDrawables {
             useSupportLibrary = true
@@ -31,7 +36,6 @@ android {
 
     buildFeatures {
         buildConfig = true
-        viewBinding = true
         compose = true
     }
 
@@ -61,7 +65,12 @@ android {
     }
 
     testOptions {
-        execution = "ANDROIDX_TEST_ORCHESTRATOR"
+        // Keep process isolation opt-in for dedicated, disposable test devices.
+        // On the physical POS, use scripts/run-device-tests-preserving-session.ps1;
+        // AGP's connectedDebugAndroidTest uninstalls the target APK after execution.
+        if (useTestOrchestrator.get().toBoolean()) {
+            execution = "ANDROIDX_TEST_ORCHESTRATOR"
+        }
         animationsDisabled = true
 
         unitTests {
@@ -78,18 +87,17 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:34.10.0"))
     implementation("com.google.firebase:firebase-analytics")
 
+    // Hilt and Coil still resolve these Android runtime artifacts transitively.
+    // App-owned screens remain Compose-only.
     implementation(libs.fragment.ktx)
-    implementation(libs.shimmer)
+    implementation(libs.androidx.appcompat)
     implementation(libs.kotlin.serialization)
     implementation(libs.okhttp.logging.interceptor)
     implementation(libs.retrofit.gson.converter)
     implementation(libs.retrofit)
     implementation(libs.hilt)
-    implementation(libs.androidx.legacy.support.v4)
-    implementation(libs.androidx.recyclerview)
-    implementation(libs.androidx.navigation.fragment.ktx)
-    implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.androidx.activity)
+    implementation(libs.androidx.activity.compose)
     ksp(libs.hilt.compiler)
     implementation(libs.gson)
     implementation(libs.room.runtime)
@@ -103,10 +111,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
     implementation(libs.androidx.annotation)
-    implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
@@ -124,6 +129,7 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.espresso.intents)
     androidTestImplementation(libs.androidx.uiautomator)
+    androidTestImplementation(libs.androidx.ui.test.junit4)
     androidTestImplementation(libs.hilt.testing)
     androidTestUtil(libs.androidx.test.orchestrator)
     kspAndroidTest(libs.hilt.compiler)

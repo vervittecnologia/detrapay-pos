@@ -17,6 +17,40 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OrderFlowReducerTest {
+    @Test
+    fun directMethodsPreparePaymentWithoutReviewNavigation() {
+        listOf("pix", "pix_manual", "dinheiro", "store_credit").forEach { type ->
+            val prepared = OrderFlowReducer.prepareDirectPayment(OrderFlowLocalState(
+                step = OrderFlowStep.Amount,
+                paymentDigits = "2567",
+                selectedPaymentMethod = paymentMethod(type, type == "pix"),
+            ))
+            assertEquals(OrderFlowStep.Amount, prepared.step)
+            assertEquals(25.67, prepared.paymentReview!!.amountFinal, 0.0)
+            assertEquals(1, prepared.paymentReview.installments)
+        }
+    }
+
+    @Test
+    fun invalidInstallmentClearsPreviousPayment() {
+        val prepared = OrderFlowReducer.prepareInstallmentPayment(OrderFlowLocalState(
+            step = OrderFlowStep.Installments,
+            paymentDigits = "10000",
+            selectedInstallment = 99,
+            creditInstallments = listOf(installmentFee()),
+            paymentReview = OrderPresentation.directPaymentReview(100.0),
+        ))
+        assertNull(prepared.paymentReview)
+        assertTrue(prepared.feesError != null)
+    }
+
+    @Test
+    fun paymentInputsStayUnchangedDuringSubmission() {
+        val state = OrderFlowLocalState(paymentDigits = "10000", paymentSubmissionInFlight = true)
+        assertEquals(state, OrderFlowReducer.applyPaymentKey(state, "1"))
+        assertEquals(state, OrderFlowReducer.prepareDirectPayment(state))
+        assertEquals(state, OrderFlowReducer.prepareInstallmentPayment(state))
+    }
 
     @Test
     fun `start payment opens method before amount`() {
@@ -120,7 +154,7 @@ class OrderFlowReducerTest {
     }
 
     @Test
-    fun `credit quote opens installments and simple quote opens review`() {
+    fun `credit quote opens installments and simple quote prepares payment`() {
         val credit = OrderFlowReducer.quoteLoaded(
             OrderFlowReducer.startCheckoutQuote(
                 OrderFlowLocalState(
@@ -134,7 +168,7 @@ class OrderFlowReducerTest {
         )
         assertEquals(OrderFlowStep.Installments, credit.step)
         assertNull(credit.selectedInstallment)
-        assertEquals(OrderFlowStep.Installments, OrderFlowReducer.openInstallmentReview(credit).step)
+        assertEquals(OrderFlowStep.Installments, OrderFlowReducer.prepareInstallmentPayment(credit).step)
 
         val pix = OrderFlowReducer.quoteLoaded(
             OrderFlowReducer.startCheckoutQuote(
@@ -147,7 +181,7 @@ class OrderFlowReducerTest {
             listOf(installmentFee()),
             "No installments",
         )
-        assertEquals(OrderFlowStep.Review, pix.step)
+        assertEquals(OrderFlowStep.Amount, pix.step)
         assertEquals(100.0, pix.paymentReview?.amountFinal ?: 0.0, 0.0)
     }
 
@@ -167,22 +201,22 @@ class OrderFlowReducerTest {
     }
 
     @Test
-    fun `direct payment opens zero fee review`() {
+    fun `direct payment prepares zero fee amount`() {
         val state = OrderFlowLocalState(
             step = OrderFlowStep.Amount,
             selectedPaymentMethod = paymentMethod("cash", false),
             paymentDigits = "2567",
         )
 
-        val next = OrderFlowReducer.openDirectReview(state)
+        val next = OrderFlowReducer.prepareDirectPayment(state)
 
-        assertEquals(OrderFlowStep.Review, next.step)
+        assertEquals(OrderFlowStep.Amount, next.step)
         assertEquals(25.67, next.paymentReview?.amountFinal ?: 0.0, 0.0)
         assertEquals(0.0, next.paymentReview?.feeAmount ?: -1.0, 0.0)
     }
 
     @Test
-    fun `selected credit installment opens matching review`() {
+    fun `selected credit installment prepares matching payment`() {
         val state = OrderFlowLocalState(
             step = OrderFlowStep.Installments,
             paymentDigits = "10000",
@@ -191,9 +225,9 @@ class OrderFlowReducerTest {
             creditInstallments = listOf(installmentFee()),
         )
 
-        val next = OrderFlowReducer.openInstallmentReview(state)
+        val next = OrderFlowReducer.prepareInstallmentPayment(state)
 
-        assertEquals(OrderFlowStep.Review, next.step)
+        assertEquals(OrderFlowStep.Installments, next.step)
         assertEquals(2, next.paymentReview?.installments)
     }
 
@@ -219,13 +253,13 @@ class OrderFlowReducerTest {
             OrderFlowStep.Installments,
             OrderFlowReducer.back(
                 OrderFlowLocalState(
-                    step = OrderFlowStep.Review,
+                    step = OrderFlowStep.Waiting,
                     selectedPaymentMethod = paymentMethod("credito", true),
                 ),
             ).step,
         )
         assertEquals(
-            OrderFlowStep.Review,
+            OrderFlowStep.Amount,
             OrderFlowReducer.back(OrderFlowLocalState(step = OrderFlowStep.Waiting)).step,
         )
     }

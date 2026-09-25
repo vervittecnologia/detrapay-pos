@@ -3,14 +3,33 @@ package com.detrapay.ui.splash
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
-import android.os.SystemClock
-import android.widget.ImageView
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.lifecycle.Observer
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import com.detrapay.R
 import com.detrapay.ui.home.HomeActivity
 import com.detrapay.ui.login.LoginActivity
+import com.detrapay.ui.theme.DetrapayColors
+import com.detrapay.ui.theme.DetrapayTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -18,57 +37,56 @@ import dagger.hilt.android.AndroidEntryPoint
 class SplashActivity : ComponentActivity() {
 
     private val viewModel: SplashViewModel by viewModels()
-    private val splashStartTime: Long = SystemClock.elapsedRealtime()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_splash)
-        animateLogo()
-
-        viewModel.authResult.observe(this@SplashActivity, Observer {
-            val loginResult = it ?: return@Observer
-            navigateWithMinimumDuration(loginResult)
-        })
+        setContent {
+            DetrapayTheme {
+                val authResult by viewModel.authResult.observeAsState()
+                SplashScreen()
+                LaunchedEffect(authResult) {
+                    authResult?.let(::handleAuthResult)
+                }
+            }
+        }
         viewModel.getLoggedUser()
     }
 
-    private fun animateLogo() {
-        val logo = findViewById<ImageView>(R.id.ivSplashLogo)
-        logo.scaleX = 0.88f
-        logo.scaleY = 0.88f
-        logo.translationY = 24f
-        logo.animate()
-            .alpha(1f)
-            .scaleX(1f)
-            .scaleY(1f)
-            .translationY(0f)
-            .setDuration(520)
-            .start()
-    }
-
-    private fun navigateWithMinimumDuration(result: SplashAuthResult) {
-        val minimumDurationMs = 900L
-        val elapsed = SystemClock.elapsedRealtime() - splashStartTime
-        val delayMs = (minimumDurationMs - elapsed).coerceAtLeast(0L)
-        window.decorView.postDelayed({
-            handleAuthResult(result)
-        }, delayMs)
-    }
-
     private fun handleAuthResult(result: SplashAuthResult) {
-        if (result.authenticated) {
-            val intent = Intent(
+        startActivity(
+            Intent(
                 this,
-                HomeActivity::class.java
-            )
-            this.startActivity(intent)
-        } else {
-            val loginActivityIntent = Intent(
-                this,
-                LoginActivity::class.java
-            )
-            this.startActivity(loginActivityIntent)
-        }
-        this.finish()
+                if (result.authenticated) HomeActivity::class.java else LoginActivity::class.java,
+            ),
+        )
+        finish()
+    }
+}
+
+@Composable
+private fun SplashScreen() {
+    val progress = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        progress.animateTo(1f, animationSpec = tween(durationMillis = 520))
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(DetrapayColors.Primary),
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(
+            painter = painterResource(R.drawable.splash_image),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier
+                .widthIn(max = 320.dp)
+                .alpha(progress.value)
+                .graphicsLayer {
+                    scaleX = 0.88f + (0.12f * progress.value)
+                    scaleY = 0.88f + (0.12f * progress.value)
+                    translationY = 24f * (1f - progress.value)
+                },
+        )
     }
 }

@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,7 +27,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CreditCard
@@ -36,6 +37,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,7 +48,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,19 +60,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.detrapay.R
+import com.detrapay.ui.theme.DetrapayFontFamily
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.OrderReceivableItem
-import com.detrapay.data.model.OrderReceivableItemStatus
 import com.detrapay.data.model.canBeDeleted
+import com.detrapay.ui.home.orders.OrderPaymentTotals
 import com.detrapay.ui.home.orders.OrderPresentation
 import com.detrapay.ui.home.orders.OrderDocumentsUiState
 import com.detrapay.ui.util.InstallmentQuotePresenter
@@ -87,17 +90,12 @@ private val DetailMuted = Color(0xFF58687E)
 private val DetailBorder = Color(0xFFCED5DE)
 private val DetailPrimary = Color(0xFF0F64B3)
 private val DetailPrimarySoft = Color(0xFFE8F1FB)
-private val DetailGreen = Color(0xFF35A748)
+private val DetailGreen = Color(0xFF23813B)
 private val DetailGreenSoft = Color(0xFFEAF7EC)
 private val DetailRed = Color(0xFFC92D32)
+private val DetailWarning = Color(0xFF73510D)
 private val DetailPendingSoft = Color(0xFFF2F4F7)
-private val DetailSellerFont = FontFamily(
-    Font(R.font.inter, FontWeight.Normal),
-    Font(R.font.inter, FontWeight.Medium),
-    Font(R.font.inter, FontWeight.SemiBold),
-    Font(R.font.inter, FontWeight.Bold),
-    Font(R.font.inter, FontWeight.ExtraBold),
-)
+private val DetailSellerFont = DetrapayFontFamily
 
 @Composable
 fun DetailScreen(
@@ -114,51 +112,55 @@ fun DetailScreen(
     onDiscardPendingPhoto: () -> Unit,
 ) {
     var pendingDeletion by remember { mutableStateOf<OrderReceivableItem?>(null) }
-
-    LaunchedEffect(order.id) {
-        onLoadDocuments()
-    }
+    val canReceivePayment = OrderPresentation.shouldStartPayment(order)
 
     CompositionLocalProvider(
         LocalTextStyle provides LocalTextStyle.current.copy(fontFamily = DetailSellerFont),
     ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(DetailCanvas),
-            contentPadding = PaddingValues(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
-        ) {
-            item {
-                SellerDetailHeader(
-                    orderId = order.id,
-                    onBack = onBack,
-                )
+        Box(modifier = Modifier.fillMaxSize().background(DetailCanvas)) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = if (canReceivePayment) 112.dp else 32.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                item {
+                    SellerDetailHeader(
+                        orderId = order.id,
+                        status = OrderPresentation.statusLabel(order),
+                        onBack = onBack,
+                    )
+                }
+                item {
+                    SellerOrderTotalsCard(
+                        order = order,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+                item {
+                    SellerPaymentsCard(
+                        order = order,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        onRequestDelete = { pendingDeletion = it },
+                    )
+                }
+                item {
+                    SellerOrderPhotosCard(
+                        state = documentsState,
+                        cameraAvailable = cameraAvailable,
+                        captureError = captureError,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        onTakePhoto = onTakePhoto,
+                        onRetryUpload = onRetryPhotoUpload,
+                        onDiscardPending = onDiscardPendingPhoto,
+                        onReload = onLoadDocuments,
+                    )
+                }
             }
-            item {
-                SellerOrderTotalsCard(
-                    order = order,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
-            }
-            item {
-                SellerPaymentsCard(
-                    order = order,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    onAddPayment = onPay,
-                    onRequestDelete = { pendingDeletion = it },
-                )
-            }
-            item {
-                SellerOrderPhotosCard(
-                    state = documentsState,
-                    cameraAvailable = cameraAvailable,
-                    captureError = captureError,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    onTakePhoto = onTakePhoto,
-                    onRetryUpload = onRetryPhotoUpload,
-                    onDiscardPending = onDiscardPendingPhoto,
-                    onReload = onLoadDocuments,
+
+            if (canReceivePayment) {
+                SellerReceivePaymentButton(
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    onClick = onPay,
                 )
             }
         }
@@ -183,6 +185,33 @@ fun DetailScreen(
                         Text("Cancelar", color = DetailPrimary)
                     }
                 },
+            )
+        }
+    }
+}
+
+@Composable
+private fun SellerReceivePaymentButton(modifier: Modifier, onClick: () -> Unit) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = DetailCard,
+        shadowElevation = 8.dp,
+    ) {
+        Button(
+            onClick = onClick,
+            modifier = Modifier
+                .navigationBarsPadding()
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .height(56.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = DetailPrimary),
+        ) {
+            Text(
+                text = "Receber pagamento",
+                fontSize = 16.sp,
+                lineHeight = 22.sp,
+                fontWeight = FontWeight.Bold,
             )
         }
     }
@@ -218,7 +247,6 @@ private fun SellerOrderPhotosCard(
         shape = RoundedCornerShape(16.dp),
         color = DetailCard,
         border = BorderStroke(1.dp, DetailBorder),
-        shadowElevation = 1.dp,
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
             Row(
@@ -230,13 +258,15 @@ private fun SellerOrderPhotosCard(
                         text = "Documentação",
                         color = DetailInk,
                         fontSize = 18.sp,
+                        lineHeight = 24.sp,
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
                         modifier = Modifier.padding(top = 2.dp),
                         text = "Fotos anexadas ao pedido",
                         color = DetailMuted,
-                        fontSize = 11.sp,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp,
                     )
                 }
                 Row(
@@ -247,6 +277,7 @@ private fun SellerOrderPhotosCard(
                             enabled = cameraAvailable && !state.isUploading,
                             onClick = onTakePhoto,
                         )
+                        .heightIn(min = 48.dp)
                         .padding(horizontal = 10.dp, vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -260,13 +291,36 @@ private fun SellerOrderPhotosCard(
                     Text(
                         text = "Tirar foto",
                         color = if (cameraAvailable) DetailPrimary else DetailMuted,
-                        fontSize = 13.sp,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
                 }
             }
 
             when {
+                !state.hasLoaded && !state.isLoading -> {
+                    Column(modifier = Modifier.padding(top = 12.dp)) {
+                        Text(
+                            text = "Toque em Visualizar fotos para ver os anexos.",
+                            color = DetailMuted,
+                            fontSize = 14.sp,
+                            lineHeight = 18.sp,
+                        )
+                        TextButton(
+                            onClick = onReload,
+                            enabled = !state.isUploading,
+                        ) {
+                            Icon(
+                                Icons.Default.Image,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text("Visualizar fotos")
+                        }
+                    }
+                }
                 state.isLoading && photos.isEmpty() && state.pendingPhotoPath == null -> {
                     Row(
                         modifier = Modifier.padding(top = 18.dp),
@@ -278,7 +332,7 @@ private fun SellerOrderPhotosCard(
                             color = DetailPrimary,
                             strokeWidth = 2.dp,
                         )
-                        Text("Carregando fotos...", color = DetailMuted, fontSize = 13.sp)
+                        Text("Carregando fotos...", color = DetailMuted, fontSize = 14.sp)
                     }
                 }
                 photos.isEmpty() && state.pendingPhotoPath == null -> {
@@ -290,7 +344,7 @@ private fun SellerOrderPhotosCard(
                             "A camera nao esta disponivel neste terminal."
                         },
                         color = DetailMuted,
-                        fontSize = 13.sp,
+                        fontSize = 14.sp,
                         lineHeight = 18.sp,
                     )
                 }
@@ -379,7 +433,7 @@ private fun SellerOrderPhotosCard(
                     modifier = Modifier.padding(top = 12.dp),
                     text = message,
                     color = DetailRed,
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
                     lineHeight = 17.sp,
                 )
                 if (captureError == null) {
@@ -425,7 +479,8 @@ private fun SellerOrderPhotosCard(
                     "Formato JPEG. Tamanho maximo: 10 MB."
                 },
                 color = DetailMuted,
-                fontSize = 10.sp,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
             )
         }
     }
@@ -510,7 +565,8 @@ private fun ZoomablePhotoDialog(
                     "Use dois dedos para ampliar"
                 },
                 color = Color.White,
-                fontSize = 12.sp,
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
                 fontWeight = FontWeight.Medium,
             )
         }
@@ -520,6 +576,7 @@ private fun ZoomablePhotoDialog(
 @Composable
 private fun SellerDetailHeader(
     orderId: Int,
+    status: String,
     onBack: () -> Unit,
 ) {
     Row(
@@ -531,7 +588,7 @@ private fun SellerDetailHeader(
     ) {
         IconButton(
             onClick = onBack,
-            modifier = Modifier.size(40.dp),
+            modifier = Modifier.size(48.dp),
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
@@ -567,9 +624,10 @@ private fun SellerDetailHeader(
                     modifier = Modifier.size(16.dp),
                 )
                 Text(
-                    text = "VER DETALHES",
+                    text = status.uppercase(),
                     color = DetailInk,
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
                     fontWeight = FontWeight.Bold,
                 )
             }
@@ -582,14 +640,16 @@ private fun SellerOrderTotalsCard(
     order: Order,
     modifier: Modifier = Modifier,
 ) {
-    val summary = OrderPresentation.summary(order)
+    val paidAmount = OrderPaymentTotals.from(order.receivables).paidAmount
+    val balanceDue = (order.originalAmount - paidAmount).coerceAtLeast(0.0)
+    val clipboard = LocalClipboardManager.current
+    var copied by remember(order.id, order.originalAmount) { mutableStateOf(false) }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         color = DetailCard,
         border = BorderStroke(1.dp, DetailBorder),
-        shadowElevation = 1.dp,
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
@@ -619,7 +679,7 @@ private fun SellerOrderTotalsCard(
                     Text(
                         text = "VALOR TOTAL DO PEDIDO",
                         color = DetailMuted,
-                        fontSize = 10.sp,
+                        fontSize = 12.sp,
                         lineHeight = 15.sp,
                         fontWeight = FontWeight.Medium,
                     )
@@ -631,12 +691,20 @@ private fun SellerOrderTotalsCard(
                         fontWeight = FontWeight.ExtraBold,
                     )
                 }
-                Icon(
-                    Icons.Default.ContentCopy,
-                    contentDescription = "Copiar valor",
-                    tint = DetailMuted,
-                    modifier = Modifier.size(18.dp),
-                )
+                IconButton(
+                    modifier = Modifier.size(48.dp),
+                    onClick = {
+                        clipboard.setText(AnnotatedString(OrderPresentation.formatCurrency(order.originalAmount)))
+                        copied = true
+                    },
+                ) {
+                    Icon(
+                        if (copied) Icons.Default.Check else Icons.Default.ContentCopy,
+                        contentDescription = if (copied) "Valor copiado" else "Copiar valor",
+                        tint = if (copied) DetailGreen else DetailMuted,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
             }
             Box(
                 modifier = Modifier
@@ -653,16 +721,16 @@ private fun SellerOrderTotalsCard(
                 SellerTotalMetric(
                     modifier = Modifier.weight(1f),
                     label = "RECEBIDO",
-                    value = OrderPresentation.formatCurrency(summary.registeredAmount),
+                    value = OrderPresentation.formatCurrency(paidAmount),
                     iconUp = true,
                     color = DetailInk,
                 )
                 SellerTotalMetric(
                     modifier = Modifier.weight(1f),
                     label = "FALTA",
-                    value = OrderPresentation.formatCurrency(summary.missingAmount),
+                    value = OrderPresentation.formatCurrency(balanceDue),
                     iconUp = false,
-                    color = DetailRed,
+                    color = DetailWarning,
                 )
             }
         }
@@ -689,13 +757,14 @@ private fun SellerTotalMetric(
                     Icons.AutoMirrored.Filled.TrendingDown
                 },
                 contentDescription = null,
-                tint = if (iconUp) DetailGreen else DetailRed,
+                tint = if (iconUp) DetailGreen else DetailWarning,
                 modifier = Modifier.size(14.dp),
             )
             Text(
                 text = label,
                 color = DetailMuted,
-                fontSize = 10.sp,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
                 fontWeight = FontWeight.Medium,
             )
         }
@@ -714,7 +783,6 @@ private fun SellerTotalMetric(
 private fun SellerPaymentsCard(
     order: Order,
     modifier: Modifier = Modifier,
-    onAddPayment: () -> Unit,
     onRequestDelete: (OrderReceivableItem) -> Unit,
 ) {
     Surface(
@@ -722,7 +790,6 @@ private fun SellerPaymentsCard(
         shape = RoundedCornerShape(16.dp),
         color = DetailCard,
         border = BorderStroke(1.dp, DetailBorder),
-        shadowElevation = 1.dp,
     ) {
         Column {
             Row(
@@ -732,41 +799,21 @@ private fun SellerPaymentsCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    modifier = Modifier.weight(1f),
                     text = "Pagamentos",
                     color = DetailInk,
                     fontSize = 18.sp,
+                    lineHeight = 24.sp,
                     fontWeight = FontWeight.Bold,
                 )
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable(onClick = onAddPayment)
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = null,
-                        tint = DetailPrimary,
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Text(
-                        text = "Adicionar",
-                        color = DetailPrimary,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
             }
 
             if (order.receivables.isEmpty()) {
                 Text(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                     text = "Nenhum pagamento registrado.",
                     color = DetailMuted,
                     fontSize = 14.sp,
+                    lineHeight = 20.sp,
                 )
             } else {
                 order.receivables.forEachIndexed { index, receivable ->
@@ -796,7 +843,7 @@ private fun SellerPaymentRow(
     onRequestDelete: (OrderReceivableItem) -> Unit,
 ) {
     val statusLabel = OrderPresentation.receivableStatusLabel(receivable)
-    val isPaid = receivable.status == OrderReceivableItemStatus.PAID
+    val isPaid = statusLabel == "Pago"
     val installment = receivable.takeIf { it.installments > 1 }?.let {
         InstallmentQuotePresenter.present(
             amountOriginal = it.amountOriginal,
@@ -834,6 +881,7 @@ private fun SellerPaymentRow(
                 text = receivable.paymentMethod.name.uppercase(Locale("pt", "BR")),
                 color = DetailInk,
                 fontSize = 14.sp,
+                lineHeight = 20.sp,
                 fontWeight = FontWeight.ExtraBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -841,17 +889,19 @@ private fun SellerPaymentRow(
             Text(
                 text = sellerLongDate(receivable.paymentDate ?: fallbackDate),
                 color = DetailMuted,
-                fontSize = 12.sp,
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
             )
             Text(
                 modifier = Modifier.padding(top = 2.dp),
-                text = if (isPaid) {
-                    "Pagamento confirmado"
-                } else {
-                    "Aguardando pagamento na maquininha"
+                text = when {
+                    isPaid -> "Pagamento confirmado"
+                    statusLabel == "Revertido" -> "Pagamento revertido"
+                    receivable.paymentMethod.isOnlinePayment -> "Aguardando pagamento na maquininha"
+                    else -> "Aguardando confirmação do pagamento"
                 },
                 color = DetailMuted,
-                fontSize = 12.sp,
+                fontSize = 13.sp,
                 lineHeight = 16.sp,
             )
             installment?.let {
@@ -859,7 +909,8 @@ private fun SellerPaymentRow(
                     modifier = Modifier.padding(top = 3.dp),
                     text = it.installmentLabel,
                     color = DetailMuted,
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
                     fontWeight = FontWeight.Medium,
                 )
             }
@@ -871,6 +922,7 @@ private fun SellerPaymentRow(
                 text = OrderPresentation.formatCurrency(receivable.amountFinal),
                 color = DetailInk,
                 fontSize = 14.sp,
+                lineHeight = 20.sp,
                 fontWeight = FontWeight.ExtraBold,
                 maxLines = 1,
             )
@@ -883,7 +935,8 @@ private fun SellerPaymentRow(
                     modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
                     text = statusLabel,
                     color = if (isPaid) DetailGreen else DetailMuted,
-                    fontSize = 10.sp,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
             }

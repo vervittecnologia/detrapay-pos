@@ -23,6 +23,7 @@ data class Order(
 
 enum class OrderStatus {
     PENDING,
+    IN_PROGRESS,
     PAID,
     AUTHORIZED,
     COMPLETED,
@@ -31,10 +32,19 @@ enum class OrderStatus {
     override fun toString(): String {
         return when (this) {
             PENDING -> "Pendente"
-            PAID -> "Pago"
-            AUTHORIZED -> "Autorizado"
+            IN_PROGRESS, PAID, AUTHORIZED -> "Em Progresso"
             COMPLETED -> "Concluído"
             CANCELLED -> "Cancelado"
+        }
+    }
+
+    companion object {
+        fun fromApi(status: String?): OrderStatus = when (status?.trim()?.lowercase()) {
+            "quote", "pending", null, "" -> PENDING
+            "in_progress", "awaiting_review", "authorized", "paid" -> IN_PROGRESS
+            "completed" -> COMPLETED
+            "reversed", "denied", "cancelled" -> CANCELLED
+            else -> PENDING
         }
     }
 }

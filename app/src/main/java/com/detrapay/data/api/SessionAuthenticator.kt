@@ -46,13 +46,14 @@ class SessionAuthenticator @Inject constructor(
 
                 val refreshToken = authRepository.currentRefreshToken()?.takeIf { it.isNotBlank() }
                     ?: return@withLock null
+                val sessionGeneration = authRepository.currentSessionGeneration()
                 val refreshResponse = noAuthDetrapayService.refresh(
                     refreshTokenHeader = refreshToken,
                     payload = RefreshSessionRequest(refreshToken = refreshToken),
                 )
                 if (!refreshResponse.isSuccessful) return@withLock null
                 val refreshBody = refreshResponse.body() ?: return@withLock null
-                if (!authRepository.updateSessionFromRefresh(refreshBody)) return@withLock null
+                if (!authRepository.updateSessionFromRefresh(refreshBody, sessionGeneration)) return@withLock null
 
                 val refreshedToken = authRepository.currentAccessToken() ?: return@withLock null
                 authorizedRequest(response.request, refreshedToken)

@@ -75,6 +75,17 @@ Execute o Gradle sem `--offline` somente quando uma dependencia ainda nao estive
 no cache local. Depois que o cache for preenchido, volte a usar o comando offline para evitar
 downloads repetidos e tornar o build mais previsivel.
 
+Para executar os testes instrumentados no SmartPOS sem desinstalar o app nem apagar a sessao,
+use o runner seguro do projeto:
+
+```powershell
+.\scripts\run-device-tests-preserving-session.ps1
+```
+
+Nao use `connectedDebugAndroidTest` no aparelho de uso diario: ao finalizar, a tarefa do AGP
+desinstala o APK alvo. O Orchestrator e a limpeza de dados ficam disponiveis apenas por opt-in
+em aparelhos descartaveis, com `-PuseTestOrchestrator=true -PclearTestPackageData=true`.
+
 ### Como gerar uma nova versão do aplicativo?
 1. - Abra o build.gradle.kts
 2. - Atualize o versionName: sugestão de utilizar versionamento semantico (https://semver.org/lang/pt-BR/)

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1462ad">
+  <title>DetraPay POS · protótipo GPOS780</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="workspace">
+    <aside class="guide">
+      <div class="brand"><span class="brand-mark">D</span><div><strong>DetraPay POS</strong><small>Revisão de interface · GPOS780</small></div></div>
+      <div class="guide-intro">
+        <span class="eyebrow">PROTÓTIPO NAVEGÁVEL</span>
+        <h1>Mais contexto em menos toques.</h1>
+        <p>Uma evolução da interface atual, calibrada para a tela física do terminal conectado.</p>
+      </div>
+      <nav id="screen-list" aria-label="Telas do protótipo"></nav>
+      <div class="guide-foot">
+        <p><strong>GPOS780 · Android 11</strong><br>720 × 1280 px · 272 dpi configurados<br>Área útil do app: 424 × 681 dp</p>
+        <p>Dados fictícios. Este protótipo funciona apenas no navegador e não se conecta ao terminal ou ao backend.</p>
+      </div>
+    </aside>
+    <main class="stage">
+      <header class="stage-head"><div><span class="eyebrow">PROPOSTA 04 / EVOLUÇÃO</span><h2 id="stage-title">Pedidos</h2></div><button id="reset" class="text-button" type="button">Reiniciar demonstração</button></header>
+      <div class="stage-body">
+        <div class="device-shell" aria-label="Simulação da tela GPOS780">
+          <div class="device" id="device">
+            <div class="status-bar"><span>▣ ▦</span><span>▰ ◢ 50%</span></div>
+            <div id="app" class="app" aria-live="polite"></div>
+            <div class="system-nav"><span class="triangle"></span><span class="circle"></span><span class="square"></span></div>
+          </div>
+        </div>
+        <aside class="inspector"><span class="eyebrow">POR QUE MUDAR</span><h3 id="note-title"></h3><p id="note-body"></p><div class="inspector-rule"></div><strong>Teste de navegação</strong><p id="note-tip"></p><div id="simulation" class="simulation"></div></aside>
+      </div>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

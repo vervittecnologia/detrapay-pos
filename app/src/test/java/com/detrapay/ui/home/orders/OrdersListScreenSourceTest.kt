@@ -16,18 +16,28 @@ class OrdersListScreenSourceTest {
 
         assertTrue(source.contains("text = \"Pedidos\""))
         assertTrue(source.contains("SellerSearchButton"))
-        assertTrue(source.contains("SellerBottomNavigation"))
-        assertTrue(source.contains("SellerBottomItem(\"Início\""))
-        assertTrue(source.contains("SellerBottomItem(\"Pedidos\""))
-        assertTrue(source.contains("SellerBottomItem(\"Perfil\""))
-        assertTrue(source.contains("SellerFloatingActionButton"))
+        assertFalse(source.contains("SellerBottomNavigation"))
+        assertFalse(source.contains("SellerFloatingActionButton"))
+        assertTrue(source.contains("SellerNewOrderButton"))
+        assertTrue(source.contains("text = \"Novo pedido\""))
+        assertTrue(source.contains("contentDescription = \"Abrir perfil\""))
+        assertTrue(source.contains("onSectionSelected(SellerHomeSection.Profile)"))
+        assertTrue(source.contains(".clickable(onClick = onClick)"))
         assertTrue(source.contains("RoundedCornerShape(16.dp)"))
-        assertTrue(source.contains("text = \"PENDENTE VENDEDOR\""))
+        assertTrue(source.contains("text = status.uppercase()"))
+        assertTrue(source.contains("text = card.paymentStatusLabel"))
         assertTrue(source.contains("SellerExactFontFamily"))
-        assertTrue(source.contains("Font(R.font.inter, FontWeight.ExtraBold)"))
+        assertTrue(source.contains("DetrapayFontFamily"))
         assertTrue(source.contains("SellerMetricsGrid"))
-        assertTrue(source.contains(".requiredWidth(148.dp)"))
-        assertTrue(source.contains(".heightIn(min = 129.dp)"))
+        assertTrue(source.contains(".widthIn(min = 112.dp)"))
+        assertTrue(source.contains(".heightIn(min = 120.dp)"))
+
+        val profileSource = String(
+            Files.readAllBytes(Paths.get("src/main/java/com/detrapay/ui/home/orders/screens/SellerProfileScreen.kt")),
+            StandardCharsets.UTF_8,
+        )
+        assertFalse(profileSource.contains("SellerBottomNavigation"))
+        assertTrue(profileSource.contains("contentDescription = \"Voltar para pedidos\""))
 
         assertFalse(source.contains("WalletBalanceBlock"))
         assertFalse(source.contains("WalletServicesBlock"))

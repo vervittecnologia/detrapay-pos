@@ -20,6 +20,23 @@ import org.junit.Test
 class OrderPresentationTest {
 
     @Test
+    fun `api order statuses follow the web workflow including legacy values`() {
+        mapOf(
+            "quote" to OrderStatus.PENDING,
+            "pending" to OrderStatus.PENDING,
+            "in_progress" to OrderStatus.IN_PROGRESS,
+            "awaiting_review" to OrderStatus.IN_PROGRESS,
+            "authorized" to OrderStatus.IN_PROGRESS,
+            "paid" to OrderStatus.IN_PROGRESS,
+            "completed" to OrderStatus.COMPLETED,
+            "denied" to OrderStatus.CANCELLED,
+            "reversed" to OrderStatus.CANCELLED,
+        ).forEach { (raw, expected) ->
+            assertEquals(raw, expected, OrderStatus.fromApi(raw))
+        }
+    }
+
+    @Test
     fun `review method label uses selected credit installments instead of configured name`() {
         val credit = PaymentMethod(
             id = 1,
@@ -84,7 +101,7 @@ class OrderPresentationTest {
     }
 
     @Test
-    fun `seller status label uses settled and pending badges from balance`() {
+    fun `order status remains separate from payment status`() {
         val settled = order(
             id = 11,
             total = 100.0,
@@ -93,8 +110,58 @@ class OrderPresentationTest {
         )
         val pending = order(id = 12, total = 100.0, status = OrderStatus.PENDING)
 
-        assertEquals("Quitado", OrderPresentation.sellerStatusLabel(settled))
+        assertEquals("Pendente", OrderPresentation.sellerStatusLabel(settled))
         assertEquals("Pendente", OrderPresentation.sellerStatusLabel(pending))
+        assertEquals("Em Progresso", OrderPresentation.statusLabel(OrderStatus.IN_PROGRESS))
+        assertEquals("Cancelado", OrderPresentation.statusLabel(OrderStatus.CANCELLED))
+        assertEquals("Concluído", OrderPresentation.statusLabel(OrderStatus.COMPLETED))
+    }
+
+    @Test
+    fun `financial card counts only paid receivables and keeps pending separate`() {
+        val card = OrderPresentation.sellerCardSummary(order(
+            id = 13,
+            total = 200.0,
+            status = OrderStatus.IN_PROGRESS,
+            receivables = listOf(
+                receivable(amount = 80.0, status = OrderReceivableItemStatus.PAID),
+                receivable(amount = 120.0, status = OrderReceivableItemStatus.PENDING),
+            ),
+        ))
+
+        assertEquals("R$ 80,00", card.paidLabel)
+        assertEquals("R$ 120,00", card.balanceLabel)
+        assertEquals("Pendente · falta R$ 120,00", card.paymentStatusLabel)
+        assertFalse(card.isFullyPaid)
+        assertEquals(40, card.progressPercent)
+    }
+
+    @Test
+    fun `paid payment does not complete the order and closed orders cannot receive payment`() {
+        val paidPendingOrder = order(
+            id = 14,
+            total = 100.0,
+            status = OrderStatus.PENDING,
+            receivables = listOf(receivable(amount = 100.0, status = OrderReceivableItemStatus.PAID)),
+        )
+        assertEquals("Pendente", OrderPresentation.sellerStatusLabel(paidPendingOrder))
+        assertEquals("Pago", OrderPresentation.sellerCardSummary(paidPendingOrder).paymentStatusLabel)
+        assertFalse(OrderPresentation.shouldStartPayment(paidPendingOrder))
+
+        val openBalance = order(id = 15, total = 100.0)
+        assertTrue(OrderPresentation.shouldStartPayment(openBalance))
+        assertFalse(OrderPresentation.shouldStartPayment(openBalance.copy(status = OrderStatus.COMPLETED)))
+        assertFalse(OrderPresentation.shouldStartPayment(openBalance.copy(status = OrderStatus.CANCELLED)))
+    }
+
+    @Test
+    fun `web receivable display keeps card without authorization pending`() {
+        val card = receivable(amount = 100.0, status = OrderReceivableItemStatus.PAID).copy(
+            paymentMethod = paymentMethod(paymentType = "credit"),
+        )
+        assertEquals("Pendente", OrderPresentation.receivableStatusLabel(card))
+        assertEquals("Pago", OrderPresentation.receivableStatusLabel(card.copy(authorizationCode = "123456")))
+        assertEquals("Revertido", OrderPresentation.receivableStatusLabel(OrderReceivableItemStatus.CANCELLED))
     }
 
     @Test
@@ -107,6 +174,14 @@ class OrderPresentationTest {
     fun `typed payment input uses only entered digits`() {
         assertEquals(1_000.0, OrderPresentation.paymentAmount("100000"), 0.0)
         assertEquals("R$ 1.000,00", OrderPresentation.paymentDisplayAmount("100000"))
+    }
+
+    @Test
+    fun `keypad double zero and delete keep payment input numeric and within limit`() {
+        assertEquals("100", OrderPresentation.nextPaymentDigits("1", "00"))
+        assertEquals("", OrderPresentation.nextPaymentDigits("0", "DEL"))
+        assertEquals("1234567890", OrderPresentation.nextPaymentDigits("123456789", "00"))
+        assertEquals("12", OrderPresentation.nextPaymentDigits("12", ","))
     }
 
     @Test

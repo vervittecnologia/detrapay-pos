@@ -1,34 +1,26 @@
 package com.detrapay.ui.home.orders.components
 
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import com.detrapay.R
+import com.detrapay.ui.theme.DetrapayColors
+import com.detrapay.ui.theme.DetrapayFontFamily
 
 internal object OrderFlowFintechTheme {
-    val Inter = FontFamily(
-        Font(R.font.inter, FontWeight.Normal),
-        Font(R.font.inter, FontWeight.Medium),
-        Font(R.font.inter, FontWeight.SemiBold),
-        Font(R.font.inter, FontWeight.Bold),
-        Font(R.font.inter, FontWeight.ExtraBold),
-    )
-    val Canvas = Color(0xFFF6F9FD)
-    val Primary = Color(0xFF0F64B3)
-    val PrimaryDark = Color(0xFF0A4E8E)
-    val PrimarySoft = Color(0xFFE8F1FB)
-    val Ink = Color(0xFF1A212D)
-    val Body = Color(0xFF1A212D)
-    val Muted = Color(0xFF58687E)
-    val Quiet = Color(0xFF7A8798)
-    val Card = Color(0xFFFFFFFF)
-    val CardMuted = Color(0xFFEEF2F6)
-    val Line = Color(0xFFCED5DE)
-    val Green = Color(0xFF35A748)
-    val GreenSoft = Color(0xFFEAF7EC)
-    val Red = Color(0xFFC92D32)
-    val RedSoft = Color(0xFFFBEAEC)
+    val Inter = DetrapayFontFamily
+    val Canvas = DetrapayColors.Background
+    val Primary = DetrapayColors.Primary
+    val PrimaryDark = DetrapayColors.PrimaryDark
+    val PrimarySoft = DetrapayColors.PrimarySoft
+    val Ink = DetrapayColors.Ink
+    val Body = DetrapayColors.Ink
+    val Muted = DetrapayColors.Muted
+    val Quiet = DetrapayColors.Quiet
+    val Card = DetrapayColors.Surface
+    val CardMuted = DetrapayColors.SurfaceMuted
+    val Line = DetrapayColors.Border
+    val Green = DetrapayColors.Success
+    val GreenSoft = DetrapayColors.SuccessSoft
+    val Red = DetrapayColors.Error
+    val RedSoft = DetrapayColors.ErrorSoft
     val Teal = Color(0xFF168C92)
     val Yellow = Color(0xFFFFC145)
     val Purple = Color(0xFF7357B5)
@@ -55,7 +47,7 @@ internal object OrderFlowColors {
     val IndigoSoft = Color(0xFFF4F8FC)
     val Amber = Color(0xFFFBBF24)
     val AmberSoft = Color(0xFFFFFBEB)
-    val AmberText = Color(0xFFD97706)
+    val AmberText = Color(0xFF9A5700)
     val Warning = Color(0xFFDB9101)
     val WarningSoft = Color(0xFFFEF6E7)
     val WarningText = Color(0xFF73510D)

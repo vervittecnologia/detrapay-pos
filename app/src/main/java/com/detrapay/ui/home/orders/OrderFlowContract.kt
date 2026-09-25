@@ -4,6 +4,7 @@ import com.detrapay.data.model.Order
 import com.detrapay.data.model.OrderReceivableItem
 import com.detrapay.data.model.PaymentData
 import com.detrapay.data.model.PaymentMethod
+import com.detrapay.data.model.Salesman
 import com.detrapay.data.model.remote.InstallmentFee
 import com.detrapay.ui.home.orders.OrderPaymentRequest
 import com.detrapay.ui.state.UIState
@@ -14,8 +15,12 @@ enum class OrderFlowStep {
     Method,
     Amount,
     Installments,
-    Review,
     Waiting,
+}
+
+enum class SellerHomeSection {
+    Orders,
+    Profile,
 }
 
 data class OrderPaymentReview(
@@ -62,6 +67,10 @@ data class OrdersUiState(
     val errorMessage: String?,
     val paymentMethods: List<PaymentMethod>,
     val local: OrderFlowLocalState,
+    val dispatcherName: String = "",
+    val companyLogoKey: String? = null,
+    val salesmen: List<Salesman> = emptyList(),
+    val homeSection: SellerHomeSection = SellerHomeSection.Orders,
     val inPagePaymentState: UIState<PaymentData> = UIState.Idle(),
     val orderDocuments: OrderDocumentsUiState = OrderDocumentsUiState(),
 )
@@ -70,6 +79,7 @@ sealed interface OrderFlowAction {
     data object Logout : OrderFlowAction
     data object Reload : OrderFlowAction
     data object NewOrder : OrderFlowAction
+    data class SelectHomeSection(val section: SellerHomeSection) : OrderFlowAction
     data class OrderPay(val order: Order) : OrderFlowAction
     data class OrderDetail(val order: Order) : OrderFlowAction
     data class DeletePayment(val receivable: OrderReceivableItem) : OrderFlowAction
@@ -85,7 +95,6 @@ sealed interface OrderFlowAction {
     data object ContinueAmount : OrderFlowAction
     data class SelectInstallment(val installment: Int) : OrderFlowAction
     data object ContinueInstallments : OrderFlowAction
-    data object ConfirmPayment : OrderFlowAction
     data object RetryInPagePayment : OrderFlowAction
     data object FinishInPagePayment : OrderFlowAction
     data class CopyPaymentCode(val text: String) : OrderFlowAction

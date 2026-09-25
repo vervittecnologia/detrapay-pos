@@ -58,4 +58,39 @@ class PlugPagEventMessageResolverTest {
             PlugPagEventMessageResolver.resolve(999, "  Mensagem do terminal  "),
         )
     }
+
+    @Test
+    fun `sale event waits for final result before claiming approval`() {
+        assertEquals(
+            "Finalizando transação...",
+            PlugPagEventMessageResolver.resolve(PlugPagEventData.EVENT_CODE_SALE_APPROVED, null),
+        )
+        assertEquals(
+            "Processando pagamento...",
+            PlugPagEventMessageResolver.resolve(999, "Pagamento aprovado"),
+        )
+    }
+
+    @Test
+    fun `pix events never request a card or announce early approval`() {
+        listOf(
+            PlugPagEventData.EVENT_CODE_WAITING_CARD,
+            PlugPagEventData.EVENT_CODE_INSERTED_CARD,
+            PlugPagEventData.EVENT_CODE_AUTHORIZING,
+            PlugPagEventData.EVENT_CODE_WAITING_REMOVE_CARD,
+        ).forEach { eventCode ->
+            assertEquals(
+                "Aguardando confirmação do Pix...",
+                PlugPagEventMessageResolver.resolve(eventCode, "Retire o cartão", isPix = true),
+            )
+        }
+        assertEquals(
+            "Finalizando transação Pix...",
+            PlugPagEventMessageResolver.resolve(
+                PlugPagEventData.EVENT_CODE_SALE_APPROVED,
+                "Pagamento aprovado",
+                isPix = true,
+            ),
+        )
+    }
 }

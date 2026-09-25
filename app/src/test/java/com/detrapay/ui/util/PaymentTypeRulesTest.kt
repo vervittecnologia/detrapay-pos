@@ -1,6 +1,7 @@
 ﻿package com.detrapay.ui.util
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PaymentTypeRulesTest {
@@ -17,5 +18,11 @@ class PaymentTypeRulesTest {
         assertEquals("debito", PaymentTypeRules.normalize("debit"))
         assertEquals("dinheiro", PaymentTypeRules.normalize("cash"))
         assertEquals("store_credit", PaymentTypeRules.normalize("credito loja"))
+    }
+
+    @Test
+    fun `pix methods skip the remote fee quote`() {
+        assertTrue(PaymentTypeRules.isDirectNoFeePaymentType("pix"))
+        assertTrue(PaymentTypeRules.isDirectNoFeePaymentType("pix_manual"))
     }
 }

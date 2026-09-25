@@ -1,152 +1,284 @@
 package com.detrapay.ui.login
 
-import android.app.ActivityOptions
 import android.content.Intent
-import androidx.lifecycle.Observer
 import android.os.Bundle
-import androidx.annotation.StringRes
-import androidx.appcompat.app.AppCompatActivity
-import android.view.View
-import android.view.inputmethod.EditorInfo
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.detrapay.R
-import com.detrapay.databinding.ActivityLoginBinding
 import com.detrapay.ui.home.HomeActivity
-import com.detrapay.ui.util.Mask
-import com.detrapay.ui.util.afterTextChanged
+import com.detrapay.ui.theme.DetrapayColors
+import com.detrapay.ui.theme.DetrapayTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
-class LoginActivity : AppCompatActivity() {
+class LoginActivity : ComponentActivity() {
 
-    private val loginViewModel: LoginViewModel by viewModels()
-    private lateinit var binding: ActivityLoginBinding
+    private val viewModel: LoginViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContent {
+            DetrapayTheme {
+                val formState by viewModel.loginFormState.observeAsState()
+                val loginResult by viewModel.loginResult.observeAsState()
+                var cnpj by rememberSaveable {
+                    mutableStateOf(formatCnpj(viewModel.getLastLoggedCnpj().orEmpty()))
+                }
+                var password by rememberSaveable { mutableStateOf("") }
+                var isLoading by rememberSaveable { mutableStateOf(false) }
+                var errorMessage by rememberSaveable { mutableStateOf<Int?>(null) }
 
-        binding = ActivityLoginBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
-        val cnpj = binding.cnpj
-        val cnpjTextInputLayout = binding.cnpjTextInputLayout
-        val passwordTextInputLayout = binding.passwordTextInputLayout
-        val password = binding.password
-        val login = binding.login
-        val loading = binding.loading
-
-        loginViewModel.loginFormState.observe(this@LoginActivity, Observer {
-            val loginState = it ?: return@Observer
-            binding.errorTextView.visibility = View.GONE
-            login.isEnabled = loginState.isDataValid
-            if (loginState.cnpjError != null) {
-                cnpjTextInputLayout.error = getString(loginState.cnpjError)
-                login.isEnabled = false
-            } else {
-                cnpjTextInputLayout.error = null
-            }
-
-            if (loginState.passwordError != null) {
-                passwordTextInputLayout.error = getString(loginState.passwordError)
-                login.isEnabled = false
-            } else {
-                passwordTextInputLayout.error = null
-            }
-
-            if (loginState.passwordError == null && loginState.cnpjError == null ){
-                login.isEnabled = true
-            }
-        })
-
-        loginViewModel.loginResult.observe(this@LoginActivity, Observer {
-            val loginResult = it ?: return@Observer
-
-            setLoadingState(false)
-            if (loginResult.error != null) {
-                showLoginFailed(loginResult.error)
-            }
-            if (loginResult.success != null) {
-                val homeIntent = Intent(this, HomeActivity::class.java)
-                this.startActivity(homeIntent, ActivityOptions.makeSceneTransitionAnimation(this).toBundle())
-                finish()
-            }
-        })
-
-        cnpj.addTextChangedListener(Mask.mask("##.###.###/####-##", cnpj))
-        restoreLastLoggedCnpj()
-
-        cnpj.afterTextChanged {
-            binding.errorTextView.visibility = View.GONE
-            loginViewModel.loginDataChanged(
-                cnpj.text.toString(),
-                password.text.toString()
-            )
-        }
-
-        password.apply {
-            afterTextChanged {
-                binding.errorTextView.visibility = View.GONE
-                loginViewModel.loginDataChanged(
-                    cnpj.text.toString(),
-                    password.text.toString()
-                )
-            }
-
-            setOnEditorActionListener { _, actionId, _ ->
-                when (actionId) {
-                    EditorInfo.IME_ACTION_DONE -> {
-                        setLoadingState(true)
-                        loginViewModel.login(
-                            cnpj.text.toString(),
-                            password.text.toString()
-                        )
+                LaunchedEffect(loginResult) {
+                    val result = loginResult ?: return@LaunchedEffect
+                    isLoading = false
+                    errorMessage = result.error
+                    if (result.success != null) {
+                        startActivity(Intent(this@LoginActivity, HomeActivity::class.java))
+                        finish()
                     }
                 }
-                false
-            }
 
-            login.setOnClickListener {
-                binding.errorTextView.visibility = View.GONE
-                setLoadingState(true)
-                loginViewModel.login(cnpj.text.toString(), password.text.toString())
+                LoginScreen(
+                    cnpj = cnpj,
+                    password = password,
+                    cnpjError = formState?.cnpjError,
+                    passwordError = formState?.passwordError,
+                    errorMessage = errorMessage,
+                    isLoading = isLoading,
+                    canSubmit = formState?.isDataValid == true,
+                    onCnpjChange = { raw ->
+                        cnpj = formatCnpj(raw)
+                        errorMessage = null
+                        viewModel.loginDataChanged(cnpj, password)
+                    },
+                    onPasswordChange = { value ->
+                        password = value
+                        errorMessage = null
+                        viewModel.loginDataChanged(cnpj, password)
+                    },
+                    onSubmit = {
+                        if (!isLoading && formState?.isDataValid == true) {
+                            isLoading = true
+                            errorMessage = null
+                            viewModel.login(cnpj, password)
+                        }
+                    },
+                )
             }
         }
     }
+}
 
-    private fun showLoginFailed(@StringRes errorString: Int) {
-        binding.errorTextView.text = getString(errorString)
-        binding.errorTextView.visibility = View.VISIBLE
-    }
-
-    private fun setLoadingState(isLoading: Boolean) {
-        binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
-        binding.login.text = if (isLoading) getString(R.string.login_loading) else getString(R.string.action_login)
-        if (isLoading) {
-            binding.login.isEnabled = false
-        } else {
-            loginViewModel.loginDataChanged(
-                binding.cnpj.text.toString(),
-                binding.password.text.toString()
+@Composable
+private fun LoginScreen(
+    cnpj: String,
+    password: String,
+    cnpjError: Int?,
+    passwordError: Int?,
+    errorMessage: Int?,
+    isLoading: Boolean,
+    canSubmit: Boolean,
+    onCnpjChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onSubmit: () -> Unit,
+) {
+    var passwordVisible by rememberSaveable { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(DetrapayColors.PrimarySoft)
+            .imePadding(),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Image(
+                painter = painterResource(R.drawable.login_logo),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .padding(start = 32.dp, top = 28.dp, end = 32.dp)
+                    .fillMaxWidth()
+                    .height(72.dp),
             )
+            Image(
+                painter = painterResource(R.drawable.login_illustration),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .padding(horizontal = 40.dp, vertical = 8.dp)
+                    .fillMaxWidth()
+                    .height(132.dp),
+            )
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 2.dp,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = 560.dp)
+                        .padding(horizontal = 24.dp, vertical = 28.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.login_title),
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = stringResource(R.string.login_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedTextField(
+                        value = cnpj,
+                        onValueChange = onCnpjChange,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                        label = { Text(stringResource(R.string.prompt_cnpj), fontSize = 16.sp) },
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
+                        singleLine = true,
+                        enabled = !isLoading,
+                        isError = cnpjError != null,
+                        supportingText = cnpjError?.let { error ->
+                            { Text(stringResource(error)) }
+                        },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Next,
+                        ),
+                    )
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = onPasswordChange,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                        label = { Text(stringResource(R.string.prompt_password), fontSize = 16.sp) },
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp),
+                        singleLine = true,
+                        enabled = !isLoading,
+                        isError = passwordError != null,
+                        supportingText = passwordError?.let { error ->
+                            { Text(stringResource(error)) }
+                        },
+                        visualTransformation = if (passwordVisible) {
+                            VisualTransformation.None
+                        } else {
+                            PasswordVisualTransformation()
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    contentDescription = null,
+                                )
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done,
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                focusManager.clearFocus()
+                                onSubmit()
+                            },
+                        ),
+                    )
+                    errorMessage?.let { error ->
+                        Text(
+                            text = stringResource(error),
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Button(
+                        onClick = onSubmit,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        enabled = canSubmit && !isLoading,
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(22.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp,
+                            )
+                        } else {
+                            Text(stringResource(R.string.action_login))
+                        }
+                    }
+                }
+            }
         }
     }
+}
 
-    private fun restoreLastLoggedCnpj() {
-        val lastLoggedCnpj = loginViewModel.getLastLoggedCnpj().orEmpty()
-        if (lastLoggedCnpj.isBlank()) {
-            return
-        }
-
-        binding.cnpj.setText(formatCnpj(lastLoggedCnpj))
-        binding.cnpj.setSelection(binding.cnpj.text?.length ?: 0)
-    }
-
-    private fun formatCnpj(cnpj: String): String {
-        val digits = cnpj.filter(Char::isDigit)
-        return if (digits.length == 14) {
-            "${digits.substring(0, 2)}.${digits.substring(2, 5)}.${digits.substring(5, 8)}/${digits.substring(8, 12)}-${digits.substring(12, 14)}"
-        } else {
-            cnpj
+private fun formatCnpj(raw: String): String {
+    val digits = raw.filter(Char::isDigit).take(14)
+    return buildString {
+        digits.forEachIndexed { index, char ->
+            if (index == 2 || index == 5) append('.')
+            if (index == 8) append('/')
+            if (index == 12) append('-')
+            append(char)
         }
     }
 }

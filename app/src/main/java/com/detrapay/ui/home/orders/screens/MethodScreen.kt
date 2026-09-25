@@ -15,8 +15,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
@@ -28,9 +28,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.detrapay.R
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.PaymentMethod
 import com.detrapay.ui.home.orders.OrderPresentation
@@ -62,8 +64,8 @@ fun MethodScreen(
             item {
                 NavBar("Novo pagamento", onBack, onClose)
                 Column(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 18.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
@@ -72,20 +74,22 @@ fun MethodScreen(
                         border = BorderStroke(1.dp, OrderFlowFintechTheme.Line),
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = "PEDIDO #${order.id}",
                                     color = OrderFlowFintechTheme.Muted,
-                                    fontSize = 11.sp,
+                                    fontSize = 12.sp,
+                                    lineHeight = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                 )
                                 Text(
                                     text = "Valor pendente",
                                     color = OrderFlowFintechTheme.Ink,
                                     fontSize = 14.sp,
+                                    lineHeight = 20.sp,
                                     fontWeight = FontWeight.SemiBold,
                                 )
                             }
@@ -93,6 +97,7 @@ fun MethodScreen(
                                 text = OrderPresentation.formatCurrency(pending),
                                 color = OrderFlowFintechTheme.Primary,
                                 fontSize = 20.sp,
+                                lineHeight = 26.sp,
                                 fontWeight = FontWeight.ExtraBold,
                             )
                         }
@@ -101,16 +106,17 @@ fun MethodScreen(
                     Text(
                         text = "Escolha a forma de pagamento",
                         color = OrderFlowFintechTheme.Ink,
-                        fontSize = 20.sp,
-                        lineHeight = 26.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        lineHeight = 24.sp,
+                        fontWeight = FontWeight.SemiBold,
                     )
 
                     if (online.isNotEmpty()) {
                         Text(
                             text = "PAGAMENTOS NA MAQUININHA",
                             color = OrderFlowFintechTheme.Muted,
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
                             fontWeight = FontWeight.SemiBold,
                         )
                         online.forEach { method ->
@@ -123,10 +129,11 @@ fun MethodScreen(
 
                     if (recordOnly.isNotEmpty()) {
                         Text(
-                            modifier = Modifier.padding(top = 6.dp),
+                            modifier = Modifier.padding(top = 4.dp),
                             text = "REGISTRAR PAGAMENTO",
                             color = OrderFlowFintechTheme.Muted,
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
                             fontWeight = FontWeight.SemiBold,
                         )
                         recordOnly.forEach { method ->
@@ -148,8 +155,16 @@ private fun SellerPaymentMethodCard(
     onClick: () -> Unit,
 ) {
     val normalized = PaymentTypeRules.normalize(method.paymentType ?: method.name)
+    val isPix = normalized == "pix" || normalized == "pix_manual"
+    val accent = when (normalized) {
+        "credito" -> Color(0xFF7047A3)
+        "debito" -> OrderFlowFintechTheme.Primary
+        "pix", "pix_manual" -> Color(0xFF087F73)
+        "dinheiro" -> Color(0xFF277943)
+        "store_credit" -> Color(0xFF9A5B19)
+        else -> OrderFlowFintechTheme.Primary
+    }
     val icon: ImageVector = when (normalized) {
-        "pix", "pix_manual" -> Icons.Default.Bolt
         "dinheiro" -> Icons.Default.Payments
         "store_credit" -> Icons.Default.AccountBalance
         else -> Icons.Default.CreditCard
@@ -172,27 +187,35 @@ private fun SellerPaymentMethodCard(
         shape = RoundedCornerShape(16.dp),
         color = Color.White,
         border = BorderStroke(1.dp, OrderFlowFintechTheme.Line),
-        shadowElevation = 1.dp,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier = Modifier
-                    .size(46.dp)
+                    .size(44.dp)
                     .background(
-                        color = OrderFlowFintechTheme.PrimarySoft,
+                        color = OrderFlowFintechTheme.CardMuted,
                         shape = RoundedCornerShape(12.dp),
                     ),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = OrderFlowFintechTheme.Primary,
-                    modifier = Modifier.size(24.dp),
-                )
+                if (isPix) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_pix),
+                        contentDescription = null,
+                        tint = accent,
+                        modifier = Modifier.size(28.dp),
+                    )
+                } else {
+                    Icon(
+                        icon,
+                        contentDescription = null,
+                        tint = accent,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
             }
             Column(
                 modifier = Modifier
@@ -202,19 +225,22 @@ private fun SellerPaymentMethodCard(
                 Text(
                     text = title,
                     color = OrderFlowFintechTheme.Ink,
-                    fontSize = 15.sp,
+                    fontSize = 16.sp,
+                    lineHeight = 22.sp,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
                     text = subtitle,
                     color = OrderFlowFintechTheme.Muted,
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
                 )
             }
-            Text(
-                text = "›",
-                color = OrderFlowFintechTheme.Muted,
-                fontSize = 26.sp,
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = OrderFlowFintechTheme.Muted,
+                modifier = Modifier.size(20.dp),
             )
         }
     }

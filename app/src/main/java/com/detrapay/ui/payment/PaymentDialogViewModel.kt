@@ -27,6 +27,7 @@ import com.detrapay.ui.util.PaymentTypeRules
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.roundToInt
@@ -43,9 +44,9 @@ class PaymentDialogViewModel @Inject constructor(
 
     private enum class PaymentStep(val message: String) {
         PREPARING("Aguarde, preparando a maquininha."),
-        WAITING("Aproxime ou insira seu cartao"),
+        WAITING("Aproxime ou insira seu cartão"),
         PROCESSING("Processando pagamento..."),
-        RECORDING("Pagamento aprovado. Registrando no pedido..."),
+        RECORDING("Registrando pagamento no pedido..."),
     }
 
     private val _paymentState = MutableLiveData<UIState<PaymentData>>()
@@ -53,6 +54,8 @@ class PaymentDialogViewModel @Inject constructor(
 
     @Volatile
     private var lastTerminalMessage: String? = null
+    @Volatile
+    private var activePaymentIsPix = false
     @Volatile
     private var activeOperationId: String? = null
 
@@ -92,6 +95,7 @@ class PaymentDialogViewModel @Inject constructor(
 
         if (!operationCoordinator.begin(request.idempotencyKey)) return
         activeOperationId = request.idempotencyKey
+        activePaymentIsPix = PaymentTypeRules.normalize(request.paymentMethod.paymentType) == "pix"
         lastTerminalMessage = null
         postStep(PaymentStep.PREPARING)
         viewModelScope.launch(Dispatchers.IO) {
@@ -174,7 +178,11 @@ class PaymentDialogViewModel @Inject constructor(
                 finishWithError("Pagamento cancelado.")
                 return
             }
-            postStep(PaymentStep.WAITING)
+            if (activePaymentIsPix) {
+                _paymentState.postValue(UIState.Loading("Aguardando pagamento via Pix..."))
+            } else {
+                postStep(PaymentStep.WAITING)
+            }
             val result = plugPag.doPayment(
                 PlugPagPaymentData(
                     paymentType(request),
@@ -207,24 +215,21 @@ class PaymentDialogViewModel @Inject constructor(
 
             val approval = paymentData(request, result, amountFinal)
             if (approval.transactionId.isNullOrBlank()) {
-                operationCoordinator.terminalRejected(request.idempotencyKey)
+                operationCoordinator.terminalApproved(request.idempotencyKey)
                 disposeTerminalSubscriber()
-                finishWithError("A aprovacao PagBank nao retornou transaction_id.")
+                val recovered = runCatching { plugPag.getLastApprovedTransaction() }.getOrNull()
+                if (recovered != null && matchesCurrentPayment(request, attempt, amountFinalCents, recovered)) {
+                    persistAndCompleteApproval(request, attempt, sessionUserId, recovered, amountFinal)
+                } else {
+                    finishWithError(
+                        "Pagamento aprovado sem identificador. Verifique a venda no PagBank; " +
+                            "uma nova cobranca foi bloqueada ate a reconciliacao.",
+                        releaseOperation = false,
+                    )
+                }
                 return
             }
-            operationCoordinator.terminalApproved(request.idempotencyKey)
-            val completion = pendingCompletion(
-                request = request,
-                attempt = attempt,
-                sessionUserId = sessionUserId,
-                result = result,
-                paymentData = approval,
-            )
-            pendingPaymentRepository.saveApproved(completion)
-            operationCoordinator.persistenceSucceeded(request.idempotencyKey)
-            disposeTerminalSubscriber()
-            runCatching { saveTransactionLog(request, result, amountFinal) }
-            completeApprovedPayment(completion)
+            persistAndCompleteApproval(request, attempt, sessionUserId, result, amountFinal)
         } catch (_: PlugPagException) {
             operationCoordinator.terminalRejected(request.idempotencyKey)
             disposeTerminalSubscriber()
@@ -283,11 +288,42 @@ class PaymentDialogViewModel @Inject constructor(
             result = lastApproved,
             paymentData = recoveredPaymentData,
         )
-        pendingPaymentRepository.saveApproved(completion)
+        saveApprovedWithRetry(completion)
         operationCoordinator.persistenceSucceeded(request.idempotencyKey)
         disposeTerminalSubscriber()
         runCatching { saveTransactionLog(request, lastApproved, amountFinal) }
         completeApprovedPayment(completion)
+    }
+
+    private suspend fun persistAndCompleteApproval(
+        request: OrderPaymentRequest,
+        attempt: PaymentAttempt,
+        sessionUserId: String,
+        result: PlugPagTransactionResult,
+        amountFinal: Double,
+    ) {
+        operationCoordinator.terminalApproved(request.idempotencyKey)
+        val approval = paymentData(request, result, amountFinal)
+        val completion = pendingCompletion(request, attempt, sessionUserId, result, approval)
+        saveApprovedWithRetry(completion)
+        operationCoordinator.persistenceSucceeded(request.idempotencyKey)
+        disposeTerminalSubscriber()
+        runCatching { saveTransactionLog(request, result, amountFinal) }
+        completeApprovedPayment(completion)
+    }
+
+    private suspend fun saveApprovedWithRetry(completion: PendingPaymentCompletion) {
+        var lastFailure: Exception? = null
+        repeat(3) { index ->
+            try {
+                pendingPaymentRepository.saveApproved(completion)
+                return
+            } catch (error: Exception) {
+                lastFailure = error
+                if (index < 2) delay(100L * (index + 1))
+            }
+        }
+        throw lastFailure ?: IllegalStateException("Nao foi possivel salvar o pagamento aprovado.")
     }
 
     private fun matchesCurrentPayment(
@@ -321,7 +357,20 @@ class PaymentDialogViewModel @Inject constructor(
         cardLast4 = result.holder,
         cardHolder = result.holderName,
         pixTxIdCode = result.pixTxIdCode,
-        transactionLog = Gson().toJson(result),
+        transactionLog = Gson().toJson(
+            mapOf(
+                "result" to result.result,
+                "errorCode" to result.errorCode,
+                "message" to result.message?.take(256),
+                "transactionId" to result.transactionId,
+                "transactionCode" to result.transactionCode,
+                "date" to result.date,
+                "time" to result.time,
+                "cardBrand" to result.cardBrand,
+                "cardLast4" to result.holder?.takeLast(4),
+                "pixTxIdCode" to result.pixTxIdCode,
+            ),
+        ).take(32_768),
         amountOriginal = request.amount,
         amountFinal = amountFinal,
     )
@@ -464,7 +513,8 @@ class PaymentDialogViewModel @Inject constructor(
     private fun isAmbiguousCommunicationFailure(result: PlugPagTransactionResult): Boolean {
         val errorCode = result.errorCode?.trim()
         return errorCode.equals("A011", ignoreCase = true) ||
-            result.result == 1019 || result.result == -1019
+            result.result == 1019 || result.result == -1019 ||
+            result.result == 1005 || result.result == -1005
     }
 
     private fun terminalFailureCode(result: PlugPagTransactionResult): String =
@@ -498,7 +548,11 @@ class PaymentDialogViewModel @Inject constructor(
 
     override fun onEvent(data: PlugPagEventData) {
         if (!operationCoordinator.acceptsTerminalEvents()) return
-        val message = PlugPagEventMessageResolver.resolve(data.eventCode, data.customMessage)
+        val message = PlugPagEventMessageResolver.resolve(
+            data.eventCode,
+            data.customMessage,
+            activePaymentIsPix,
+        )
         if (message == lastTerminalMessage) return
         lastTerminalMessage = message
         viewModelScope.launch(Dispatchers.Main.immediate) {

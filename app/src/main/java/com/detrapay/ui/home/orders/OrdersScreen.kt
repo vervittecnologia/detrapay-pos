@@ -1,11 +1,17 @@
 ﻿package com.detrapay.ui.home.orders
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import com.detrapay.ui.home.orders.components.OrderFlowColors
 import com.detrapay.ui.home.orders.screens.DetailScreen
 import com.detrapay.ui.home.orders.screens.InstallmentSimulatorScreen
@@ -13,9 +19,10 @@ import com.detrapay.ui.home.orders.screens.InstallmentsScreen
 import com.detrapay.ui.home.orders.screens.KeypadScreen
 import com.detrapay.ui.home.orders.screens.MethodScreen
 import com.detrapay.ui.home.orders.screens.OrdersListScreen
-import com.detrapay.ui.home.orders.screens.ReviewScreen
+import com.detrapay.ui.home.orders.screens.SellerProfileScreen
 import com.detrapay.ui.home.orders.screens.WaitingScreen
 import com.detrapay.ui.home.orders.OrderPresentation
+import com.detrapay.ui.theme.DetrapayTheme
 
 @Composable
 fun OrdersScreen(
@@ -28,31 +35,59 @@ fun OrdersScreen(
 ) {
     val local = state.local
     val currentOrder = local.selectedOrder
-    val pendingAmount = currentOrder?.let { OrderPresentation.summary(it).missingAmount } ?: 0.0
     val amount = OrderPresentation.paymentAmount(local.paymentDigits)
 
-    MaterialTheme {
+    BackHandler(
+        enabled = local.showSimulator || local.step != OrderFlowStep.Orders ||
+            state.homeSection == SellerHomeSection.Profile,
+    ) {
+        onAction(
+            when {
+                local.showSimulator -> OrderFlowAction.CloseSimulator
+                local.step != OrderFlowStep.Orders -> OrderFlowAction.Back
+                else -> OrderFlowAction.SelectHomeSection(SellerHomeSection.Orders)
+            },
+        )
+    }
+
+    DetrapayTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = OrderFlowColors.Background,
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 when (local.step) {
-                    OrderFlowStep.Orders -> OrdersListScreen(
-                        companyName = state.companyName,
-                        companyDocument = state.companyDocument,
-                        orders = state.orders,
-                        isLoading = state.isLoading,
-                        isRefreshing = state.isRefreshing,
-                        errorMessage = state.errorMessage,
-                        onLogout = { onAction(OrderFlowAction.Logout) },
-                        onReload = { onAction(OrderFlowAction.Reload) },
-                        onRefresh = onRefresh,
-                        onNewOrder = { onAction(OrderFlowAction.NewOrder) },
-                        onOpenSimulator = { onAction(OrderFlowAction.OpenSimulator) },
-                        onOrderPay = { onAction(OrderFlowAction.OrderPay(it)) },
-                        onOrderDetail = { onAction(OrderFlowAction.OrderDetail(it)) },
-                    )
+                    OrderFlowStep.Orders -> when (state.homeSection) {
+                        SellerHomeSection.Orders -> OrdersListScreen(
+                            companyName = state.companyName,
+                            companyDocument = state.companyDocument,
+                            orders = state.orders,
+                            isLoading = state.isLoading,
+                            isRefreshing = state.isRefreshing,
+                            errorMessage = state.errorMessage,
+                            onLogout = { onAction(OrderFlowAction.Logout) },
+                            onReload = { onAction(OrderFlowAction.Reload) },
+                            onRefresh = onRefresh,
+                            onNewOrder = { onAction(OrderFlowAction.NewOrder) },
+                            onOpenSimulator = { onAction(OrderFlowAction.OpenSimulator) },
+                            onOrderPay = { onAction(OrderFlowAction.OrderPay(it)) },
+                            onOrderDetail = { onAction(OrderFlowAction.OrderDetail(it)) },
+                            onSectionSelected = {
+                                onAction(OrderFlowAction.SelectHomeSection(it))
+                            },
+                        )
+                        SellerHomeSection.Profile -> SellerProfileScreen(
+                            companyName = state.companyName,
+                            companyDocument = state.companyDocument,
+                            dispatcherName = state.dispatcherName,
+                            companyLogoKey = state.companyLogoKey,
+                            salesmen = state.salesmen,
+                            onLogout = { onAction(OrderFlowAction.Logout) },
+                            onSectionSelected = {
+                                onAction(OrderFlowAction.SelectHomeSection(it))
+                            },
+                        )
+                    }
                     OrderFlowStep.Detail -> if (currentOrder != null) {
                         DetailScreen(
                             order = currentOrder,
@@ -72,17 +107,13 @@ fun OrdersScreen(
                         currentOrder != null && local.selectedPaymentMethod != null
                     ) {
                         KeypadScreen(
-                            order = currentOrder,
-                            paymentMethod = local.selectedPaymentMethod,
                             displayAmount = OrderPresentation.paymentDisplayAmount(local.paymentDigits),
-                            pendingAmountLabel = OrderPresentation.formatCurrency(pendingAmount),
                             canPay = amount > 0.0,
-                            isLoading = local.feesLoading,
+                            isLoading = local.feesLoading || local.paymentSubmissionInFlight,
                             errorMessage = local.feesError,
                             onBack = { onAction(OrderFlowAction.Back) },
                             onClose = { onAction(OrderFlowAction.ExitPayment) },
                             onKey = { onAction(OrderFlowAction.Key(it)) },
-                            onUsePendingAmount = { onAction(OrderFlowAction.UsePendingAmount) },
                             onContinue = { onAction(OrderFlowAction.ContinueAmount) },
                         )
                     }
@@ -99,7 +130,7 @@ fun OrdersScreen(
                         amount = amount,
                         installments = local.creditInstallments,
                         selectedInstallment = local.selectedInstallment,
-                        isLoading = local.feesLoading,
+                        isLoading = local.feesLoading || local.paymentSubmissionInFlight,
                         errorMessage = local.feesError,
                         onBack = { onAction(OrderFlowAction.Back) },
                         onClose = { onAction(OrderFlowAction.ExitPayment) },
@@ -107,18 +138,6 @@ fun OrdersScreen(
                         onSelectInstallment = { onAction(OrderFlowAction.SelectInstallment(it)) },
                         onContinue = { onAction(OrderFlowAction.ContinueInstallments) },
                     )
-                    OrderFlowStep.Review -> if (
-                        local.selectedPaymentMethod != null && local.paymentReview != null
-                    ) {
-                        ReviewScreen(
-                            paymentMethod = local.selectedPaymentMethod,
-                            review = local.paymentReview,
-                            isSubmitting = local.paymentSubmissionInFlight,
-                            onBack = { onAction(OrderFlowAction.Back) },
-                            onClose = { onAction(OrderFlowAction.ExitPayment) },
-                            onConfirm = { onAction(OrderFlowAction.ConfirmPayment) },
-                        )
-                    }
                     OrderFlowStep.Waiting -> WaitingScreen(
                         total = local.paymentReview?.amountFinal ?: amount,
                         installments = local.activePaymentRequest?.installments
@@ -132,6 +151,18 @@ fun OrdersScreen(
                         onDone = { onAction(OrderFlowAction.FinishInPagePayment) },
                         onCopyPixCode = { onAction(OrderFlowAction.CopyPaymentCode(it)) },
                     )
+                }
+
+                if (local.paymentSubmissionInFlight && local.step != OrderFlowStep.Waiting) {
+                    Surface(modifier = Modifier.align(Alignment.Center)) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            CircularProgressIndicator()
+                            Text("Registrando pagamento…", modifier = Modifier.padding(top = 16.dp))
+                        }
+                    }
                 }
 
                 if (local.showSimulator) {

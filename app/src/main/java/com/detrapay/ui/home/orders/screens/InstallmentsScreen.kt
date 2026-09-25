@@ -107,13 +107,13 @@ fun InstallmentsScreen(
                                 Text(
                                     text = "VALOR DO PAGAMENTO",
                                     color = OrderFlowFintechTheme.Muted,
-                                    fontSize = 10.sp,
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                 )
                                 Text(
                                     text = "Escolha a melhor condição",
                                     color = OrderFlowFintechTheme.PrimaryDark,
-                                    fontSize = 13.sp,
+                                    fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold,
                                 )
                             }
@@ -183,7 +183,7 @@ private fun InstallmentsLoadingCard() {
                 Text(
                     text = "Consultando as opções de parcelamento...",
                     color = OrderFlowFintechTheme.Muted,
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                 )
             }

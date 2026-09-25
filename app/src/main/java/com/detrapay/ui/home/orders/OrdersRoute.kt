@@ -13,6 +13,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.detrapay.data.model.Order
 import com.detrapay.data.model.PaymentMethod
+import com.detrapay.data.model.Salesman
 import com.detrapay.ui.home.HomeViewModel
 import com.detrapay.ui.home.orders.OrderPresentation
 import com.detrapay.ui.home.orders.OrdersViewModel
@@ -48,6 +49,10 @@ fun OrdersRoute(
     var paymentMethods by remember { mutableStateOf<List<PaymentMethod>>(emptyList()) }
     var companyName by remember { mutableStateOf(defaultCompanyName) }
     var companyDocument by remember { mutableStateOf(defaultCompanyDocument) }
+    var dispatcherName by remember { mutableStateOf("") }
+    var companyLogoKey by remember { mutableStateOf<String?>(null) }
+    var salesmen by remember { mutableStateOf<List<Salesman>>(emptyList()) }
+    var homeSection by remember { mutableStateOf(SellerHomeSection.Orders) }
 
     val homeState by homeViewModel.homeState.observeAsState()
     val orderState by viewModel.orderListState.observeAsState()
@@ -57,6 +62,52 @@ fun OrdersRoute(
     val deletePaymentState by viewModel.deletePaymentState.observeAsState()
     val orderDocumentsState by viewModel.orderDocumentsState.observeAsState(OrderDocumentsUiState())
     val inPagePaymentState by paymentViewModel.paymentState.observeAsState(UIState.Idle())
+
+    fun startPaymentRequest() {
+        if (localState.paymentSubmissionInFlight) return
+        val order = localState.selectedOrder ?: return
+        val paymentMethod = localState.selectedPaymentMethod ?: return
+        val review = localState.paymentReview ?: return
+        val selectedMethod = if (PaymentTypeRules.normalize(paymentMethod.paymentType) == "credito") {
+            viewModel.resolvePaymentMethod(paymentMethod.paymentType.orEmpty(), review.installments)
+        } else {
+            paymentMethod
+        }
+        if (selectedMethod == null) {
+            onEffect(OrderFlowEffect.ShowToast("Metodo de pagamento indisponivel para a condicao selecionada."))
+            localState = localState.copy(step = OrderFlowStep.Installments)
+            return
+        }
+        val request = localState.activePaymentRequest?.takeIf { existing ->
+            existing.order.id == order.id &&
+                existing.paymentMethod.id == selectedMethod.id &&
+                existing.amount == review.amountOriginal &&
+                existing.amountFinal == review.amountFinal &&
+                existing.installments == review.installments
+        } ?: OrderPaymentRequest(
+            order = order,
+            paymentMethod = selectedMethod,
+            amount = review.amountOriginal,
+            amountFinal = review.amountFinal,
+            installments = review.installments,
+        )
+        localState = localState.copy(activePaymentRequest = request)
+        when (val route = OrderPaymentRouter.routeFor(request)) {
+            is OrderPaymentRoute.Online -> {
+                localState = localState.copy(
+                    selectedPaymentMethod = selectedMethod,
+                    activePaymentRequest = route.request,
+                    step = OrderFlowStep.Waiting,
+                    paymentSubmissionInFlight = true,
+                )
+                paymentViewModel.payOrder(route.request, terminalSerial)
+            }
+            is OrderPaymentRoute.RecordOnly -> {
+                localState = localState.copy(paymentSubmissionInFlight = true)
+                viewModel.recordOfflinePayment(route.request)
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         paymentViewModel.init()
@@ -69,6 +120,9 @@ fun OrdersRoute(
         val data = (homeState as? UIState.Success)?.data ?: return@LaunchedEffect
         companyName = data.companyName.ifBlank { defaultCompanyName }
         companyDocument = formatCnpj(data.companyDocument).ifBlank { defaultCompanyDocument }
+        dispatcherName = data.dispatcherName
+        companyLogoKey = data.companyLogoKey
+        salesmen = data.salesmen
     }
 
     LaunchedEffect(orderState) {
@@ -88,8 +142,11 @@ fun OrdersRoute(
             is UIState.Error -> {
                 isLoading = false
                 isRefreshing = false
-                orders = emptyList()
-                errorMessage = state.message ?: ordersErrorMessage
+                if (orders.isEmpty()) {
+                    errorMessage = state.message ?: ordersErrorMessage
+                } else {
+                    onEffect(OrderFlowEffect.ShowToast(state.message ?: ordersErrorMessage))
+                }
                 state.exception?.let { onEffect(OrderFlowEffect.ShowSessionExpired(it)) }
             }
             is UIState.Idle,
@@ -126,6 +183,7 @@ fun OrdersRoute(
                 }
             }
             is UIState.Success -> {
+                val shouldStartPayment = localState.feeRequestTarget == OrderFeeRequestTarget.CheckoutCredit
                 val installments = state.data?.data.orEmpty().firstOrNull()?.installments.orEmpty()
                 localState = when (localState.feeRequestTarget) {
                     OrderFeeRequestTarget.CheckoutCredit -> {
@@ -135,6 +193,11 @@ fun OrdersRoute(
                         OrderFlowReducer.simulatorLoaded(localState, installments, installmentErrorMessage)
                     }
                     null -> OrderFlowReducer.discardFeeResponse(localState)
+                }
+                if (shouldStartPayment && localState.step == OrderFlowStep.Amount &&
+                    localState.paymentReview != null && localState.feesError == null
+                ) {
+                    startPaymentRequest()
                 }
             }
             is UIState.Error -> {
@@ -190,7 +253,6 @@ fun OrdersRoute(
             }
             is UIState.Error -> {
                 localState = localState.copy(
-                    step = OrderFlowStep.Review,
                     paymentSubmissionInFlight = false,
                 )
                 onEffect(OrderFlowEffect.ShowToast(state.message ?: addPaymentLoadErrorMessage))
@@ -236,51 +298,6 @@ fun OrdersRoute(
         }
     }
 
-    fun startConfirmedRequest() {
-        if (localState.paymentSubmissionInFlight) return
-        val order = localState.selectedOrder ?: return
-        val paymentMethod = localState.selectedPaymentMethod ?: return
-        val review = localState.paymentReview ?: return
-        val selectedMethod = if (PaymentTypeRules.normalize(paymentMethod.paymentType) == "credito") {
-            viewModel.resolvePaymentMethod(paymentMethod.paymentType.orEmpty(), review.installments)
-        } else {
-            paymentMethod
-        }
-        if (selectedMethod == null) {
-            onEffect(OrderFlowEffect.ShowToast("Metodo de pagamento indisponivel para a condicao selecionada."))
-            localState = localState.copy(step = OrderFlowStep.Installments)
-            return
-        }
-        val request = localState.activePaymentRequest?.takeIf { existing ->
-            existing.order.id == order.id &&
-                existing.paymentMethod.id == selectedMethod.id &&
-                existing.amount == review.amountOriginal &&
-                existing.amountFinal == review.amountFinal &&
-                existing.installments == review.installments
-        } ?: OrderPaymentRequest(
-            order = order,
-            paymentMethod = selectedMethod,
-            amount = review.amountOriginal,
-            amountFinal = review.amountFinal,
-            installments = review.installments,
-        )
-        localState = localState.copy(activePaymentRequest = request)
-        when (val route = OrderPaymentRouter.routeFor(request)) {
-            is OrderPaymentRoute.Online -> {
-                localState = localState.copy(
-                    selectedPaymentMethod = selectedMethod,
-                    activePaymentRequest = route.request,
-                    step = OrderFlowStep.Waiting,
-                )
-                paymentViewModel.payOrder(route.request, terminalSerial)
-            }
-            is OrderPaymentRoute.RecordOnly -> {
-                localState = localState.copy(paymentSubmissionInFlight = true)
-                viewModel.recordOfflinePayment(route.request)
-            }
-        }
-    }
-
     var isFirstResume by remember { mutableStateOf(true) }
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -307,23 +324,30 @@ fun OrdersRoute(
             errorMessage = errorMessage,
             paymentMethods = paymentMethods,
             local = localState,
+            dispatcherName = dispatcherName,
+            companyLogoKey = companyLogoKey,
+            salesmen = salesmen,
+            homeSection = homeSection,
             inPagePaymentState = inPagePaymentState,
             orderDocuments = orderDocumentsState,
         ),
         cameraAvailable = cameraAvailable,
         cameraCaptureError = cameraCaptureError,
         onTakeOrderPhoto = onTakeOrderPhoto,
-        onAction = { action ->
+        onAction = action@{ action ->
+            if (localState.paymentSubmissionInFlight && localState.step != OrderFlowStep.Waiting) return@action
             when (action) {
                 OrderFlowAction.Logout -> onEffect(OrderFlowEffect.ShowLogoutConfirmation)
                 OrderFlowAction.Reload -> viewModel.loadOrders(forceRefresh = true)
                 OrderFlowAction.NewOrder -> onEffect(OrderFlowEffect.NavigateToRegistration)
+                is OrderFlowAction.SelectHomeSection -> homeSection = action.section
                 is OrderFlowAction.OrderPay -> {
                     localState = OrderFlowReducer.startPayment(localState, action.order)
                     viewModel.clearFeesState()
                     viewModel.loadPaymentMethods()
                 }
                 is OrderFlowAction.OrderDetail -> {
+                    viewModel.resetOrderDocuments()
                     localState = OrderFlowReducer.showDetail(localState, action.order)
                 }
                 is OrderFlowAction.DeletePayment -> {
@@ -368,6 +392,7 @@ fun OrdersRoute(
                     viewModel.clearFeesState()
                 }
                 OrderFlowAction.ContinueAmount -> {
+                    if (localState.step != OrderFlowStep.Amount && localState.step != OrderFlowStep.Installments) return@action
                     val method = localState.selectedPaymentMethod
                     val amount = currentPaymentAmount(localState)
                     when {
@@ -376,8 +401,9 @@ fun OrdersRoute(
                             localState = localState.copy(feesError = "Informe um valor maior que zero.")
                         }
                         PaymentTypeRules.isDirectNoFeePaymentType(method.paymentType) -> {
-                            localState = OrderFlowReducer.openDirectReview(localState)
+                            localState = OrderFlowReducer.prepareDirectPayment(localState)
                             viewModel.clearFeesState()
+                            startPaymentRequest()
                         }
                         else -> {
                             val previous = localState
@@ -394,10 +420,9 @@ fun OrdersRoute(
                     localState = OrderFlowReducer.selectInstallment(localState, action.installment)
                 }
                 OrderFlowAction.ContinueInstallments -> {
-                    localState = OrderFlowReducer.openInstallmentReview(localState)
-                }
-                OrderFlowAction.ConfirmPayment -> {
-                    startConfirmedRequest()
+                    if (localState.step != OrderFlowStep.Installments || localState.feesLoading) return@action
+                    localState = OrderFlowReducer.prepareInstallmentPayment(localState)
+                    if (localState.feesError == null) startPaymentRequest()
                 }
                 OrderFlowAction.RetryInPagePayment -> {
                     localState.activePaymentRequest?.let { request ->

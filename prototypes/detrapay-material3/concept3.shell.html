@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Detrapay · Proposta 03 · Action POS</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="concept3.css">
+  <script>
+    window.__detrapayBootError = null;
+    window.addEventListener('error', function (event) {
+      window.__detrapayBootError = event.message || 'Falha desconhecida';
+      window.setTimeout(function () {
+        var target = document.getElementById('app');
+        if (target && !target.children.length) {
+          target.innerHTML = '<div style="padding:32px;font:16px/1.5 Roboto,Arial;color:#93000a"><strong>Não foi possível abrir esta tela.</strong><br><span style="font-size:13px">Recarregue o arquivo. Diagnóstico: ' + String(window.__detrapayBootError).replace(/[<>&]/g, '') + '</span></div>';
+        }
+      }, 0);
+    });
+  </script>
+  <script src="assets/material.bundle.js"></script>
+</head>
+<body>
+  <aside class="catalog">
+    <a class="wordmark" href="index.html">detrapay<span>POS</span></a>
+    <div class="proposal-label">PROPOSTA 03</div>
+    <h1>Action POS.<br>Comece pela ação.</h1>
+    <p class="intro">Atalhos de balcão, atendimento ativo<br>e cobrança sempre a um toque.</p>
+    <nav id="catalog" aria-label="Telas do protótipo"></nav>
+    <a class="compare" href="index.html">↗ Comparar com proposta 02</a>
+  </aside>
+  <main class="workbench">
+    <header class="bench-header"><div><span>DETRAPAY / PESQUISA POS</span><h2 id="screen-title">Início</h2></div><div class="bench-tools"><a href="concept3-board.html">Ver conjunto de telas ↗</a><button id="restart">Reiniciar</button></div></header>
+    <div class="preview-area">
+      <section class="terminal" aria-label="Protótipo GPOS780, 720 por 1280 pixels, densidade 272 dpi">
+        <div class="printer"><div class="printer-slot"></div><span>SMART TERMINAL</span><i></i></div>
+        <div class="bezel"><div class="viewport"><div class="status"><span>09:41</span><span id="terminal-status"></span></div><div id="app"></div><div class="android-nav"><span></span></div></div></div>
+        <div class="hardware-bottom"><span>detrapay</span><span class="contactless">)))</span><i></i></div>
+      </section>
+      <aside class="annotation"><span class="proposal-label">CALIBRADO PARA O DEVICE</span><h3 id="note-title"></h3><p id="note-body"></p><div class="spec-grid"><div><strong>GPOS780</strong><span>Android 11 · 272 dpi</span></div><div><strong>720 × 1280</strong><span>Resolução física</span></div><div><strong>424 × 681 dp</strong><span>Área útil do app</span></div><div><strong>72 dp</strong><span>Altura das teclas</span></div></div><div id="demo-controls"></div><div class="prototype-note">Dados fictícios. Nenhuma cobrança real.<br>Escala visual da moldura: 85%. 1 px de layout representa 1 dp; 1 dp corresponde a 1,7 px no device.</div><details><summary>Componentes desta tela</summary><p id="component-list"></p></details></aside>
+    </div>
+    <div id="mobile-demo"></div>
+  </main>
+  <script src="model.js"></script>
+  <script src="concept3.js"></script>
+</body>
+</html>

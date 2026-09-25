@@ -25,6 +25,7 @@ data class OrderSummary(
 data class SellerCardSummary(
     val totalLabel: String,
     val paidLabel: String,
+    val paymentStatusLabel: String,
     val balanceLabel: String,
     val balanceTitle: String,
     val progressPercent: Int,
@@ -74,13 +75,7 @@ object OrderPresentation {
     }
 
     fun sellerStatusLabel(order: Order): String {
-        return when (order.status) {
-            OrderStatus.CANCELLED -> "Cancelado"
-            OrderStatus.COMPLETED -> "Concluído"
-            OrderStatus.PAID,
-            OrderStatus.AUTHORIZED -> "Quitado"
-            OrderStatus.PENDING -> if (summary(order).hasPendingBalance) "Pendente" else "Quitado"
-        }
+        return statusLabel(order.status)
     }
 
     fun exactPaymentMethod(
@@ -189,7 +184,12 @@ object OrderPresentation {
     fun nextPaymentDigits(digits: String, key: String): String {
         return when (key) {
             "DEL" -> if (digits.isNotEmpty()) digits.dropLast(1) else ""
-            else -> if (digits.length < 10) digits + key else digits
+            "00" -> (digits + key).take(10)
+            else -> if (key.length == 1 && key[0] in '0'..'9') {
+                (digits + key).take(10)
+            } else {
+                digits
+            }
         }
     }
 
@@ -207,40 +207,52 @@ object OrderPresentation {
 
     fun statusLabel(status: OrderStatus): String {
         return when (status) {
-            OrderStatus.PAID, OrderStatus.AUTHORIZED -> "Quitado"
+            OrderStatus.PAID, OrderStatus.AUTHORIZED, OrderStatus.IN_PROGRESS -> "Em Progresso"
             OrderStatus.COMPLETED -> "Concluído"
             OrderStatus.CANCELLED -> "Cancelado"
-            else -> "Pendente"
+            OrderStatus.PENDING -> "Pendente"
         }
     }
 
     fun paidPercent(order: Order): Int {
-        return (summary(order).progress / 10.0).roundToInt()
+        if (order.originalAmount <= 0.0) return 0
+        val paid = OrderPaymentTotals.from(order.receivables).paidAmount
+        return ((paid / order.originalAmount).coerceIn(0.0, 1.0) * 100).roundToInt()
     }
 
     fun receivableStatusLabel(receivable: OrderReceivableItem): String {
+        val paymentType = PaymentTypeRules.normalize(
+            receivable.paymentMethod.paymentType ?: receivable.paymentMethod.name,
+        )
+        if (receivable.status == OrderReceivableItemStatus.PAID &&
+            paymentType in setOf("credito", "debito") &&
+            receivable.authorizationCode.isNullOrBlank()
+        ) return "Pendente"
         return receivableStatusLabel(receivable.status)
     }
 
     fun receivableStatusLabel(status: OrderReceivableItemStatus): String {
         return when (status) {
-            OrderReceivableItemStatus.PAID -> "Quitado"
-            OrderReceivableItemStatus.CANCELLED -> "Cancelado"
+            OrderReceivableItemStatus.PAID -> "Pago"
+            OrderReceivableItemStatus.CANCELLED -> "Revertido"
             OrderReceivableItemStatus.PENDING -> "Pendente"
-            OrderReceivableItemStatus.REFUNDED -> "Estornado"
+            OrderReceivableItemStatus.REFUNDED -> "Revertido"
             else -> status.name.lowercase().replaceFirstChar { it.uppercase() }
         }
     }
 
     fun sellerCardSummary(order: Order): SellerCardSummary {
-        val summary = summary(order)
+        val paid = OrderPaymentTotals.from(order.receivables).paidAmount.coerceAtLeast(0.0)
+        val missing = (order.originalAmount - paid).coerceAtLeast(0.0)
+        val isFullyPaid = order.originalAmount > 0.0 && missing <= 0.01
         return SellerCardSummary(
             totalLabel = formatCurrency(order.originalAmount),
-            paidLabel = formatCurrency(summary.registeredAmount),
-            balanceLabel = if (summary.hasPendingBalance) formatCurrency(summary.missingAmount) else "Quitado",
-            balanceTitle = if (summary.hasPendingBalance) "Falta" else "Status",
+            paidLabel = formatCurrency(paid),
+            paymentStatusLabel = if (isFullyPaid) "Pago" else "Pendente · falta ${formatCurrency(missing)}",
+            balanceLabel = formatCurrency(missing),
+            balanceTitle = "Falta",
             progressPercent = paidPercent(order),
-            isFullyPaid = !summary.hasPendingBalance,
+            isFullyPaid = isFullyPaid,
         )
     }
 

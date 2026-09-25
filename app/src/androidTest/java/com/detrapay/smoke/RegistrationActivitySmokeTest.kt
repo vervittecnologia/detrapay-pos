@@ -1,16 +1,10 @@
 package com.detrapay.smoke
 
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
-import androidx.test.espresso.matcher.ViewMatchers.isRoot
-import androidx.test.espresso.matcher.ViewMatchers.withId
-import androidx.test.ext.junit.rules.ActivityScenarioRule
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.detrapay.R
 import com.detrapay.testing.BaseUiTest
-import com.detrapay.testing.pages.RegistrationOrderDataScreen
-import com.detrapay.testing.waitForView
 import com.detrapay.ui.registration.RegistrationActivity
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -27,7 +21,7 @@ class RegistrationActivitySmokeTest : BaseUiTest() {
     val hiltRule = HiltAndroidRule(this)
 
     @get:Rule(order = 2)
-    val scenarioRule = ActivityScenarioRule(RegistrationActivity::class.java)
+    val composeRule = createAndroidComposeRule<RegistrationActivity>()
 
     @Before
     fun inject() {
@@ -36,13 +30,11 @@ class RegistrationActivitySmokeTest : BaseUiTest() {
 
     @Test
     fun launchRegistration_displaysFirstStepShell() {
-        onView(isRoot()).perform(waitForView(withId(R.id.registrationOrderDataNextBtn)))
-        RegistrationOrderDataScreen.assertDisplayed()
+        composeRule.onNodeWithText("Dados do pedido").assertIsDisplayed()
     }
 
     @Test
     fun launchRegistration_allowsAccessToPrimaryAction() {
-        onView(isRoot()).perform(waitForView(withId(R.id.registrationOrderDataNextBtn)))
-        onView(withId(R.id.registrationOrderDataNextBtn)).check(matches(isDisplayed()))
+        composeRule.onNodeWithText("Revisar pedido").assertIsDisplayed()
     }
 }

@@ -1,6 +1,5 @@
 package com.detrapay.ui.payment
 
-import kotlinx.coroutines.sync.Mutex
 import javax.inject.Inject
 
 sealed interface PaymentOperationState {
@@ -15,12 +14,12 @@ sealed interface PaymentOperationState {
 }
 
 class PaymentOperationCoordinator @Inject constructor() {
-    private val mutex = Mutex()
+    private val lock = Any()
 
     @Volatile
     private var state: PaymentOperationState = PaymentOperationState.Idle
 
-    fun currentState(): PaymentOperationState = state
+    fun currentState(): PaymentOperationState = synchronized(lock) { state }
 
     fun begin(operationId: String): Boolean = locked(false) {
         when (val current = state) {
@@ -129,12 +128,5 @@ class PaymentOperationCoordinator @Inject constructor() {
         is PaymentOperationState.Failed -> value.operationId
     }
 
-    private inline fun <T> locked(fallback: T, block: () -> T): T {
-        if (!mutex.tryLock()) return fallback
-        return try {
-            block()
-        } finally {
-            mutex.unlock()
-        }
-    }
+    private inline fun <T> locked(fallback: T, block: () -> T): T = synchronized(lock) { block() }
 }

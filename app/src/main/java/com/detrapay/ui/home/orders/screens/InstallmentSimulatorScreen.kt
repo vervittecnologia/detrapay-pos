@@ -105,7 +105,7 @@ fun InstallmentSimulatorScreen(
                     MethodIcon(Icons.Default.CreditCard, OrderFlowColors.Blue)
                     Column(modifier = Modifier.padding(start = 14.dp)) {
                         Text("Crédito", color = OrderFlowFintechTheme.Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                        Text("Simular parcelamento em até 18x", color = OrderFlowFintechTheme.Muted, fontSize = 13.sp)
+                        Text("Simular parcelamento em até 18x", color = OrderFlowFintechTheme.Muted, fontSize = 14.sp)
                     }
                 }
 
@@ -118,8 +118,9 @@ fun InstallmentSimulatorScreen(
                         modifier = Modifier.fillMaxWidth(),
                         value = formattedAmount,
                         onValueChange = onAmountChange,
-                        leadingIcon = { Text("R$", color = OrderFlowColors.Muted, fontWeight = FontWeight.Medium) },
-                        placeholder = { Text("0,00") },
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 20.sp),
+                        leadingIcon = { Text("R$", color = OrderFlowColors.Muted, fontSize = 20.sp, fontWeight = FontWeight.Medium) },
+                        placeholder = { Text("0,00", fontSize = 20.sp) },
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                     )
@@ -182,7 +183,7 @@ fun InstallmentSimulatorScreen(
                     ) {
                         Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Copiar", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Copiar", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     }
                     Button(
                         modifier = Modifier
@@ -194,7 +195,7 @@ fun InstallmentSimulatorScreen(
                     ) {
                         Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("WhatsApp", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Text("WhatsApp", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -202,7 +203,7 @@ fun InstallmentSimulatorScreen(
                 modifier = Modifier.fillMaxWidth(),
                 text = "Simulação - nenhum dado será salvo",
                 color = OrderFlowColors.Muted,
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 textAlign = TextAlign.Center,
             )
         }
@@ -235,8 +236,8 @@ private fun SimulatorInstallmentRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(presentation.originalLabel, color = OrderFlowColors.Muted, fontSize = 12.sp)
-            Text(presentation.totalLabel, color = OrderFlowColors.Muted, fontSize = 12.sp)
+            Text(presentation.originalLabel, color = OrderFlowColors.Muted, fontSize = 13.sp)
+            Text(presentation.totalLabel, color = OrderFlowColors.Muted, fontSize = 13.sp)
         }
     }
 }

@@ -14,6 +14,7 @@ import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import java.util.concurrent.atomic.AtomicLong
 
 data class SessionScope(
     val userId: String,
@@ -27,11 +28,13 @@ class AuthRepository @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     private var user: LoggedInUser? = null
+    private val sessionGeneration = AtomicLong(0)
     private val preferences by lazy {
         context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
     }
 
     suspend fun logout() {
+        sessionGeneration.incrementAndGet()
         user?.cpfCnpj?.takeIf { it.isNotBlank() }?.let { saveLastLoggedCnpj(it) }
         this.user = null
         clearSessionTokens()
@@ -53,6 +56,7 @@ class AuthRepository @Inject constructor(
         .takeIf { it != NO_EXPIRATION }
 
     suspend fun saveLoginSession(authResponse: AuthResponse, localUser: User) {
+        sessionGeneration.incrementAndGet()
         persistSessionTokens(
             accessToken = authResponse.resolvedAccessToken(),
             refreshToken = authResponse.refreshToken,
@@ -63,9 +67,14 @@ class AuthRepository @Inject constructor(
         updateCachedUser(localUser)
     }
 
-    suspend fun updateSessionFromRefresh(response: SessionRefreshResponse): Boolean {
+    fun currentSessionGeneration(): Long = sessionGeneration.get()
+
+    suspend fun updateSessionFromRefresh(
+        response: SessionRefreshResponse,
+        expectedGeneration: Long = currentSessionGeneration(),
+    ): Boolean {
         val accessToken = response.resolvedAccessToken()
-        if (accessToken.isBlank()) return false
+        if (accessToken.isBlank() || sessionGeneration.get() != expectedGeneration) return false
 
         persistSessionTokens(
             accessToken = accessToken,
@@ -74,6 +83,10 @@ class AuthRepository @Inject constructor(
             expiresAt = response.resolvedExpiresAt(),
             tokenType = response.resolvedTokenType(),
         )
+        if (sessionGeneration.get() != expectedGeneration) {
+            clearSessionTokens()
+            return false
+        }
         updateStoredUserToken(accessToken)
         return true
     }
