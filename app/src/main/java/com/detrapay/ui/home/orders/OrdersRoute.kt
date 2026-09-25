@@ -26,7 +26,7 @@ fun OrdersRoute(
     homeViewModel: HomeViewModel,
     viewModel: OrdersViewModel,
     paymentViewModel: PaymentDialogViewModel,
-    terminalSerial: String,
+    terminalSerial: () -> String,
     defaultCompanyName: String,
     defaultCompanyDocument: String,
     ordersErrorMessage: String,
@@ -100,7 +100,7 @@ fun OrdersRoute(
                     step = OrderFlowStep.Waiting,
                     paymentSubmissionInFlight = true,
                 )
-                paymentViewModel.payOrder(route.request, terminalSerial)
+                paymentViewModel.payOrder(route.request, terminalSerial())
             }
             is OrderPaymentRoute.RecordOnly -> {
                 localState = localState.copy(paymentSubmissionInFlight = true)
@@ -426,7 +426,7 @@ fun OrdersRoute(
                 }
                 OrderFlowAction.RetryInPagePayment -> {
                     localState.activePaymentRequest?.let { request ->
-                        paymentViewModel.payOrder(request, terminalSerial)
+                        paymentViewModel.payOrder(request, terminalSerial())
                     }
                 }
                 OrderFlowAction.FinishInPagePayment -> {

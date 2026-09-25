@@ -122,6 +122,8 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
 class RegistrationActivity : ComponentActivity() {
@@ -731,7 +733,11 @@ private fun RegistrationSummaryScreen(
 ) {
     var revision by remember { mutableIntStateOf(0) }
     val payload = remember(revision) { viewModel.buildWhatsAppSharePayload() }
-    val qr = remember(payload?.waMeLink) { payload?.waMeLink?.let(::qrBitmap) }
+    val qrLink = payload?.waMeLink
+    var qr by remember(qrLink) { mutableStateOf<Bitmap?>(null) }
+    LaunchedEffect(qrLink) {
+        qr = withContext(Dispatchers.Default) { qrLink?.let(::qrBitmap) }
+    }
     val items = remember(revision) { viewModel.simulationItems() }
     Scaffold(
         topBar = {

@@ -41,6 +41,9 @@ import java.io.File
 @AndroidEntryPoint
 class HomeActivity : ComponentActivity() {
 
+    private val serialForPrePay by lazy { resolveSerialForPrePay() }
+    private val cameraAvailable by lazy(LazyThreadSafetyMode.NONE) { hasCameraCapture() }
+
     private val homeViewModel: HomeViewModel by viewModels()
     private val ordersViewModel: OrdersViewModel by viewModels()
     private val paymentViewModel: PaymentDialogViewModel by viewModels()
@@ -86,7 +89,7 @@ class HomeActivity : ComponentActivity() {
                     homeViewModel = homeViewModel,
                     viewModel = ordersViewModel,
                     paymentViewModel = paymentViewModel,
-                    terminalSerial = getSerialForPrePay(),
+                    terminalSerial = { serialForPrePay },
                     defaultCompanyName = getString(R.string.home_default_company_name),
                     defaultCompanyDocument = getString(R.string.home_company_document_preview),
                     ordersErrorMessage = getString(R.string.orders_error),
@@ -96,7 +99,7 @@ class HomeActivity : ComponentActivity() {
                     invalidSimulatorAmountMessage = "Informe um valor maior que zero.",
                     orderToOpen = createdOrder,
                     onOrderOpened = { createdOrder = null },
-                    cameraAvailable = hasCameraCapture(),
+                    cameraAvailable = cameraAvailable,
                     cameraCaptureError = cameraCaptureError,
                     onTakeOrderPhoto = ::openOrderCamera,
                     onEffect = ::handleEffect,
@@ -201,7 +204,7 @@ class HomeActivity : ComponentActivity() {
         data?.getSerializableExtra(RegistrationActivity.EXTRA_CREATED_ORDER) as? Order
     }
 
-    private fun getSerialForPrePay(): String = if (BuildConfig.DEBUG) {
+    private fun resolveSerialForPrePay(): String = if (BuildConfig.DEBUG) {
         DebugConstants.DEBUG_SPLIT_DEVICE_ID
     } else {
         DeviceUtils.getSerialNumber()

@@ -105,7 +105,7 @@ fun OrdersListScreen(
     var showSearch by remember { mutableStateOf(initialShowSearch || initialQuery.isNotBlank()) }
     val filteredOrders = remember(query, orders) {
         val digits = query.filter(Char::isDigit)
-        OrderPresentation.allOrders(orders).filter { order ->
+        orders.filter { order ->
             query.isBlank() ||
                 order.id.toString().contains(query, ignoreCase = true) ||
                 order.customer.name.contains(query, ignoreCase = true) ||
