@@ -27,6 +27,7 @@ import com.detrapay.data.model.remote.CreateOrderSimulationRequest
 import com.detrapay.data.model.remote.OrderCustomerRequest
 import com.detrapay.data.model.remote.OrderReceivableRequest
 import com.detrapay.data.model.remote.OrderResponse
+import com.detrapay.data.model.remote.PaginationResponse
 import com.detrapay.data.model.remote.OrderDocumentResponse
 import com.detrapay.data.model.remote.PaymentAttempt
 import com.detrapay.data.model.remote.OrderSimulationItemRequest
@@ -43,6 +44,15 @@ class OrderRepository @Inject constructor(
     private val detrapayRemoteDataSource: DetrapayRemoteDataSource,
     private val authRepository: AuthRepository
 ) {
+
+    data class OrderPage(
+        val orders: List<Order>,
+        val page: Int,
+        val pageCount: Int,
+        val total: Int,
+    ) {
+        val hasMore: Boolean get() = page < pageCount
+    }
 
     private data class CacheEntry<T>(
         val value: T,
@@ -360,6 +370,27 @@ class OrderRepository @Inject constructor(
 
     private fun parseOrderStatus(rawStatus: String?): OrderStatus {
         return OrderStatus.fromApi(rawStatus)
+    }
+
+    suspend fun getOrdersPage(page: Int): Result<OrderPage> {
+        require(page > 0)
+        val scope = authRepository.currentSessionScope()
+            ?: return Result.Error(Exception("Usuario nao configurado com empresa."))
+        val dispatcherId = scope.dispatcherId
+            ?: return Result.Error(Exception("Usuario nao configurado com despachante."))
+        val generationAtStart = synchronized(cacheLock) { cacheGeneration }
+        return when (val result = detrapayRemoteDataSource.getOrdersPage(scope.companyId, dispatcherId, page)) {
+            is Result.Success -> {
+                val meta: PaginationResponse = result.data.meta
+                    ?: return Result.Error(Exception("Paginacao ausente na resposta de pedidos."))
+                val parsed = result.data.data.mapNotNull { response ->
+                    try { parseOrder(response) } catch (_: Exception) { null }
+                }.sortedByDescending { it.id }
+                if (page == 1) updateOrdersCache(parsed, scope, generationAtStart)
+                Result.Success(OrderPage(parsed, meta.page, meta.pageCount, meta.total))
+            }
+            is Result.Error -> result
+        }
     }
 
     private fun parseReceivableStatus(rawStatus: String?): OrderReceivableItemStatus {

@@ -56,6 +56,7 @@ fun OrdersRoute(
 
     val homeState by homeViewModel.homeState.observeAsState()
     val orderState by viewModel.orderListState.observeAsState()
+    val paginationState by viewModel.paginationState.observeAsState()
     val paymentMethodsState by viewModel.paymentMethodsState.observeAsState()
     val feesState by viewModel.calculateFeesState.observeAsState()
     val paymentRecordState by viewModel.paymentRecordState.observeAsState()
@@ -328,6 +329,7 @@ fun OrdersRoute(
             homeSection = homeSection,
             inPagePaymentState = inPagePaymentState,
             orderDocuments = orderDocumentsState,
+            pagination = paginationState ?: OrderPaginationUiState(),
         ),
         cameraAvailable = cameraAvailable,
         cameraCaptureError = cameraCaptureError,
@@ -337,6 +339,7 @@ fun OrdersRoute(
             when (action) {
                 OrderFlowAction.Logout -> onEffect(OrderFlowEffect.ShowLogoutConfirmation)
                 OrderFlowAction.Reload -> viewModel.loadOrders(forceRefresh = true)
+                OrderFlowAction.LoadMore -> viewModel.loadMoreOrders()
                 OrderFlowAction.NewOrder -> onEffect(OrderFlowEffect.NavigateToRegistration)
                 is OrderFlowAction.SelectHomeSection -> homeSection = action.section
                 is OrderFlowAction.OrderPay -> {

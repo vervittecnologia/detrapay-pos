@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class PaginatedOrderResponse(
     val data: List<OrderResponse>,
-    val meta: MetaResponse? = null
+    val meta: PaginationResponse? = null
 )
 
 @Serializable

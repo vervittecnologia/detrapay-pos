@@ -149,6 +149,21 @@ class DetrapayRemoteDataSource @Inject constructor(
         }
     }
 
+    suspend fun getOrdersPage(companyId: Int, dispatcherId: Int, page: Int) = try {
+        val response = detrapayService.getOrders(companyId, dispatcherId, page, 20)
+        if (response.isSuccessful) {
+            val body = response.body() ?: throw IOException("Resposta de pedidos vazia")
+            if (body.meta == null) throw IOException("Paginação de pedidos ausente na resposta")
+            Result.Success(body)
+        } else if (response.code() == 401) {
+            Result.Error(UnauthorizedException())
+        } else {
+            Result.Error(Exception(ApiError(response.errorBody()).message))
+        }
+    } catch (e: Throwable) {
+        Result.Error(IOException("Erro ao carregar página de pedidos", e))
+    }
+
     suspend fun getOrder(orderId: Int): Result<OrderResponse> {
         try {
             val result = detrapayService.getOrder(orderId)

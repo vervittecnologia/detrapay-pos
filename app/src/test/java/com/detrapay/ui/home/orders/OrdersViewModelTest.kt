@@ -38,8 +38,8 @@ class OrdersViewModelTest {
         val pending = TestOrderFixtures.order().copy(id = 20, status = OrderStatus.PENDING)
         val paid = TestOrderFixtures.order().copy(id = 22, status = OrderStatus.PAID)
         val cancelled = TestOrderFixtures.order().copy(id = 21, status = OrderStatus.CANCELLED)
-        coEvery { orderRepository.getOrders(false) } returns
-            Result.Success(listOf(pending, paid, cancelled))
+        coEvery { orderRepository.getOrdersPage(1) } returns
+            Result.Success(OrderRepository.OrderPage(listOf(pending, paid, cancelled), 1, 2, 4))
         coEvery { orderRepository.cachedOrders() } returns null
         val viewModel = OrdersViewModel(
             orderRepository,
@@ -51,6 +51,7 @@ class OrdersViewModelTest {
 
         val state = viewModel.orderListState.getOrAwaitValueMatching { it is UIState.Success }
         assertEquals(listOf(22, 21, 20), (state as UIState.Success).data?.map { it.id })
+        assertTrue(viewModel.paginationState.getOrAwaitValueMatching { it.hasMore }.hasMore)
     }
 
     @Test
@@ -59,9 +60,9 @@ class OrdersViewModelTest {
         val cached = TestOrderFixtures.order().copy(id = 20)
         val fresh = TestOrderFixtures.order().copy(id = 21)
         coEvery { orderRepository.cachedOrders() } returns listOf(cached)
-        coEvery { orderRepository.getOrders(false) } coAnswers {
+        coEvery { orderRepository.getOrdersPage(1) } coAnswers {
             freshRequest.await()
-            Result.Success(listOf(fresh))
+            Result.Success(OrderRepository.OrderPage(listOf(fresh), 1, 1, 1))
         }
         val viewModel = OrdersViewModel(orderRepository, registrationRepository, salesmanRepository)
 
@@ -76,6 +77,30 @@ class OrdersViewModelTest {
             it is UIState.Success && it.data?.singleOrNull()?.id == 21
         }
         assertEquals(21, freshState.data?.single()?.id)
+    }
+
+    @Test
+    fun `load more appends unique orders and stops after last page`() {
+        val first = TestOrderFixtures.order().copy(id = 21)
+        val next = TestOrderFixtures.order().copy(id = 20)
+        coEvery { orderRepository.cachedOrders() } returns null
+        coEvery { orderRepository.getOrdersPage(1) } returns
+            Result.Success(OrderRepository.OrderPage(listOf(first), 1, 2, 3))
+        coEvery { orderRepository.getOrdersPage(2) } returns
+            Result.Success(OrderRepository.OrderPage(listOf(first, next), 2, 2, 3))
+        val viewModel = OrdersViewModel(orderRepository, registrationRepository, salesmanRepository)
+
+        viewModel.loadOrders()
+        viewModel.paginationState.getOrAwaitValueMatching { it.hasMore }
+        viewModel.loadMoreOrders()
+
+        val state = viewModel.orderListState.getOrAwaitValueMatching {
+            it is UIState.Success && it.data?.size == 2
+        }
+        assertEquals(listOf(21, 20), (state as UIState.Success).data?.map { it.id })
+        assertTrue(!viewModel.paginationState.getOrAwaitValueMatching { !it.hasMore }.hasMore)
+        viewModel.loadMoreOrders()
+        coVerify(exactly = 1) { orderRepository.getOrdersPage(2) }
     }
 
     @Test

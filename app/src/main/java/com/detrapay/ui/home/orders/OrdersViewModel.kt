@@ -19,7 +19,9 @@ import com.detrapay.ui.state.UIState
 import com.detrapay.ui.util.PaymentTypeRules
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 import java.io.File
 import javax.inject.Inject
@@ -42,6 +44,13 @@ data class OrderDocumentsUiState(
     val errorMessage: String? = null,
 )
 
+data class OrderPaginationUiState(
+    val hasMore: Boolean = false,
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
+    val total: Int = 0,
+)
+
 @HiltViewModel
 class OrdersViewModel @Inject constructor(
     private val orderRepository: OrderRepository,
@@ -54,6 +63,12 @@ class OrdersViewModel @Inject constructor(
     private var paymentMethodsLoading = false
     private val _orderListState = MutableLiveData<UIState<List<Order>>>()
     val orderListState: LiveData<UIState<List<Order>>> = _orderListState
+    private val _paginationState = MutableLiveData(OrderPaginationUiState())
+    val paginationState: LiveData<OrderPaginationUiState> = _paginationState
+    private var ordersGeneration = 0L
+    private var currentPage = 0
+    private var ordersJob: Job? = null
+    private var loadMoreJob: Job? = null
     private val _paymentMethodsState = MutableLiveData<UIState<List<PaymentMethod>>>(UIState.Idle())
     val paymentMethodsState: LiveData<UIState<List<PaymentMethod>>> = _paymentMethodsState
     private val _calculateFeesState = MutableLiveData<UIState<CalculateFeesResponse>>(UIState.Idle())
@@ -69,21 +84,61 @@ class OrdersViewModel @Inject constructor(
     private var pendingPhoto: File? = null
 
     fun loadOrders(forceRefresh: Boolean = false) {
-        viewModelScope.launch(Dispatchers.IO) {
+        ordersGeneration++
+        val generation = ordersGeneration
+        ordersJob?.cancel()
+        loadMoreJob?.cancel()
+        currentPage = 0
+        _paginationState.value = OrderPaginationUiState()
+        ordersJob = viewModelScope.launch {
             if (!forceRefresh) {
-                val cached = orderRepository.cachedOrders()
+                val cached = withContext(Dispatchers.IO) { orderRepository.cachedOrders() }
                 if (cached != null) {
-                    _orderListState.postValue(UIState.Success(OrderPresentation.allOrders(cached)))
+                    _orderListState.value = UIState.Success(OrderPresentation.allOrders(cached))
                 } else {
-                    _orderListState.postValue(UIState.Loading())
+                    _orderListState.value = UIState.Loading()
                 }
             }
-            when (val result = orderRepository.getOrders(forceRefresh)) {
-                is Result.Success -> _orderListState.postValue(
-                    UIState.Success(OrderPresentation.allOrders(result.data)),
+            val result = withContext(Dispatchers.IO) { orderRepository.getOrdersPage(1) }
+            if (generation != ordersGeneration) return@launch
+            when (result) {
+                is Result.Success -> {
+                    currentPage = result.data.page
+                    _orderListState.value = UIState.Success(OrderPresentation.allOrders(result.data.orders))
+                    _paginationState.value = OrderPaginationUiState(
+                        hasMore = result.data.hasMore,
+                        total = result.data.total,
+                    )
+                }
+                is Result.Error -> _orderListState.value = UIState.Error(
+                    "Nao foi possivel carregar os pedidos.", result.exception,
                 )
-                is Result.Error -> _orderListState.postValue(
-                    UIState.Error("Nao foi possivel carregar os pedidos.", result.exception),
+            }
+        }
+    }
+
+    fun loadMoreOrders() {
+        val pagination = _paginationState.value ?: return
+        if (!pagination.hasMore || pagination.isLoading || currentPage == 0) return
+        val generation = ordersGeneration
+        val nextPage = currentPage + 1
+        _paginationState.value = pagination.copy(isLoading = true, errorMessage = null)
+        loadMoreJob = viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) { orderRepository.getOrdersPage(nextPage) }
+            if (generation != ordersGeneration) return@launch
+            when (result) {
+                is Result.Success -> {
+                    val previous = (_orderListState.value as? UIState.Success)?.data.orEmpty()
+                    val merged = (previous + result.data.orders).distinctBy { it.id }
+                    currentPage = result.data.page
+                    _orderListState.value = UIState.Success(OrderPresentation.allOrders(merged))
+                    _paginationState.value = OrderPaginationUiState(
+                        hasMore = result.data.hasMore,
+                        total = result.data.total,
+                    )
+                }
+                is Result.Error -> _paginationState.value = pagination.copy(
+                    errorMessage = "Nao foi possivel carregar mais pedidos.",
                 )
             }
         }

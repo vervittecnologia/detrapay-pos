@@ -73,11 +73,13 @@ data class OrdersUiState(
     val homeSection: SellerHomeSection = SellerHomeSection.Orders,
     val inPagePaymentState: UIState<PaymentData> = UIState.Idle(),
     val orderDocuments: OrderDocumentsUiState = OrderDocumentsUiState(),
+    val pagination: OrderPaginationUiState = OrderPaginationUiState(),
 )
 
 sealed interface OrderFlowAction {
     data object Logout : OrderFlowAction
     data object Reload : OrderFlowAction
+    data object LoadMore : OrderFlowAction
     data object NewOrder : OrderFlowAction
     data class SelectHomeSection(val section: SellerHomeSection) : OrderFlowAction
     data class OrderPay(val order: Order) : OrderFlowAction

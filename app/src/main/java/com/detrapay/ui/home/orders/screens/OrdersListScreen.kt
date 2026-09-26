@@ -100,6 +100,10 @@ fun OrdersListScreen(
     initialShowSearch: Boolean = false,
     initialQuery: String = "",
     initialShowFabMenu: Boolean = false,
+    hasMore: Boolean = false,
+    isLoadingMore: Boolean = false,
+    loadMoreError: String? = null,
+    onLoadMore: () -> Unit = {},
 ) {
     var query by remember { mutableStateOf(initialQuery) }
     var showSearch by remember { mutableStateOf(initialShowSearch || initialQuery.isNotBlank()) }
@@ -159,7 +163,8 @@ fun OrdersListScreen(
                             subtitle = if (query.isBlank()) {
                                 "Quando houver pedidos, eles aparecerão aqui."
                             } else {
-                                "Tente buscar com outros termos."
+                                if (hasMore) "Busca nos pedidos carregados. Carregue mais para procurar pedidos antigos."
+                                else "Tente buscar com outros termos."
                             },
                             actionText = if (query.isBlank()) "Recarregar" else "Limpar busca",
                             onAction = {
@@ -172,6 +177,34 @@ fun OrdersListScreen(
                             order = order,
                             onClick = { onOrderDetail(order) },
                         )
+                    }
+                }
+
+                if (hasMore && !isLoading && errorMessage == null) {
+                    item(key = "load-more") {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            if (query.isNotBlank() && filteredOrders.isNotEmpty()) {
+                                Text(
+                                    "Busca nos pedidos carregados",
+                                    color = SellerMuted,
+                                    fontSize = 14.sp,
+                                )
+                            }
+                            if (loadMoreError != null) {
+                                Text(loadMoreError, color = SellerDanger, fontSize = 14.sp)
+                            }
+                            Button(
+                                onClick = onLoadMore,
+                                enabled = !isLoadingMore,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(if (isLoadingMore) "Carregando..." else "Carregar mais pedidos")
+                            }
+                        }
                     }
                 }
             }
