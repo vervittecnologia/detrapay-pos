@@ -82,6 +82,7 @@ class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         homeViewModel.loadScreenContent()
+        ordersViewModel.loadOrders(forceRefresh = false)
         onBackPressedDispatcher.addCallback(this) { showLogoutConfirmation = true }
         setContent {
             DetrapayTheme {
@@ -99,7 +100,7 @@ class HomeActivity : ComponentActivity() {
                     invalidSimulatorAmountMessage = "Informe um valor maior que zero.",
                     orderToOpen = createdOrder,
                     onOrderOpened = { createdOrder = null },
-                    cameraAvailable = cameraAvailable,
+                    cameraAvailable = { cameraAvailable },
                     cameraCaptureError = cameraCaptureError,
                     onTakeOrderPhoto = ::openOrderCamera,
                     onEffect = ::handleEffect,

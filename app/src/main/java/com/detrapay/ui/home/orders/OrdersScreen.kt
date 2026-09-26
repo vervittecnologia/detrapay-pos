@@ -28,7 +28,7 @@ import com.detrapay.ui.theme.DetrapayTheme
 fun OrdersScreen(
     state: OrdersUiState,
     onAction: (OrderFlowAction) -> Unit,
-    cameraAvailable: Boolean = true,
+    cameraAvailable: () -> Boolean = { true },
     cameraCaptureError: String? = null,
     onTakeOrderPhoto: (Int) -> Unit = {},
     onRefresh: () -> Unit = {},
@@ -92,7 +92,7 @@ fun OrdersScreen(
                         DetailScreen(
                             order = currentOrder,
                             documentsState = state.orderDocuments,
-                            cameraAvailable = cameraAvailable,
+                            cameraAvailable = cameraAvailable(),
                             captureError = cameraCaptureError,
                             onBack = { onAction(OrderFlowAction.Back) },
                             onPay = { onAction(OrderFlowAction.OrderPay(currentOrder)) },

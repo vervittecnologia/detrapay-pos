@@ -36,7 +36,7 @@ fun OrdersRoute(
     invalidSimulatorAmountMessage: String,
     orderToOpen: Order?,
     onOrderOpened: () -> Unit,
-    cameraAvailable: Boolean,
+    cameraAvailable: () -> Boolean,
     cameraCaptureError: String?,
     onTakeOrderPhoto: (Int) -> Unit,
     onEffect: (OrderFlowEffect) -> Unit,
@@ -111,7 +111,6 @@ fun OrdersRoute(
 
     LaunchedEffect(Unit) {
         paymentViewModel.resumePendingPayments()
-        viewModel.loadOrders(forceRefresh = false)
         viewModel.prefetchRegistrationData()
     }
 
